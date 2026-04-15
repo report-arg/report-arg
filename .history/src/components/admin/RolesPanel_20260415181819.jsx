@@ -223,7 +223,7 @@ export default function RolesPanel() {
           </div>
 
           {/* Botones */}
-         <div className="btn-group" style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 20 }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 20, flexWrap: "wrap" }}>
             <button style={btnStyles.secondary}>Descartar Cambios</button>
             <button style={btnStyles.primary}>Guardar Cambios</button>
           </div>

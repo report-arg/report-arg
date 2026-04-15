@@ -270,7 +270,7 @@ body {
 @media (max-width: 767px) {
   .btn-group {
     flex-direction: row !important;
-    justify-content: center !important;
+    justify-content: flex-end !important;
   }
     .btn-group button {
     padding: 9px 14px !important;
