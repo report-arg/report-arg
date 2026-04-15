@@ -197,3 +197,39 @@ body {
   }
 }
 
+/* ── Mobile stats ── */
+.mobile-stats {
+  display: none;
+}
+
+.mobile-total-card {
+  position: relative;
+  background: var(--color-primary);
+  borderRadius: 12px;
+  padding: 20px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+/* ── Bottom navbar mobile ── */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .mobile-stats {
+    display: block;
+  }
+
+  .mobile-bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 10px 0;
+    background: #fff;
+    border-top: 1px solid var(--color-border);
+    position: sticky;
+    bottom: 0;
+  }
+}
