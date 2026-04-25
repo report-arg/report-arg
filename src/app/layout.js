@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import FloatingButton from "@/components/FloatingButton";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,8 +22,10 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         {children}
+        <FloatingButton />
       </body>
     </html>
   );
