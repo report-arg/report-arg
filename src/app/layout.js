@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import FloatingButton from "@/components/FloatingButton";
 import "./globals.css";
+import HeroProvider from "@/components/providers/HeroProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,8 +25,7 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        {children}
-        <FloatingButton />
+        <HeroProvider>{children}</HeroProvider>
       </body>
     </html>
   );
