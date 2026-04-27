@@ -1,7 +1,10 @@
+//archivo: Login.jsx
+
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
+import AuthSplitLayout from '@/components/auth/AuthSplitLayout';
 import {
   EnvelopeIcon,
   EyeIcon,
@@ -23,33 +26,24 @@ export default function Login() {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-left">
-        <img src="/logo.png" alt="logo-reportarg" className="login-logo-img" />
-        <div className="login-left-content">
-          <h1 className="login-title">
-            Impulsando la<br />Gestión Ciudadana
-          </h1>
-          <p className="login-description">
-            Una plataforma moderna para comunidades conectadas. 
-            Transparencia, eficiencia y participación en un solo lugar.
-          </p>
-        </div>
-      </div>
-
-      <div className="login-right">
-        <div className="login-form">
-          <div className="login-logo-mobile">
-            <img src="/logo.png" alt="logo-reportarg" className="login-logo-mobile-img" />
-            <p className="login-logo-mobile-subtitle">Tu conexión con la comunidad</p>
-          </div>
-
-          <div className="login-form-header">
+    <AuthSplitLayout
+      title={
+        <>
+          Impulsando la
+          <br />
+          Gestión Ciudadana
+        </>
+      }
+      description="Una plataforma moderna para comunidades conectadas. Transparencia, eficiencia y participación en un solo lugar."
+      mobileSubtitle="Tu conexión con la comunidad"
+      formClassName="login-form"
+    >
+      <div className="login-form-header">
             <h2 className="login-form-title">Iniciar sesión</h2>
             <p className="login-form-subtitle">Accede a tu cuenta para continuar</p>
-          </div>
+      </div>
 
-          <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label" htmlFor="email">CORREO ELECTRÓNICO</label>
               <div className="form-input-wrapper">
@@ -102,11 +96,15 @@ export default function Login() {
             <button type="submit" className="btn-primary">
               Ingresar
             </button>
-          </form>
 
-          <div className="login-divider">O continuar con</div>
+            <p className="login-footer">
+              ¿No tienes cuenta? <Link href="/auth">Regístrate</Link>
+            </p>
+      </form>
 
-          <div className="social-buttons">
+      <div className="login-divider">O continuar con</div>
+
+      <div className="social-buttons">
             <button className="btn-social">
               <svg viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -122,9 +120,7 @@ export default function Login() {
               </svg>
               Facebook
             </button>
-          </div>
-        </div>
       </div>
-    </div>
+    </AuthSplitLayout>
   );
 }

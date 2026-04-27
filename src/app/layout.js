@@ -1,17 +1,10 @@
+// src/app/layout.js
 import { Geist, Geist_Mono } from "next/font/google";
-import FloatingButton from "@/components/FloatingButton";
+import DynamicHeroProvider from "@/components/providers/DynamicHeroProvider";
 import "./globals.css";
-import HeroProvider from "@/components/providers/HeroProvider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata = {
   title: "ReportARG",
@@ -25,7 +18,9 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <HeroProvider>{children}</HeroProvider>
+        <DynamicHeroProvider>
+          {children}
+        </DynamicHeroProvider>
       </body>
     </html>
   );

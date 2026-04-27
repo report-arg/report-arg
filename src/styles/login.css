@@ -328,3 +328,44 @@
         display: none
     }
 }
+
+.auth-page {
+    min-height: 100vh;
+    background: #f4f6fb;
+  }
+  
+  .auth-navbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(244, 246, 251, 0.85);
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    z-index: 10;
+  }
+  
+  .auth-heading {
+    color: #1a1d2e;
+    font-weight: 600;
+  }
+  
+  .auth-copy {
+    color: #5a6070;
+  }
+  
+  .brand-text {
+    color: rgb(var(--azul));
+  }
+  
+  .auth-link-muted {
+    color: #7a808f;
+  }
+  
+  .auth-footer-text {
+    color: #9da3af;
+    background: #f4f6fb;
+    border-top: 0.5px solid rgba(0,0,0,0.05);
+  }
+  
+  .auth-primary-button {
+    background: rgb(var(--azul));
+    color: white;
+  }

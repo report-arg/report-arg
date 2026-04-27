@@ -1,3 +1,4 @@
+//archivo: InlineNotice.jsx
 'use client';
 
 // Aviso inline reutilizable para mostrar mensajes de advertencia o validación.

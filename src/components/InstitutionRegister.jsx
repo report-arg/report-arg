@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import AuthSplitLayout from '@/components/auth/AuthSplitLayout';
 import {
   BuildingOffice2Icon,
   ChevronDownIcon,
@@ -90,90 +91,69 @@ export default function InstitutionRegister() {
 
   if (submitted) {
     return (
-      <div className="login-container">
-        <div className="login-left">
-          <img src="/logo.png" alt="logo-reportarg" className="login-logo-img" />
-          <div className="login-left-content">
-            <h1 className="login-title">
-              Construyendo una
-              <br />
-              comunidad más
-              <br />
-              segura.
-            </h1>
-            <p className="login-description">
-              Únete al portal institucional para la gestión y reporte inteligente de incidentes.
-              Tecnología al servicio del ciudadano.
-            </p>
-          </div>
-        </div>
-
-        <div className="login-right">
-          <div className="login-form register-success-box">
-            <div className="login-form-header">
-              <h2 className="login-form-title">Solicitud enviada</h2>
-              <p className="login-form-subtitle">
-                Tu institucion quedó registrada en estado pendiente de validacion.
-              </p>
-            </div>
-
-            <p className="register-success-text">
-              Te avisaremos por correo cuando el equipo administrador revise la información.
-            </p>
-
-            <button type="button" className="btn-primary" onClick={() => setSubmitted(false)}>
-              Crear otra solicitud
-            </button>
-
-            <Link href="/login" className="form-link">
-              Ir a iniciar sesión
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="login-container">
-      <div className="login-left">
-        <img src="/logo.png" alt="logo-reportarg" className="login-logo-img" />
-        <div className="login-left-content">
-          <h1 className="login-title">
+      <AuthSplitLayout
+        title={
+          <>
             Construyendo una
             <br />
             comunidad más
             <br />
             segura.
-          </h1>
-          <p className="login-description">
-            Únete al portal institucional para la gestión y reporte inteligente de incidentes.
-            Tecnología al servicio del ciudadano.
+          </>
+        }
+        description="Únete al portal institucional para la gestión y reporte inteligente de incidentes. Tecnología al servicio del ciudadano."
+        mobileSubtitle="Registro institucional"
+        formClassName="login-form register-success-box"
+      >
+        <div className="login-form-header">
+          <h2 className="login-form-title">Solicitud enviada</h2>
+          <p className="login-form-subtitle">
+            Tu institucion quedó registrada en estado pendiente de validacion.
           </p>
+        </div>
+
+        <p className="register-success-text">
+          Te avisaremos por correo cuando el equipo administrador revise la información.
+        </p>
+
+        <button type="button" className="btn-primary" onClick={() => setSubmitted(false)}>
+          Crear otra solicitud
+        </button>
+
+        <Link href="/login" className="form-link">
+          Ir a iniciar sesión
+        </Link>
+      </AuthSplitLayout>
+    );
+  }
+
+  return (
+    <AuthSplitLayout
+      title={
+        <>
+          Construyendo una
+          <br />
+          comunidad más
+          <br />
+          segura.
+        </>
+      }
+      description="Únete al portal institucional para la gestión y reporte inteligente de incidentes. Tecnología al servicio del ciudadano."
+      mobileSubtitle="Registro institucional"
+      formClassName="login-form login-form-register"
+    >
+      <div className="register-form-brand" aria-hidden>
+        <div className="register-form-brand-badge">
+          <BuildingOffice2Icon className="register-form-brand-icon" />
         </div>
       </div>
 
-      <div className="login-right">
-        <div className="login-form login-form-register">
-          <div className="login-logo-mobile">
-            <img src="/logo.png" alt="logo-reportarg" className="login-logo-mobile-img" />
-            <p className="login-logo-mobile-subtitle">Registro institucional</p>
-          </div>
+      <div className="login-form-header">
+        <h2 className="login-form-title">Crear cuenta institucional</h2>
+        <p className="login-form-subtitle">Datos del responsable y datos formales de la institución.</p>
+      </div>
 
-          <div className="register-form-brand" aria-hidden>
-            <div className="register-form-brand-badge">
-              <BuildingOffice2Icon className="register-form-brand-icon" />
-            </div>
-          </div>
-
-          <div className="login-form-header">
-            <h2 className="login-form-title">Crear cuenta institucional</h2>
-            <p className="login-form-subtitle">
-              Datos del responsable y datos formales de la institución.
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label" htmlFor="contactName">
                 NOMBRE COMPLETO DEL RESPONSABLE
@@ -417,9 +397,7 @@ export default function InstitutionRegister() {
             <p className="login-footer">
               ¿Ya tienes una cuenta? <Link href="/login">Iniciar sesión</Link>
             </p>
-          </form>
-        </div>
-      </div>
-    </div>
+      </form>
+    </AuthSplitLayout>
   );
 }
