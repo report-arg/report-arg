@@ -1,0 +1,75 @@
+.auth-page {
+    background-color: rgb(var(--auth-bg));
+    color: rgb(var(--auth-text-main));
+  }
+  
+  .auth-navbar {
+    border-bottom: 1px solid rgb(var(--auth-border));
+    background-color: rgb(255 255 255 / 0.9);
+  }
+  
+  .brand-text {
+    color: rgb(var(--azul));
+  }
+  
+  .brand-accent {
+    color: rgb(var(--azul-suave));
+  }
+  
+  .brand-wordmark {
+    font-family: "Arial Black", "Segoe UI", Arial, sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-size: 1.1rem;
+  }
+  
+  @media (min-width: 640px) {
+    .brand-wordmark {
+      font-size: 1.35rem;
+    }
+  }
+  
+  .auth-link-muted {
+    color: rgb(var(--auth-text-muted));
+  }
+  
+  .auth-heading {
+    color: rgb(var(--auth-text-main));
+  }
+  
+  .auth-copy {
+    color: rgb(var(--auth-text-subtle));
+  }
+  
+  .auth-step-text {
+    color: rgb(var(--auth-text-step));
+  }
+  
+  .auth-footer-text {
+    color: rgb(var(--auth-text-footer));
+  }
+  
+  .auth-primary-button {
+    width: 100%;
+    height: 3.5rem;
+    border-radius: 9999px;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #fff;
+    background-color: #0c47a8;
+    transition: all 300ms;
+    box-shadow: 0 6px 20px rgba(12, 71, 168, 0.35);
+  }
+  
+  .auth-primary-button:hover:enabled {
+    transform: translateY(-0.25rem);
+    background-color: #0a3e93;
+    box-shadow: 0 12px 28px rgba(12, 71, 168, 0.45);
+  }
+  
+  .auth-primary-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  
