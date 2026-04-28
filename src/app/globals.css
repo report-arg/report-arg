@@ -31,6 +31,19 @@
   --color-secondary: var(--celeste);
   --color-background-soft: var(--celeste-claro);
   --color-accent: var(--amarillo);
+
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-primary: var(--azul);
+  --color-secondary: var(--celeste);
+  --color-background-soft: var(--celeste-claro);
+  --color-accent: var(--amarillo);
 }
 
 @media (prefers-color-scheme: dark) {
