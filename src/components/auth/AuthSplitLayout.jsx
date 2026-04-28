@@ -10,7 +10,7 @@ export default function AuthSplitLayout({
   return (
     <div className="login-container" suppressHydrationWarning>
       
-      {/* Panel izquierdo — visibilidad controlada SOLO por CSS */}
+      {/* Panel izquierdo */}
       <div className="login-left" aria-hidden="true">
         <img src="/logo.png" alt="" className="login-logo-img" />
         <div className="login-left-content">

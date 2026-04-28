@@ -1,4 +1,3 @@
-// src/app/layout.js
 import { Geist, Geist_Mono } from "next/font/google";
 import DynamicHeroProvider from "@/components/providers/DynamicHeroProvider";
 import "./globals.css";

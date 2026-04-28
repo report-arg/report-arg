@@ -1,5 +1,3 @@
-//archivo: Login.jsx
-
 'use client';
 
 import { useState } from 'react';
