@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "ReportARG",
-  description: "Plataforma de gestión ciudadana",
+  description: "Plataforma ciudadana ReportARG",
 };
 
 export default function RootLayout({ children }) {
