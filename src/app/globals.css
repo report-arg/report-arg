@@ -5,10 +5,10 @@
 @import "../styles/floating-btn.css";
 
 :root {
-  --azul: 30 58 138;            /* #1e3a8a */
-  --celeste: 132 155 255;       /* #849bff */
-  --celeste-claro: 168 184 253; /* #a8b8fd */
-  --amarillo: 248 212 98;       /* #f8d462 */
+  --azul: 30 58 138;            
+  --celeste: 132 155 255;       
+  --celeste-claro: 168 184 253; 
+  --amarillo: 248 212 98;       
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,3 +23,4 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
