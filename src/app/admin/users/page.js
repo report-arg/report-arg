@@ -4,9 +4,11 @@ import { useState } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Navbar from "@/components/admin/Navbar";
 import UserTable from "@/components/admin/UserTable";
+import { useRouter } from "next/navigation";
 
 export default function UsersPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <div className="admin-layout">
@@ -26,7 +28,7 @@ export default function UsersPage() {
                 Administrá las credenciales de acceso, roles y estados de los ciudadanos y personal administrativo del sistema ReportARG.
               </p>
             </div>
-            <button style={{
+            <button onClick={() => router.push("/admin/users/new")} style={{
               padding: "10px 20px", background: "var(--color-primary)",
               color: "#fff", border: "none", borderRadius: 8,
               fontSize: 14, fontWeight: "bold", cursor: "pointer", whiteSpace: "nowrap",

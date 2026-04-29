@@ -8,7 +8,6 @@ import {
   LayoutDashboard,
   Users,
   Shield,
-  KeyRound,
   Settings,
   X,
 } from "lucide-react";
@@ -16,8 +15,7 @@ import {
 const navItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Usuarios", href: "/admin/users", icon: Users },
-  { label: "Roles", href: "/admin/roles", icon: Shield },
-  { label: "Permisos", href: "/admin/permissions", icon: KeyRound },
+  { label: "Roles y Permisos", href: "/admin/roles", icon: Shield },
   { label: "Configuración", href: "/admin/settings", icon: Settings },
 ];
 
@@ -35,16 +33,16 @@ export default function Sidebar({ open, onClose }) {
 
         {/* LOGO */}
         <div className="sidebar-header">
-          <div>
-            <Image
-              src="/logo.png"
-              alt="ReportARG"
-              width={110}
-              height={38}
-              className="sidebar-logo"
-            />
-            <p className="sidebar-subtitle">ADMIN PANEL</p>
-          </div>
+        <Link href="/admin" onClick={onClose} style={{ textDecoration: "none" }}>
+         <Image
+          src="/logo.png"
+          alt="ReportARG"
+          width={110}
+          height={38}
+          className="sidebar-logo"
+        />
+        <p className="sidebar-subtitle">ADMIN PANEL</p>
+        </Link>
 
           <button className="sidebar-close-btn" onClick={onClose}>
             <X size={20} />
