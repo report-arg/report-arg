@@ -1,36 +1,56 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 
-const stats = [
-  { label: "TOTAL REPORTES",   value: "3.842", sub: "+12% este mes",  subColor: "var(--color-success)" },
-  { label: "ABIERTOS",         value: "1.204", sub: "En espera",      subColor: "var(--color-primary)" },
-  { label: "EN PROCESO",       value: "638",   sub: "Asignados",      subColor: "var(--color-warning)" },
-  { label: "RESUELTOS",        value: "2.000", sub: "52% del total",  subColor: "var(--color-success)" },
-  { label: "USUARIOS ACTIVOS", value: "10.105",sub: "+4.2% este mes", subColor: "var(--color-success)" },
-  { label: "TIEMPO PROMEDIO",  value: "3.2d",  sub: "Resolución",     subColor: "var(--color-warning)" },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-const categorias = [
-  { nombre: "Baches y pavimento",   cantidad: 982, pct: 82 },
-  { nombre: "Iluminación pública",  cantidad: 768, pct: 64 },
-  { nombre: "Residuos / basura",    cantidad: 624, pct: 52 },
-  { nombre: "Árboles / espacios",   cantidad: 451, pct: 38 },
-  { nombre: "Denuncias varias",     cantidad: 297, pct: 25 },
-  { nombre: "Otros",                cantidad: 218, pct: 18 },
-];
+const estadoConfig = {
+  recibido:   { label: "Abierto",    color: "#E6F1FB", textColor: "#0C447C" },
+  en_proceso: { label: "En proceso", color: "#FAEEDA", textColor: "#633806" },
+  resuelto:   { label: "Resuelto",   color: "#EAF3DE", textColor: "#27500A" },
+  rechazado:  { label: "Rechazado",  color: "#F1EFE8", textColor: "#444441" },
+};
 
-const ultimosReportes = [
-  { titulo: "Bache en Av. Corrientes 1240",    meta: "Hace 12 min · San Martín",     estado: "Abierto",     color: "#E6F1FB", textColor: "#0C447C" },
-  { titulo: "Luminaria apagada — Belgrano 450",meta: "Hace 1h · Centro",              estado: "En proceso",  color: "#FAEEDA", textColor: "#633806" },
-  { titulo: "Contenedor de basura desbordado", meta: "Hace 3h · Palermo",            estado: "Abierto",     color: "#E6F1FB", textColor: "#0C447C" },
-  { titulo: "Árbol caído sobre vereda",        meta: "Ayer, 18:40 · Villa del Parque",estado: "Resuelto",   color: "#EAF3DE", textColor: "#27500A" },
-  { titulo: "Pérdida de agua en calzada",      meta: "Ayer, 14:15 · Caballito",      estado: "En proceso",  color: "#FAEEDA", textColor: "#633806" },
-];
+function tiempoRelativo(fecha) {
+  const diff = Date.now() - new Date(fecha).getTime();
+  const min  = Math.floor(diff / 60000);
+  const hs   = Math.floor(diff / 3600000);
+  const dias = Math.floor(diff / 86400000);
+  if (min < 60) return `Hace ${min} min`;
+  if (hs  < 24) return `Hace ${hs}h`;
+  return `Hace ${dias} día${dias > 1 ? 's' : ''}`;
+}
 
 export default function DashboardStats() {
-  const chartRef = useRef(null);
+  const chartRef      = useRef(null);
   const chartInstance = useRef(null);
+
+  const [statsUsuarios, setStatsUsuarios] = useState({ total: 0, activos: 0, inactivos: 0, admins: 0 });
+  const [statsReclamos, setStatsReclamos] = useState({ total: 0, recibidos: 0, enProceso: 0, resueltos: 0 });
+  const [ultimos,       setUltimos]       = useState([]);
+  const [porCategoria,  setPorCategoria]  = useState([]);
+  const [actividad,     setActividad]     = useState([]);
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API_URL}/api/admin/usuarios/stats`).then(r => r.json()),
+      fetch(`${API_URL}/api/admin/reclamos/stats`).then(r => r.json()),
+      fetch(`${API_URL}/api/admin/reclamos/ultimos`).then(r => r.json()),
+      fetch(`${API_URL}/api/admin/reclamos/por-categoria`).then(r => r.json()),
+      fetch(`${API_URL}/api/admin/reclamos/actividad-mensual`).then(r => r.json()),
+    ]).then(([uStats, rStats, ult, porCat, act]) => {
+      if (uStats.ok) setStatsUsuarios(uStats.data);
+      if (rStats.ok) setStatsReclamos(rStats.data);
+      if (ult.ok)    setUltimos(ult.data);
+      if (porCat.ok) setPorCategoria(porCat.data);
+      if (act.ok)    setActividad(act.data);
+    }).catch(console.error);
+  }, []);
+
+  const meses     = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const chartLabels = actividad.map(a => meses[a.mes - 1]);
+  const chartData   = actividad.map(a => a.total);
+  const maxCat      = porCategoria.length > 0 ? Math.max(...porCategoria.map(c => c.cantidad)) : 1;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -38,14 +58,13 @@ export default function DashboardStats() {
     const init = () => {
       if (!window.Chart || !chartRef.current) return;
       if (chartInstance.current) chartInstance.current.destroy();
-
       chartInstance.current = new window.Chart(chartRef.current, {
         type: "line",
         data: {
-          labels: ["Ene", "Feb", "Mar", "Abr", "May", "Jun"],
+          labels: chartLabels.length > 0 ? chartLabels : ["Ene","Feb","Mar","Abr","May","Jun"],
           datasets: [{
             label: "Reportes",
-            data: [280, 320, 410, 390, 460, 520],
+            data: chartData.length > 0 ? chartData : [0,0,0,0,0,0],
             borderColor: "#378ADD",
             backgroundColor: "rgba(55,138,221,0.08)",
             borderWidth: 2,
@@ -77,14 +96,23 @@ export default function DashboardStats() {
     }
 
     return () => { if (chartInstance.current) chartInstance.current.destroy(); };
-  }, []);
+  }, [actividad]);
+
+  const statsCards = [
+    { label: "TOTAL REPORTES",   value: statsReclamos.total.toLocaleString(),    sub: "",          subColor: "var(--color-success)" },
+    { label: "RECIBIDOS",        value: statsReclamos.recibidos.toLocaleString(), sub: "En espera", subColor: "var(--color-primary)" },
+    { label: "EN PROCESO",       value: statsReclamos.enProceso.toLocaleString(), sub: "Asignados", subColor: "var(--color-warning)" },
+    { label: "RESUELTOS",        value: statsReclamos.resueltos.toLocaleString(), sub: "",          subColor: "var(--color-success)" },
+    { label: "USUARIOS ACTIVOS", value: statsUsuarios.activos.toLocaleString(),   sub: "",          subColor: "var(--color-primary)" },
+    { label: "ADMINISTRADORES",  value: statsUsuarios.admins.toLocaleString(),    sub: "",          subColor: "var(--color-warning)" },
+  ];
 
   return (
     <div>
 
       {/* Stats grid */}
       <div className="stats-grid" style={{ marginBottom: 24 }}>
-        {stats.map((s) => (
+        {statsCards.map((s) => (
           <div key={s.label} style={{
             background: "#fff", borderRadius: 10,
             border: "1px solid var(--color-border)", padding: "16px 20px",
@@ -102,11 +130,14 @@ export default function DashboardStats() {
         {/* Categorías */}
         <div style={{ background: "#fff", borderRadius: 10, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
           <p style={{ margin: "0 0 14px", fontSize: 11, color: "#aaa", fontWeight: 600, letterSpacing: 1 }}>REPORTES POR CATEGORÍA</p>
-          {categorias.map((c) => (
-            <div key={c.nombre} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: "#444", width: 150, flexShrink: 0 }}>{c.nombre}</span>
+          {porCategoria.length === 0 && (
+            <p style={{ fontSize: 13, color: "#aaa" }}>Sin datos disponibles.</p>
+          )}
+          {porCategoria.map((c) => (
+            <div key={c.categoria} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <span style={{ fontSize: 13, color: "#444", width: 150, flexShrink: 0 }}>{c.categoria || "Sin categoría"}</span>
               <div style={{ flex: 1, height: 8, background: "var(--color-border)", borderRadius: 4, overflow: "hidden" }}>
-                <div style={{ width: `${c.pct}%`, height: "100%", background: "#378ADD", borderRadius: 4 }} />
+                <div style={{ width: `${Math.round((c.cantidad / maxCat) * 100)}%`, height: "100%", background: "#378ADD", borderRadius: 4 }} />
               </div>
               <span style={{ fontSize: 12, color: "#aaa", width: 36, textAlign: "right", flexShrink: 0 }}>{c.cantidad}</span>
             </div>
@@ -126,22 +157,31 @@ export default function DashboardStats() {
       {/* Últimos reportes */}
       <div style={{ background: "#fff", borderRadius: 10, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
         <p style={{ margin: "0 0 14px", fontSize: 11, color: "#aaa", fontWeight: 600, letterSpacing: 1 }}>ÚLTIMOS REPORTES</p>
-        {ultimosReportes.map((r, i) => (
-          <div key={i} style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "10px 0", borderBottom: i < ultimosReportes.length - 1 ? "1px solid var(--color-border)" : "none",
-            gap: 8,
-          }}>
-            <div>
-              <p style={{ margin: "0 0 2px", fontSize: 13, color: "#333" }}>{r.titulo}</p>
-              <p style={{ margin: 0, fontSize: 11, color: "#aaa" }}>{r.meta}</p>
+        {ultimos.length === 0 && (
+          <p style={{ fontSize: 13, color: "#aaa" }}>Sin reportes recientes.</p>
+        )}
+        {ultimos.map((r, i) => {
+          const cfg = estadoConfig[r.estado] || estadoConfig.recibido;
+          return (
+            <div key={r.id} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "10px 0",
+              borderBottom: i < ultimos.length - 1 ? "1px solid var(--color-border)" : "none",
+              gap: 8,
+            }}>
+              <div>
+                <p style={{ margin: "0 0 2px", fontSize: 13, color: "#333" }}>{r.titulo}</p>
+                <p style={{ margin: 0, fontSize: 11, color: "#aaa" }}>
+                  {tiempoRelativo(r.fecha_creacion)} · {r.direccion || r.categoria || ""}
+                </p>
+              </div>
+              <span style={{
+                fontSize: 11, padding: "3px 10px", borderRadius: 20, fontWeight: 600,
+                background: cfg.color, color: cfg.textColor, whiteSpace: "nowrap",
+              }}>{cfg.label}</span>
             </div>
-            <span style={{
-              fontSize: 11, padding: "3px 10px", borderRadius: 20, fontWeight: 600,
-              background: r.color, color: r.textColor, whiteSpace: "nowrap",
-            }}>{r.estado}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
     </div>

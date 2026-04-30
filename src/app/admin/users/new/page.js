@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Navbar from "@/components/admin/Navbar";
 import UserForm from "@/components/admin/UserForm";
 
 export default function NewUserPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [stats, setStats] = useState({ total: 0, activos: 0, inactivos: 0, admins: 0 });
+
+  useEffect(() => {
+  fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/admin/usuarios/stats`)
+    .then(r => r.json())
+    .then(data => { if (data.ok) setStats(data.data); })
+    .catch(console.error);
+  }, []);
 
   return (
     <div className="admin-layout">
