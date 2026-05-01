@@ -15,6 +15,7 @@ import {
   PhoneIcon,
   UserIcon,
 } from '@heroicons/react/20/solid';
+import { hasValidationErrors, validateInstitutionRegister } from '@/utils/schemas';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -45,22 +46,93 @@ const initialForm = {
 
 export default function InstitutionRegister() {
   const [formData, setFormData] = useState(initialForm);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
+  const formatCuit = (value) => {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+
+    if (digits.length <= 2) {
+      return digits;
+    }
+
+    if (digits.length <= 10) {
+      return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+    }
+
+    return `${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10)}`;
+  };
+
+  const syncFieldErrors = (nextData, nextTouched, fields) => {
+    const validationErrors = validateInstitutionRegister(nextData);
+
+    setErrors((prev) => {
+      const nextErrors = { ...prev };
+
+      fields.forEach((field) => {
+        const shouldShow = nextTouched[field] || field === 'password' || field === 'confirmPassword' || field === 'cuit';
+        if (shouldShow && validationErrors[field]) {
+          nextErrors[field] = validationErrors[field];
+        } else {
+          delete nextErrors[field];
+        }
+      });
+
+      return nextErrors;
+    });
+  };
+
   const handleChange = (name, value) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const normalizedValue = name === 'cuit' ? formatCuit(value) : value;
+    const nextData = { ...formData, [name]: normalizedValue };
+    const nextTouched = { ...touched, [name]: true };
+    const fieldsToSync = name === 'password' || name === 'confirmPassword'
+      ? ['password', 'confirmPassword']
+      : [name];
+
+    setFormData(nextData);
+    setTouched(nextTouched);
+    syncFieldErrors(nextData, nextTouched, fieldsToSync);
+  };
+
+  const handleBlur = (name) => {
+    const nextTouched = { ...touched, [name]: true };
+    const fieldsToSync = name === 'password' || name === 'confirmPassword'
+      ? ['password', 'confirmPassword']
+      : [name];
+
+    setTouched(nextTouched);
+    syncFieldErrors(formData, nextTouched, fieldsToSync);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setServerError('');
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden.');
+    const validationErrors = validateInstitutionRegister(formData);
+    setErrors(validationErrors);
+    setTouched({
+      contactName: true,
+      email: true,
+      password: true,
+      confirmPassword: true,
+      institutionName: true,
+      cuit: true,
+      institutionType: true,
+      phone: true,
+      provincia: true,
+      ciudad: true,
+      zona: true,
+      address: true,
+      termsAccepted: true,
+    });
+
+    if (hasValidationErrors(validationErrors)) {
       return;
     }
 
@@ -81,7 +153,7 @@ export default function InstitutionRegister() {
 
       router.push(`/verify?email=${encodeURIComponent(formData.email)}&type=institution`);
     } catch (submitError) {
-      setError(submitError.message || 'Ocurrió un error en el registro');
+      setServerError(submitError.message || 'Ocurrió un error en el registro');
     } finally {
       setIsSubmitting(false);
     }
@@ -126,21 +198,23 @@ export default function InstitutionRegister() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
               <label className="form-label" htmlFor="contactName">NOMBRE COMPLETO DEL RESPONSABLE</label>
               <div className="form-input-wrapper">
-                <input type="text" id="contactName" className="form-input" placeholder="Ej. Juan Perez" value={formData.contactName} onChange={(e) => handleChange('contactName', e.target.value)} required />
+                <input type="text" id="contactName" className="form-input" placeholder="Ej. Juan Perez" value={formData.contactName} onChange={(e) => handleChange('contactName', e.target.value)} onBlur={() => handleBlur('contactName')} />
                 <div className="form-input-icon"><UserIcon aria-hidden /></div>
               </div>
+              {errors.contactName && <p className="register-error">{errors.contactName}</p>}
             </div>
 
             <div className="form-group">
               <label className="form-label" htmlFor="email">CORREO ELECTRÓNICO INSTITUCIONAL</label>
               <div className="form-input-wrapper">
-                <input type="email" id="email" className="form-input" placeholder="institucion@dominio.com" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} required />
+                <input type="email" id="email" className="form-input" placeholder="institucion@dominio.com" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} onBlur={() => handleBlur('email')} />
                 <div className="form-input-icon"><EnvelopeIcon aria-hidden /></div>
               </div>
+              {errors.email && <p className="register-error">{errors.email}</p>}
             </div>
 
             <div className="register-grid">
@@ -148,46 +222,50 @@ export default function InstitutionRegister() {
                 <label className="form-label" htmlFor="password">CONTRASEÑA</label>
                 <div className="form-input-wrapper">
                   <div className="form-input-icon form-input-icon-left"><LockClosedIcon aria-hidden /></div>
-                  <input type={showPassword ? 'text' : 'password'} id="password" className="form-input has-left-icon" placeholder="••••••••" value={formData.password} onChange={(e) => handleChange('password', e.target.value)} required />
+                  <input type={showPassword ? 'text' : 'password'} id="password" className="form-input has-left-icon" placeholder="••••••••" value={formData.password} onChange={(e) => handleChange('password', e.target.value)} onBlur={() => handleBlur('password')} />
                   <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
                     {showPassword ? <EyeSlashIcon aria-hidden /> : <EyeIcon aria-hidden />}
                   </button>
                 </div>
+                {errors.password && <p className="register-error">{errors.password}</p>}
               </div>
 
               <div className="form-group">
                 <label className="form-label" htmlFor="confirmPassword">CONFIRMAR CONTRASEÑA</label>
                 <div className="form-input-wrapper">
                   <div className="form-input-icon form-input-icon-left"><LockClosedIcon aria-hidden /></div>
-                  <input type={showConfirmPassword ? 'text' : 'password'} id="confirmPassword" className="form-input has-left-icon" placeholder="••••••••" value={formData.confirmPassword} onChange={(e) => handleChange('confirmPassword', e.target.value)} required />
+                  <input type={showConfirmPassword ? 'text' : 'password'} id="confirmPassword" className="form-input has-left-icon" placeholder="••••••••" value={formData.confirmPassword} onChange={(e) => handleChange('confirmPassword', e.target.value)} onBlur={() => handleBlur('confirmPassword')} />
                   <button type="button" className="password-toggle" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label={showConfirmPassword ? 'Ocultar confirmación' : 'Mostrar confirmación'}>
                     {showConfirmPassword ? <EyeSlashIcon aria-hidden /> : <EyeIcon aria-hidden />}
                   </button>
                 </div>
+                {errors.confirmPassword && <p className="register-error">{errors.confirmPassword}</p>}
               </div>
             </div>
 
             <div className="form-group">
               <label className="form-label" htmlFor="institutionName">NOMBRE O RAZÓN SOCIAL</label>
               <div className="form-input-wrapper">
-                <input type="text" id="institutionName" className="form-input" placeholder="Ej. Hospital Municipal San Martin" value={formData.institutionName} onChange={(e) => handleChange('institutionName', e.target.value)} required />
+                <input type="text" id="institutionName" className="form-input" placeholder="Ej. Hospital Municipal San Martin" value={formData.institutionName} onChange={(e) => handleChange('institutionName', e.target.value)} onBlur={() => handleBlur('institutionName')} />
                 <div className="form-input-icon"><BuildingOffice2Icon aria-hidden /></div>
               </div>
+              {errors.institutionName && <p className="register-error">{errors.institutionName}</p>}
             </div>
 
             <div className="register-grid">
               <div className="form-group">
                 <label className="form-label" htmlFor="cuit">CUIT</label>
                 <div className="form-input-wrapper">
-                  <input type="text" id="cuit" className="form-input" placeholder="30-12345678-9" value={formData.cuit} onChange={(e) => handleChange('cuit', e.target.value)} required />
+                  <input type="text" id="cuit" className="form-input" placeholder="30-12345678-9" value={formData.cuit} onChange={(e) => handleChange('cuit', e.target.value)} onBlur={() => handleBlur('cuit')} />
                   <div className="form-input-icon"><IdentificationIcon aria-hidden /></div>
                 </div>
+                {errors.cuit && <p className="register-error">{errors.cuit}</p>}
               </div>
 
               <div className="form-group">
                 <label className="form-label" htmlFor="institutionType">TIPO DE INSTITUCIÓN</label>
                 <div className="form-input-wrapper form-select-wrapper">
-                  <select id="institutionType" className="form-input form-select" value={formData.institutionType} onChange={(e) => handleChange('institutionType', e.target.value)} required>
+                  <select id="institutionType" className="form-input form-select" value={formData.institutionType} onChange={(e) => handleChange('institutionType', e.target.value)} onBlur={() => handleBlur('institutionType')}>
                     <option value="">Selecciona una opción</option>
                     {institutionTypes.map((type) => (
                       <option key={type.key} value={type.key}>{type.label}</option>
@@ -195,6 +273,7 @@ export default function InstitutionRegister() {
                   </select>
                   <div className="form-input-icon"><ChevronDownIcon aria-hidden /></div>
                 </div>
+                {errors.institutionType && <p className="register-error">{errors.institutionType}</p>}
               </div>
             </div>
 
@@ -202,47 +281,56 @@ export default function InstitutionRegister() {
               <div className="form-group">
                 <label className="form-label" htmlFor="phone">TELÉFONO DE CONTACTO</label>
                 <div className="form-input-wrapper">
-                  <input type="text" id="phone" className="form-input" placeholder="221 555 1234" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} required />
+                  <input type="text" id="phone" className="form-input" placeholder="221 555 1234" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} onBlur={() => handleBlur('phone')} />
                   <div className="form-input-icon"><PhoneIcon aria-hidden /></div>
                 </div>
+                {errors.phone && <p className="register-error">{errors.phone}</p>}
               </div>
 
               <div className="form-group">
                 <label className="form-label" htmlFor="address">DIRECCIÓN</label>
                 <div className="form-input-wrapper">
-                  <input type="text" id="address" className="form-input" placeholder="Calle 123, número, barrio" value={formData.address} onChange={(e) => handleChange('address', e.target.value)} required />
+                  <input type="text" id="address" className="form-input" placeholder="Calle 123, número, barrio" value={formData.address} onChange={(e) => handleChange('address', e.target.value)} onBlur={() => handleBlur('address')} />
                   <div className="form-input-icon"><MapPinIcon aria-hidden /></div>
                 </div>
+                {errors.address && <p className="register-error">{errors.address}</p>}
               </div>
             </div>
 
             <div className="register-grid">
               <div className="form-group">
                 <label className="form-label" htmlFor="provincia">PROVINCIA</label>
-                <input type="text" id="provincia" className="form-input" placeholder="Buenos Aires" value={formData.provincia} onChange={(e) => handleChange('provincia', e.target.value)} required />
+                <input type="text" id="provincia" className="form-input" placeholder="Buenos Aires" value={formData.provincia} onChange={(e) => handleChange('provincia', e.target.value)} onBlur={() => handleBlur('provincia')} />
+                {errors.provincia && <p className="register-error">{errors.provincia}</p>}
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="ciudad">CIUDAD</label>
-                <input type="text" id="ciudad" className="form-input" placeholder="La Plata" value={formData.ciudad} onChange={(e) => handleChange('ciudad', e.target.value)} required />
+                <input type="text" id="ciudad" className="form-input" placeholder="La Plata" value={formData.ciudad} onChange={(e) => handleChange('ciudad', e.target.value)} onBlur={() => handleBlur('ciudad')} />
+                {errors.ciudad && <p className="register-error">{errors.ciudad}</p>}
               </div>
             </div>
 
             <div className="form-group">
               <label className="form-label" htmlFor="zona">ZONA</label>
-              <input type="text" id="zona" className="form-input" placeholder="Centro" value={formData.zona} onChange={(e) => handleChange('zona', e.target.value)} required />
+              <input type="text" id="zona" className="form-input" placeholder="Centro" value={formData.zona} onChange={(e) => handleChange('zona', e.target.value)} onBlur={() => handleBlur('zona')} />
+              {errors.zona && <p className="register-error">{errors.zona}</p>}
             </div>
 
             <label className="register-checkbox">
-              <input type="checkbox" checked={formData.termsAccepted} onChange={(e) => handleChange('termsAccepted', e.target.checked)} />
+              <input type="checkbox" checked={formData.termsAccepted} onChange={(e) => handleChange('termsAccepted', e.target.checked)} onBlur={() => handleBlur('termsAccepted')} />
               <span>Acepto los términos y condiciones</span>
             </label>
+            {errors.termsAccepted && <p className="register-error">{errors.termsAccepted}</p>}
 
-            {error && <p className="register-error">{error}</p>}
+            {serverError && <p className="register-error">{serverError}</p>}
 
             <button type="submit" className="btn-primary" disabled={isSubmitting}>
               {isSubmitting ? 'Registrando...' : 'Registrarme'}
             </button>
 
+            <p className="login-footer">
+              ¿Querés registrarte como ciudadano? <Link href="/register/citizen">Ir al registro ciudadano</Link>
+            </p>
             <p className="login-footer">
               ¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link>
             </p>

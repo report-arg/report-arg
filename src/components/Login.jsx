@@ -10,21 +10,36 @@ import {
   EyeSlashIcon,
   LockClosedIcon,
 } from '@heroicons/react/20/solid';
+import { hasValidationErrors, validateLoginData } from '@/utils/schemas';
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setErrors((prev) => {
+      const nextErrors = { ...prev };
+      delete nextErrors[e.target.name];
+      return nextErrors;
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    const validationErrors = validateLoginData(formData);
+    setErrors(validationErrors);
+
+    if (hasValidationErrors(validationErrors)) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -87,12 +102,12 @@ export default function Login() {
                   placeholder="ejemplo@correo.com"
                   value={formData.email}
                   onChange={handleChange}
-                  required
                 />
                 <div className="form-input-icon">
                   <EnvelopeIcon aria-hidden />
                 </div>
               </div>
+              {errors.email && <p className="register-error">{errors.email}</p>}
             </div>
 
             <div className="form-group">
@@ -109,7 +124,6 @@ export default function Login() {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={handleChange}
-                  required
                 />
                 <button
                   type="button"
@@ -120,6 +134,7 @@ export default function Login() {
                   {showPassword ? <EyeSlashIcon aria-hidden /> : <EyeIcon aria-hidden />}
                 </button>
               </div>
+              {errors.password && <p className="register-error">{errors.password}</p>}
               <Link href="/reset-password" className="form-link">
                 ¿Olvidaste tu contraseña?
               </Link>
@@ -130,6 +145,13 @@ export default function Login() {
             <button type="submit" className="btn-primary" disabled={isSubmitting}>
               {isSubmitting ? 'Ingresando...' : 'Ingresar'}
             </button>
+
+            <p className="login-footer" style={{ marginTop: '1rem' }}>
+              ¿No tienes cuenta? <Link href="/register/citizen">Regístrate como ciudadano</Link>
+            </p>
+            <p className="login-footer">
+              ¿Representás una institución? <Link href="/register/institution">Regístrate aquí</Link>
+            </p>
           </form>
 
           <div className="login-divider">O continuar con</div>
