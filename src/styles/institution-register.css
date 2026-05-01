@@ -44,7 +44,21 @@
 }
 
 .register-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
   margin-bottom: 0.5rem;
+}
+
+.register-checkbox input {
+  width: 1rem;
+  height: 1rem;
+}
+
+.register-checkbox span {
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .register-checkbox-label {

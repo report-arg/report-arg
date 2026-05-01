@@ -25,6 +25,7 @@ export default function UserForm({ usuarioId = null }) {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(isEdit);
   const [apiError, setApiError] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
   const [uploadingFoto, setUploadingFoto] = useState(false);
 
   // Si es edición cargamos los datos del usuario
@@ -59,6 +60,64 @@ export default function UserForm({ usuarioId = null }) {
     setForm(prev => ({ ...prev, [name]: value }));
     setErrors(prev => ({ ...prev, [name]: "" }));
     setApiError("");
+    setInfoMessage("");
+  }
+
+  async function submitUser(payload, { redirect = true, successMessage = "" } = {}) {
+    const errs = validate(payload);
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      return false;
+    }
+
+    setLoading(true);
+    setApiError("");
+
+    try {
+      const url = isEdit
+        ? `${API_URL}/api/admin/usuarios/${usuarioId}`
+        : `${API_URL}/api/admin/usuarios`;
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const body = {
+        email: payload.email,
+        nombre: payload.nombre,
+        rol: payload.rol,
+        estado: payload.estado,
+        foto: payload.foto,
+      };
+
+      if (!isEdit) {
+        body.password = payload.password;
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+
+      if (!data.ok) {
+        setApiError(data.mensaje || 'No se pudo guardar el usuario');
+        return false;
+      }
+
+      if (successMessage) {
+        setInfoMessage(successMessage);
+      }
+
+      if (redirect) {
+        router.push('/admin/users');
+      }
+
+      return true;
+    } catch (err) {
+      setApiError('Error al conectar con el servidor');
+      return false;
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleFoto(e) {
@@ -71,6 +130,8 @@ export default function UserForm({ usuarioId = null }) {
 
   // Subir a Cloudinary
   setUploadingFoto(true);
+  setApiError("");
+  setInfoMessage("");
   try {
     const formData = new FormData();
     formData.append('foto', file);
@@ -79,73 +140,50 @@ export default function UserForm({ usuarioId = null }) {
       method: 'POST',
       body: formData,
     });
-    const data = await res.json();
+    const raw = await res.text();
+    const data = raw ? JSON.parse(raw) : {};
 
-    if (data.ok) {
-      setForm(prev => ({ ...prev, foto: data.url }));
+    if (res.ok && data.ok) {
+      const nextForm = { ...form, foto: data.url };
+      setForm(nextForm);
+
+      if (isEdit) {
+        const saved = await submitUser(nextForm, {
+          redirect: false,
+          successMessage: 'Foto de perfil actualizada correctamente',
+        });
+        if (!saved) {
+          setApiError('La imagen se subió, pero no se pudo guardar en el perfil. Intentá guardar cambios nuevamente.');
+        }
+      } else {
+        setInfoMessage('Imagen subida. Para guardarla en el perfil, hacé clic en Crear usuario.');
+      }
     } else {
-      setApiError('Error al subir la imagen');
+      setApiError(data.mensaje || data.error || 'Error al subir la imagen');
     }
   } catch (err) {
-    setApiError('Error al subir la imagen');
+    setApiError(err.message || 'Error al subir la imagen');
   } finally {
     setUploadingFoto(false);
   }
 }
 
-  function validate() {
+  function validate(values = form) {
     const errs = {};
-    if (!form.nombre.trim()) errs.nombre = "El nombre es obligatorio.";
-    if (!form.email.trim())  errs.email  = "El email es obligatorio.";
-    else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = "El email no es válido.";
-    if (!isEdit && !form.password) errs.password = "La contraseña es obligatoria.";
-    if (!isEdit && form.password && form.password.length < 6)
+    if (!values.nombre.trim()) errs.nombre = "El nombre es obligatorio.";
+    if (!values.email.trim())  errs.email  = "El email es obligatorio.";
+    else if (!/\S+@\S+\.\S+/.test(values.email)) errs.email = "El email no es válido.";
+    if (!isEdit && !values.password) errs.password = "La contraseña es obligatoria.";
+    if (!isEdit && values.password && values.password.length < 6)
       errs.password = "Mínimo 6 caracteres.";
     return errs;
   }
 
   async function handleSubmit() {
-    const errs = validate();
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-
-    setLoading(true);
-    setApiError("");
-
-    try {
-      const url    = isEdit
-        ? `${API_URL}/api/admin/usuarios/${usuarioId}`
-        : `${API_URL}/api/admin/usuarios`;
-      const method = isEdit ? 'PUT' : 'POST';
-
-      const body = {
-        email:  form.email,
-        nombre: form.nombre,
-        rol:    form.rol,
-        estado: form.estado,
-        foto:   form.foto
-      };
-      if (!isEdit) {
-        body.password = form.password;
-      }
-
-      const res  = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-
-      if (!data.ok) {
-        setApiError(data.mensaje);
-        return;
-      }
-
-      router.push('/admin/users');
-    } catch (err) {
-      setApiError('Error al conectar con el servidor');
-    } finally {
-      setLoading(false);
-    }
+    await submitUser(form, {
+      redirect: true,
+      successMessage: isEdit ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente',
+    });
   }
 
   const inputStyle = {
@@ -171,6 +209,16 @@ export default function UserForm({ usuarioId = null }) {
           fontSize: 13, color: "#991B1B",
         }}>
           {apiError}
+        </div>
+      )}
+
+      {infoMessage && (
+        <div style={{
+          background: "#DCFCE7", border: "1px solid #86EFAC",
+          borderRadius: 8, padding: "10px 14px", marginBottom: 16,
+          fontSize: 13, color: "#166534",
+        }}>
+          {infoMessage}
         </div>
       )}
 
@@ -271,15 +319,15 @@ export default function UserForm({ usuarioId = null }) {
         >Cancelar</button>
         <button
           onClick={handleSubmit}
-          disabled={loading}
+          disabled={loading || uploadingFoto}
           style={{
-            padding: "10px 22px", background: loading ? "#ccc" : "var(--color-primary)",
+            padding: "10px 22px", background: (loading || uploadingFoto) ? "#ccc" : "var(--color-primary)",
             color: "#fff", border: "none", borderRadius: 8,
             fontSize: 13, fontWeight: "bold",
-            cursor: loading ? "not-allowed" : "pointer",
+            cursor: (loading || uploadingFoto) ? "not-allowed" : "pointer",
           }}
         >
-          {loading ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear usuario"}
+          {uploadingFoto ? "Subiendo imagen..." : loading ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear usuario"}
         </button>
       </div>
 

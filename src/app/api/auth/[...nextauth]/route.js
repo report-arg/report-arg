@@ -3,6 +3,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
 const authOptions = {
   providers: [
     CredentialsProvider({
@@ -12,21 +14,33 @@ const authOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // Simulación de llamada a tu backend real.
-        // Aquí harías: const res = await apiClient.post('/login', credentials);
-        // if (res.data.token) return res.data.user;
-        
-        // Mock provisorio
-        if (credentials.email && credentials.password) {
-          return { 
-            id: "1", 
-            name: "Usuario Demo", 
-            email: credentials.email, 
-            role: "CIUDADANO", 
-            token: "mock-jwt-token" 
-          };
+        if (!credentials?.email || !credentials?.password) {
+          return null;
         }
-        return null;
+
+        const response = await fetch(`${API_URL}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: credentials.email,
+            password: credentials.password,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Credenciales inválidas');
+        }
+
+        return {
+          id: String(data.user.id),
+          email: data.user.email,
+          role: data.user.role,
+          name: data.user.email,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+        };
       }
     }),
     GoogleProvider({
@@ -36,19 +50,63 @@ const authOptions = {
     FacebookProvider({
       clientId: process.env.FACEBOOK_CLIENT_ID || "mock-facebook-id",
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET || "mock-facebook-secret",
+      authorization: {
+        params: {
+          scope: "public_profile",
+        },
+      },
     })
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      if (!account || account.provider === 'credentials') {
+        return true;
+      }
+
+      const resolvedEmail = user.email || `${account.provider}-${account.providerAccountId}@reportarg.social`;
+
+      const response = await fetch(`${API_URL}/api/auth/social-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: resolvedEmail,
+          name: user.name,
+          provider: account.provider,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'No se pudo iniciar sesión con el proveedor externo');
+      }
+
+      user.id = String(data.user.id);
+      user.email = data.user.email || resolvedEmail;
+      user.role = data.user.role;
+      user.accessToken = data.accessToken;
+      user.refreshToken = data.refreshToken;
+
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
-        token.accessToken = user.token; // Guardamos el JWT de nuestro backend real
+        token.accessToken = user.accessToken;
+        token.refreshToken = user.refreshToken;
         token.role = user.role;
+        token.userId = user.id;
+        token.name = user.name || token.name;
+        token.email = user.email || token.email;
       }
       return token;
     },
     async session({ session, token }) {
       session.accessToken = token.accessToken;
+      session.refreshToken = token.refreshToken;
+      session.user.id = token.userId;
       session.user.role = token.role;
+      session.user.name = token.name || session.user.name;
+      session.user.email = token.email || session.user.email;
       return session;
     }
   },

@@ -139,11 +139,6 @@ export default function Navbar({ section = "Dashboard", onMenuClick }) {
         <button className="navbar-hamburger" onClick={onMenuClick}>
           <Menu size={22} />
         </button>
-        <div className="navbar-breadcrumb">
-          <span className="hide-mobile">ADMIN PANEL</span>
-          <span className="hide-mobile">›</span>
-          <span className="navbar-section">{section.toUpperCase()}</span>
-        </div>
       </div>
 
       {/* Centro — búsqueda */}
