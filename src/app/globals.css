@@ -2,6 +2,7 @@
 @import "../styles/login.css";
 @import "../styles/institution-register.css";
 @import "../styles/reset-password.css";
+@import "../styles/floating-btn.css";
 @import "../styles/auth.css";
 
 :root {
@@ -10,6 +11,8 @@
   --celeste-claro: 168 184 253; /* #a8b8fd */
   --amarillo: 248 212 98;       /* #f8d462 */
   --azul-suave: 96 165 250;     /* #60a5fa */
+  
+  /* Variables para el Layout de Auth Split */
   --auth-bg: 241 241 245;       /* #f1f1f5 */
   --auth-text-main: 31 35 43;   /* #1f232b */
   --auth-border: 221 225 238;   /* #dde1ee */
@@ -17,7 +20,6 @@
   --auth-text-subtle: 90 96 112; /* #5a6070 */
   --auth-text-step: 108 115 130; /* #6c7382 */
   --auth-text-footer: 129 136 154; /* #81889a */
-
 }
 
 @theme inline {
@@ -45,6 +47,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Ocultar los íconos de ojo por defecto de los navegadores en inputs de contraseña */
 input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
   display: none;
