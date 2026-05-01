@@ -11,7 +11,13 @@ import StepIndicator from '@/components/ui/StepIndicator';
 import InstitutionDataStep from '@/components/auth/InstitutionDataStep';
 import InstitutionLocationStep from '@/components/auth/InstitutionLocationStep';
 
+/**
+ * Componente principal para el registro de instituciones.
+ * Funciona como un controlador del Wizard de múltiples pasos.
+ * Controla el flujo de registro corporativo (Datos -> Ubicación).
+ */
 export default function InstitutionRegister() {
+  // Estado para controlar en qué paso del Wizard nos encontramos (Inicia en 2)
   const [step, setStep] = useState(2);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -42,8 +48,11 @@ export default function InstitutionRegister() {
     },
   });
 
+  /**
+   * Valida los campos del paso 2 (Datos Institucionales).
+   * Si todos los campos requeridos son válidos, avanza al paso de ubicación.
+   */
   const onNextStep = async () => {
-    // Validate Step 2 fields
     const isStepValid = await trigger([
       'contactName', 'email', 'password', 'confirmPassword', 
       'institutionName', 'cuit', 'institutionType', 'phone'
@@ -53,6 +62,11 @@ export default function InstitutionRegister() {
     }
   };
 
+  /**
+   * Manejador final del registro institucional.
+   * Redirige a /verify con el query param ?type=institution
+   * para diferenciar la lógica de éxito en la pantalla OTP.
+   */
   const onSubmit = async (data) => {
     try {
       const payload = {
@@ -64,6 +78,7 @@ export default function InstitutionRegister() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       console.log('HU-03 payload:', payload);
       toast.info('Te enviamos un código para verificar el correo.');
+      // Redirección con flag "type=institution" para mostrar mensaje de "revisión administrativa" post-verificación
       router.push(`/verify?email=${encodeURIComponent(data.email)}&type=institution`);
     } catch (error) {
       toast.error('Ocurrió un error en el registro');

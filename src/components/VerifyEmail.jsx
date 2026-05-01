@@ -5,6 +5,10 @@ import AuthSplitLayout from '@/components/auth/AuthSplitLayout';
 import { authService } from '@/services/authService';
 import { toast } from 'sonner';
 
+/**
+ * Componente para la verificación de correo electrónico vía OTP (One-Time Password).
+ * Maneja tanto ciudadanos como instituciones basándose en parámetros de URL.
+ */
 function VerifyEmailForm() {
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -14,6 +18,9 @@ function VerifyEmailForm() {
   const type = searchParams.get('type');
   const inputsRef = useRef([]);
 
+  /**
+   * Maneja el salto automático entre las casillas de OTP al escribir.
+   */
   const handleChange = (e, index) => {
     const value = e.target.value;
     if (/[^0-9]/.test(value)) return;
@@ -27,12 +34,20 @@ function VerifyEmailForm() {
     }
   };
 
+  /**
+   * Maneja la tecla Retroceso (Backspace).
+   * Si la casilla actual está vacía, devuelve el foco a la casilla anterior.
+   */
   const handleKeyDown = (e, index) => {
     if (e.key === 'Backspace' && !code[index] && index > 0) {
       inputsRef.current[index - 1].focus();
     }
   };
 
+  /**
+   * Envía el código OTP para ser validado.
+   * Dependiendo del typeParam, redirige o muestra un mensaje de "revisión administrativa".
+   */
   const onSubmit = async (e) => {
     e.preventDefault();
     const finalCode = code.join('');

@@ -1,14 +1,19 @@
 import { EnvelopeIcon, EyeIcon, EyeSlashIcon, LockClosedIcon, UserIcon } from '@heroicons/react/20/solid';
 import Link from 'next/link';
 
+/**
+ * Sub-componente (Paso 2) del registro de Ciudadanos.
+ * Encapsula la interfaz gráfica de los datos personales.
+ * Recibe por props las funciones de `react-hook-form` desde el componente padre.
+ */
 export default function CitizenDataStep({
-  register,
-  errors,
+  register, // Función para registrar campos en el formulario padre
+  errors, // Objeto con errores de validación de Zod
   showPassword,
   setShowPassword,
   showConfirmPassword,
   setShowConfirmPassword,
-  onNextStep,
+  onNextStep, // Función que el padre provee para validar y avanzar al Paso 3
 }) {
   return (
     <div className="animate-fade-in">
