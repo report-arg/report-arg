@@ -160,22 +160,25 @@ export default function InstitutionRegister() {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-left">
-        <img src="/logo.png" alt="logo-reportarg" className="login-logo-img" />
-        <div className="login-left-content">
-          <h1 className="login-title">
-            Construyendo una
-            <br />
-            comunidad más
-            <br />
-            segura.
-          </h1>
-          <p className="login-description">
-            Únete al portal institucional para la gestión y reporte inteligente de incidentes.
-            Tecnología al servicio del ciudadano.
-          </p>
-        </div>
+    <AuthSplitLayout
+      title={
+        <>
+          Gestiona trámites
+          <br />
+          para tu Institución
+        </>
+      }
+      description="Plataforma avanzada para empresas, ONGs y entidades públicas."
+      mobileSubtitle="Registro institucional"
+      formClassName="login-form login-form-register"
+    >
+      <StepIndicator currentStep={step} />
+
+      <div className="login-form-header text-center">
+        <h2 className="login-form-title">Registro Institucional</h2>
+        <p className="login-form-subtitle">
+          {step === 2 ? 'Datos del responsable e institución.' : '¿Dónde está ubicada físicamente?'}
+        </p>
       </div>
 
       <div className="login-right">

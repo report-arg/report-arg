@@ -13,7 +13,6 @@ import {
 import { hasValidationErrors, validateLoginData } from '@/utils/schemas';
 
 export default function Login() {
-  const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [error, setError] = useState('');
@@ -88,7 +87,7 @@ export default function Login() {
           <div className="login-form-header">
             <h2 className="login-form-title">Iniciar sesión</h2>
             <p className="login-form-subtitle">Accede a tu cuenta para continuar</p>
-          </div>
+      </div>
 
           <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
@@ -97,7 +96,6 @@ export default function Login() {
                 <input
                   type="email"
                   id="email"
-                  name="email"
                   className="form-input"
                   placeholder="ejemplo@correo.com"
                   value={formData.email}
@@ -119,7 +117,6 @@ export default function Login() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
-                  name="password"
                   className="form-input has-left-icon"
                   placeholder="••••••••"
                   value={formData.password}
@@ -154,9 +151,14 @@ export default function Login() {
             </p>
           </form>
 
-          <div className="login-divider">O continuar con</div>
+            <p className="login-footer">
+              ¿No tienes cuenta? <Link href="/auth">Regístrate</Link>
+            </p>
+      </form>
 
-          <div className="social-buttons">
+      <div className="login-divider">O continuar con</div>
+
+      <div className="social-buttons">
             <button className="btn-social">
               <svg viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -172,9 +174,8 @@ export default function Login() {
               </svg>
               Facebook
             </button>
-          </div>
-        </div>
       </div>
-    </div>
+    </AuthSplitLayout>
   );
 }
+
