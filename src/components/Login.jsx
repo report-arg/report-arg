@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import {
   EnvelopeIcon,
   EyeIcon,
@@ -12,14 +14,36 @@ import {
 export default function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login:', formData);
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const response = await signIn('credentials', {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (!response || response.error) {
+        setFormData((prev) => ({ ...prev, password: '' }));
+        setError(response?.error || 'Credenciales incorrectas');
+        return;
+      }
+
+      router.push('/admin');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -28,10 +52,12 @@ export default function Login() {
         <img src="/logo.png" alt="logo-reportarg" className="login-logo-img" />
         <div className="login-left-content">
           <h1 className="login-title">
-            Impulsando la<br />Gestión Ciudadana
+            Impulsando la
+            <br />
+            Gestión Ciudadana
           </h1>
           <p className="login-description">
-            Una plataforma moderna para comunidades conectadas. 
+            Una plataforma moderna para comunidades conectadas.
             Transparencia, eficiencia y participación en un solo lugar.
           </p>
         </div>
@@ -49,7 +75,7 @@ export default function Login() {
             <p className="login-form-subtitle">Accede a tu cuenta para continuar</p>
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
               <label className="form-label" htmlFor="email">CORREO ELECTRÓNICO</label>
               <div className="form-input-wrapper">
@@ -99,8 +125,10 @@ export default function Login() {
               </Link>
             </div>
 
-            <button type="submit" className="btn-primary">
-              Ingresar
+            {error && <p className="register-error">{error}</p>}
+
+            <button type="submit" className="btn-primary" disabled={isSubmitting}>
+              {isSubmitting ? 'Ingresando...' : 'Ingresar'}
             </button>
           </form>
 
