@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Card } from '@heroui/react';
 import { motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
-import InlineNotice from '@/components/ui/InlineNotice';
 
 const accountTypes = [
   {
@@ -122,14 +121,16 @@ function AccountTypeOptions({ options, onContinue }) {
         Continuar →
       </button>
 
-      <InlineNotice
-        show={showSelectionWarning}
-        message="Antes de continuar, elegí un tipo de cuenta."
-        className="mt-4"
-      />
+      {showSelectionWarning && (
+        <p className="text-red-500 text-sm mt-4 font-medium">
+          Antes de continuar, elegí un tipo de cuenta.
+        </p>
+      )}
     </div>
   );
 }
+
+import StepIndicator from '@/components/ui/StepIndicator';
 
 export default function AccountTypeSelector() {
   const router = useRouter();
@@ -161,6 +162,10 @@ export default function AccountTypeSelector() {
         "
       >
         <div className="w-full max-w-[860px]">
+
+          <div className="mb-8 scale-110">
+            <StepIndicator currentStep={1} />
+          </div>
 
           {/* Encabezado */}
           <div className="text-center mb-2">

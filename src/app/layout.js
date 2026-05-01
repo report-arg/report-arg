@@ -1,5 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import DynamicHeroProvider from "@/components/providers/DynamicHeroProvider";
+import AuthProvider from "@/components/providers/AuthProvider";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -17,9 +19,12 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <DynamicHeroProvider>
-          {children}
-        </DynamicHeroProvider>
+        <AuthProvider>
+          <DynamicHeroProvider>
+            {children}
+            <Toaster position="top-right" richColors />
+          </DynamicHeroProvider>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -3,6 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import AuthSplitLayout from '@/components/auth/AuthSplitLayout';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema } from '@/utils/schemas';
+import { toast } from 'sonner';
 import {
   EnvelopeIcon,
   EyeIcon,
@@ -11,16 +15,30 @@ import {
 } from '@heroicons/react/20/solid';
 
 export default function Login() {
-  const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+    mode: 'onTouched',
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Login:', formData);
+  const onSubmit = async (data) => {
+    try {
+      // Simulamos la llamada a la API
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      console.log('Login data:', data);
+      toast.success('Inicio de sesión exitoso');
+    } catch (error) {
+      toast.error('Credenciales incorrectas');
+    }
   };
 
   return (
@@ -41,24 +59,22 @@ export default function Login() {
             <p className="login-form-subtitle">Accede a tu cuenta para continuar</p>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <div className="form-group">
               <label className="form-label" htmlFor="email">CORREO ELECTRÓNICO</label>
               <div className="form-input-wrapper">
                 <input
                   type="email"
                   id="email"
-                  name="email"
                   className="form-input"
                   placeholder="ejemplo@correo.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
+                  {...register('email')}
                 />
                 <div className="form-input-icon">
                   <EnvelopeIcon aria-hidden />
                 </div>
               </div>
+              {errors.email && <p className="register-error">{errors.email.message}</p>}
             </div>
 
             <div className="form-group">
@@ -70,12 +86,9 @@ export default function Login() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
-                  name="password"
                   className="form-input has-left-icon"
                   placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
+                  {...register('password')}
                 />
                 <button
                   type="button"
@@ -86,13 +99,14 @@ export default function Login() {
                   {showPassword ? <EyeSlashIcon aria-hidden /> : <EyeIcon aria-hidden />}
                 </button>
               </div>
-              <Link href="/reset-password" className="form-link">
+              {errors.password && <p className="register-error">{errors.password.message}</p>}
+              <Link href="/reset-password" className="form-link mt-2 inline-block">
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
 
-            <button type="submit" className="btn-primary">
-              Ingresar
+            <button type="submit" className="btn-primary" disabled={isSubmitting}>
+              {isSubmitting ? 'Ingresando...' : 'Ingresar'}
             </button>
 
             <p className="login-footer">
@@ -122,3 +136,4 @@ export default function Login() {
     </AuthSplitLayout>
   );
 }
+

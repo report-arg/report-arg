@@ -2,7 +2,6 @@
 @import "../styles/login.css";
 @import "../styles/institution-register.css";
 @import "../styles/reset-password.css";
-@import "../styles/floating-btn.css";
 @import "../styles/auth.css";
 
 :root {
@@ -46,3 +45,14 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}

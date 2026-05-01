@@ -3,15 +3,34 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import AuthSplitLayout from '@/components/auth/AuthSplitLayout';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { resetPasswordSchema } from '@/utils/schemas';
+import { toast } from 'sonner';
 
 export default function ResetPassword() {
-  const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Reset password:', email);
-    setSent(true);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(resetPasswordSchema),
+    mode: 'onTouched',
+    defaultValues: { email: '' },
+  });
+
+  const onSubmit = async (data) => {
+    try {
+      // Simulamos la llamada a la API
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      console.log('Reset password data:', data);
+      setSent(true);
+      toast.success('Enlace de recuperación enviado');
+    } catch (error) {
+      toast.error('Ocurrió un error');
+    }
   };
 
   if (sent) {
@@ -76,7 +95,7 @@ export default function ResetPassword() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className="form-group">
           <label className="form-label" htmlFor="email">
             EMAIL
@@ -91,25 +110,25 @@ export default function ResetPassword() {
             <input
               type="email"
               id="email"
-              name="email"
               className="form-input"
               placeholder="ejemplo@correo.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              {...register('email')}
             />
           </div>
+          {errors.email && <p className="register-error">{errors.email.message}</p>}
         </div>
 
-        <button type="submit" className="btn-primary">
-          Enviar enlace
-          <svg fill="currentColor" viewBox="0 0 20 20" style={{ width: '16px', height: '16px' }}>
-            <path
-              fillRule="evenodd"
-              d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
+        <button type="submit" className="btn-primary" disabled={isSubmitting}>
+          {isSubmitting ? 'Enviando...' : 'Enviar enlace'}
+          {!isSubmitting && (
+            <svg fill="currentColor" viewBox="0 0 20 20" style={{ width: '16px', height: '16px' }}>
+              <path
+                fillRule="evenodd"
+                d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )}
         </button>
       </form>
 
