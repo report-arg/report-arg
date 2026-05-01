@@ -1,3 +1,27 @@
+:root {
+  /* Variables para el Layout de Auth Split */
+  --auth-bg: 241 241 245;       /* #f1f1f5 */
+  --auth-text-main: 31 35 43;   /* #1f232b */
+  --auth-border: 221 225 238;   /* #dde1ee */
+  --auth-text-muted: 94 101 114; /* #5e6572 */
+  --auth-text-subtle: 90 96 112; /* #5a6070 */
+  --auth-text-step: 108 115 130; /* #6c7382 */
+  --auth-text-footer: 129 136 154; /* #81889a */
+}
+
+/* Ocultar los íconos de ojo por defecto de los navegadores en inputs de contraseña */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
+
 .auth-page {
     background-color: rgb(var(--auth-bg));
     color: rgb(var(--auth-text-main));
