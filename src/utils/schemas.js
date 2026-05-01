@@ -1,3 +1,16 @@
+import { z } from 'zod';
+
+export const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'El correo electrónico es requerido.')
+    .email('Ingresá un correo válido.'),
+  password: z
+    .string()
+    .min(1, 'La contraseña es requerida.')
+    .min(8, 'La contraseña debe tener al menos 8 caracteres.'),
+});
+
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const cuitRegex = /^\d{2}-\d{8}-\d{1}$/;
 const phoneRegex = /^\+?[\d\s-]{8,15}$/;

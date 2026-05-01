@@ -13,7 +13,7 @@ import {
 } from '@heroicons/react/20/solid';
 import { hasValidationErrors, validateCitizenRegister } from '@/utils/schemas';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const initialForm = {
   nombre: '',
@@ -65,7 +65,7 @@ export default function CitizenRegister() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/auth/register-citizen`, {
+      const response = await fetch(`${API_URL}/api/auth/register-citizen`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

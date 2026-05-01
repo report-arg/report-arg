@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LockClosedIcon } from '@heroicons/react/20/solid';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function ResetPassword() {
   const [token, setToken] = useState('');
@@ -27,7 +27,7 @@ export default function ResetPassword() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/auth/forgot-password`, {
+      const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -58,7 +58,7 @@ export default function ResetPassword() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/auth/reset-password`, {
+      const response = await fetch(`${API_URL}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword: password }),
@@ -178,25 +178,8 @@ export default function ResetPassword() {
               <Link href="/login" className="reset-back">Volver al inicio de sesión</Link>
             </div>
           </div>
-          <h2 className="reset-success-title">Enlace enviado</h2>
-          <p className="reset-success-text">
-            Revisa tu casilla de correo. Te enviamos las instrucciones para restablecer tu acceso.
-          </p>
-          <button onClick={() => setSent(false)} className="btn-primary">
-            Enviar nuevamente
-          </button>
-          <Link href="/login" className="reset-back">
-            <svg fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Volver al inicio de sesión
-          </Link>
         </div>
-      </AuthSplitLayout>
+      </div>
     );
   }
 

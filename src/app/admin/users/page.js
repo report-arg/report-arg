@@ -1,14 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Navbar from "@/components/admin/Navbar";
 import UserTable from "@/components/admin/UserTable";
 import { useRouter } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
 export default function UsersPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [stats, setStats] = useState({ total: 0, activos: 0, inactivos: 0, admins: 0 });
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/admin/usuarios/stats`);
+        const data = await response.json();
+        if (response.ok && data?.ok && data?.data) {
+          setStats(data.data);
+        }
+      } catch (error) {
+        console.error("No se pudieron cargar las estadísticas de usuarios", error);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const statsCards = [
+    { label: "TOTAL USUARIOS", value: stats.total, sub: "——", subColor: "var(--color-success)" },
+    { label: "ACTIVOS", value: stats.activos, sub: "——", subColor: "var(--color-primary)" },
+    { label: "INACTIVOS", value: stats.inactivos, sub: "——", subColor: "var(--color-danger)" },
+    { label: "ADMINISTRADORES", value: stats.admins, sub: "——", subColor: "var(--color-warning)" },
+  ];
 
   return (
     <div className="admin-layout">
@@ -39,18 +65,13 @@ export default function UsersPage() {
 
           {/* Stats */}
           <div className="stats-grid">
-            {[
-              { label: "TOTAL USUARIOS", value: "12.482", sub: "+4.2%", subColor: "var(--color-success)" },
-              { label: "ACTIVOS", value: "10.105", sub: "——", subColor: "var(--color-primary)" },
-              { label: "INACTIVOS", value: "2.377", sub: "——", subColor: "var(--color-danger)" },
-              { label: "ADMINISTRADORES", value: "48", sub: "——", subColor: "var(--color-warning)" },
-            ].map((stat) => (
+            {statsCards.map((stat) => (
               <div key={stat.label} style={{
                 background: "#fff", borderRadius: 10,
                 border: "1px solid var(--color-border)", padding: "16px 20px",
               }}>
                 <p style={{ margin: 0, fontSize: 11, color: "#aaa", fontWeight: 600, letterSpacing: 1 }}>{stat.label}</p>
-                <p style={{ margin: "6px 0 2px", fontSize: 26, fontWeight: "bold", color: "var(--color-primary)" }}>{stat.value}</p>
+                <p style={{ margin: "6px 0 2px", fontSize: 26, fontWeight: "bold", color: "var(--color-primary)" }}>{Number(stat.value || 0).toLocaleString("es-AR")}</p>
                 <p style={{ margin: 0, fontSize: 12, color: stat.subColor, fontWeight: "bold" }}>{stat.sub}</p>
               </div>
             ))}

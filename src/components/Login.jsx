@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import AuthSplitLayout from '@/components/auth/AuthSplitLayout';
 import { useForm } from 'react-hook-form';
@@ -20,9 +20,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [socialLoading, setSocialLoading] = useState(null);
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const callbackUrl = searchParams.get('callbackUrl') || '/';
+  const callbackUrl = '/admin';
 
   const {
     register,
@@ -46,13 +44,13 @@ export default function Login() {
         callbackUrl,
       });
 
-      if (result?.error) {
+      if (!result || result.error || !result.ok) {
         toast.error('Credenciales incorrectas');
         return;
       }
 
       toast.success('Inicio de sesión exitoso');
-      router.push(result?.url || callbackUrl);
+      router.push(callbackUrl);
       router.refresh();
     } catch (error) {
       toast.error('No se pudo iniciar sesión. Intentá nuevamente.');

@@ -16,8 +16,10 @@ import {
   UserIcon,
 } from '@heroicons/react/20/solid';
 import { hasValidationErrors, validateInstitutionRegister } from '@/utils/schemas';
+import AuthSplitLayout from '@/components/auth/AuthSplitLayout';
+import StepIndicator from '@/components/ui/StepIndicator';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const institutionTypes = [
   { key: 'municipio', label: 'Municipio' },
@@ -52,6 +54,7 @@ export default function InstitutionRegister() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [step] = useState(1);
   const router = useRouter();
 
   const formatCuit = (value) => {
@@ -139,7 +142,7 @@ export default function InstitutionRegister() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/auth/register-institution`, {
+      const response = await fetch(`${API_URL}/api/auth/register-institution`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -340,6 +343,6 @@ export default function InstitutionRegister() {
           </form>
         </div>
       </div>
-    </div>
+    </AuthSplitLayout>
   );
 }

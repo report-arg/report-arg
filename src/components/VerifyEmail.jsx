@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function VerifyEmail() {
   const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -52,7 +52,7 @@ export default function VerifyEmail() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/auth/verify-email`, {
+      const response = await fetch(`${API_URL}/api/auth/verify-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: finalCode }),
@@ -75,7 +75,7 @@ export default function VerifyEmail() {
     setError('');
 
     try {
-      const response = await fetch(`${API_URL}/auth/resend-code`, {
+      const response = await fetch(`${API_URL}/api/auth/resend-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
