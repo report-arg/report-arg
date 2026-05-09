@@ -44,21 +44,20 @@ export default function UsersPage() {
         <main className="admin-main">
 
           {/* Encabezado */}
-          <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+          <div className="page-header users-page-header">
             <div>
-              <p style={{ margin: 0, fontSize: 12, color: "#aaa", letterSpacing: 1 }}>ADMIN PANEL › USUARIOS</p>
-              <h1 style={{ margin: "6px 0 8px", fontSize: 28, fontWeight: "bold", color: "var(--color-primary)" }}>
+              <p className="users-breadcrumb">ADMIN PANEL › USUARIOS</p>
+              <h1 className="users-title">
                 Gestión de Usuarios
               </h1>
-              <p style={{ margin: 0, fontSize: 14, color: "#666", maxWidth: 520 }}>
+              <p className="users-description">
                 Administrá las credenciales de acceso, roles y estados de los ciudadanos y personal administrativo del sistema ReportARG.
               </p>
             </div>
-            <button onClick={() => router.push("/admin/users/new")} style={{
-              padding: "10px 20px", background: "var(--color-primary)",
-              color: "#fff", border: "none", borderRadius: 8,
-              fontSize: 14, fontWeight: "bold", cursor: "pointer", whiteSpace: "nowrap",
-            }}>
+            <button
+              onClick={() => router.push("/admin/users/new")}
+              className="users-create-btn"
+            >
               + Crear Usuario
             </button>
           </div>
@@ -66,13 +65,10 @@ export default function UsersPage() {
           {/* Stats */}
           <div className="stats-grid">
             {statsCards.map((stat) => (
-              <div key={stat.label} style={{
-                background: "#fff", borderRadius: 10,
-                border: "1px solid var(--color-border)", padding: "16px 20px",
-              }}>
-                <p style={{ margin: 0, fontSize: 11, color: "#aaa", fontWeight: 600, letterSpacing: 1 }}>{stat.label}</p>
-                <p style={{ margin: "6px 0 2px", fontSize: 26, fontWeight: "bold", color: "var(--color-primary)" }}>{Number(stat.value || 0).toLocaleString("es-AR")}</p>
-                <p style={{ margin: 0, fontSize: 12, color: stat.subColor, fontWeight: "bold" }}>{stat.sub}</p>
+              <div key={stat.label} className="users-stat-card">
+                <p className="users-stat-label">{stat.label}</p>
+                <p className="users-stat-value">{Number(stat.value || 0).toLocaleString("es-AR")}</p>
+                <p className="users-stat-sub" style={{ color: stat.subColor }}>{stat.sub}</p>
               </div>
             ))}
           </div>

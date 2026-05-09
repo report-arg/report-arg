@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -63,7 +64,10 @@ export default function VerifyEmail() {
         throw new Error(data.error || 'El código ingresado no es válido.');
       }
 
-      router.push('/login');
+      toast.success('¡Cuenta verificada! Ya podés iniciar sesión.');
+      setTimeout(() => {
+        router.push('/login');
+      }, 1500);
     } catch (submitError) {
       setError(submitError.message || 'El código ingresado no es válido.');
     } finally {

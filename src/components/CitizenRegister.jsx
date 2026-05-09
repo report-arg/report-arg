@@ -12,6 +12,7 @@ import {
   UserIcon,
 } from '@heroicons/react/20/solid';
 import { hasValidationErrors, validateCitizenRegister } from '@/utils/schemas';
+import { toast } from 'sonner';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -77,7 +78,10 @@ export default function CitizenRegister() {
         throw new Error(data.error || 'Ocurrió un error al registrar ciudadano');
       }
 
-      router.push(`/verify?email=${encodeURIComponent(formData.email)}&type=citizen`);
+      toast.success('Registro exitoso. Te enviamos un código de verificación.');
+      setTimeout(() => {
+        router.push(`/verify?email=${encodeURIComponent(formData.email)}&type=citizen`);
+      }, 1500);
     } catch (error) {
       setServerError(error.message || 'Ocurrió un error al registrar ciudadano');
     } finally {
