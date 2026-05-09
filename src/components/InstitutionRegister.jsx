@@ -18,6 +18,7 @@ import {
 import { hasValidationErrors, validateInstitutionRegister } from '@/utils/schemas';
 import AuthSplitLayout from '@/components/auth/AuthSplitLayout';
 import StepIndicator from '@/components/ui/StepIndicator';
+import { toast } from 'sonner';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -154,7 +155,10 @@ export default function InstitutionRegister() {
         throw new Error(data.error || 'Ocurrió un error en el registro');
       }
 
-      router.push(`/verify?email=${encodeURIComponent(formData.email)}&type=institution`);
+      toast.success('Registro exitoso. Te enviamos un código de verificación.');
+      setTimeout(() => {
+        router.push(`/verify?email=${encodeURIComponent(formData.email)}&type=institution`);
+      }, 1500);
     } catch (submitError) {
       setServerError(submitError.message || 'Ocurrió un error en el registro');
     } finally {

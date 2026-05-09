@@ -189,17 +189,17 @@ export default function UserForm({ usuarioId = null }) {
   const inputStyle = {
     width: "100%", padding: "9px 12px", fontSize: 13,
     border: "1px solid var(--color-border)", borderRadius: 8,
-    background: "#fff", color: "#333", boxSizing: "border-box", marginTop: 6,
+    background: "#fff", color: "var(--color-text)", boxSizing: "border-box", marginTop: 6,
   };
-  const labelStyle = { fontSize: 11, color: "#aaa", fontWeight: 600, letterSpacing: 1 };
+  const labelStyle = { fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 1 };
   const errorStyle = { fontSize: 12, color: "var(--color-danger)", marginTop: 4 };
 
   if (loadingData) {
-    return <p style={{ color: "#aaa", fontSize: 14 }}>Cargando datos del usuario...</p>;
+    return <p className="users-empty-state">Cargando datos del usuario...</p>;
   }
 
   return (
-    <div className="card" style={{ padding: 28, maxWidth: 600 }}>
+    <div className="card users-form-card">
 
       {/* Error general API */}
       {apiError && (
@@ -223,7 +223,7 @@ export default function UserForm({ usuarioId = null }) {
       )}
 
       {/* Foto de perfil */}
-      <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 16 }}>
+      <div className="users-photo-block">
         <div
           onClick={() => fileRef.current.click()}
           style={{
@@ -236,11 +236,11 @@ export default function UserForm({ usuarioId = null }) {
         >
           {preview
             ? <img src={preview} alt="foto" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            : <span style={{ fontSize: 11, color: "#aaa", textAlign: "center", padding: 4 }}>Subir foto</span>
+            : <span style={{ fontSize: 11, color: "var(--color-muted)", textAlign: "center", padding: 4 }}>Subir foto</span>
           }
         </div>
         <div>
-          <p style={{ margin: "0 0 4px", fontSize: 13, color: "#333", fontWeight: 600 }}>Foto de perfil</p>
+          <p style={{ margin: "0 0 4px", fontSize: 13, color: "var(--color-text)", fontWeight: 600 }}>Foto de perfil</p>
           <button
             onClick={() => fileRef.current.click()}
             disabled={uploadingFoto}
@@ -248,6 +248,7 @@ export default function UserForm({ usuarioId = null }) {
               padding: "6px 14px", border: "1px solid var(--color-border)",
               borderRadius: 8, background: "#fff", fontSize: 12,
               cursor: uploadingFoto ? "not-allowed" : "pointer",
+              color: "var(--color-text)",
               opacity: uploadingFoto ? 0.7 : 1,
             }}
           >
@@ -293,7 +294,7 @@ export default function UserForm({ usuarioId = null }) {
       )}
 
       {/* Rol y Estado */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+      <div className="users-form-grid">
         <div>
           <label style={labelStyle}>ROL</label>
           <select name="rol" value={form.rol} onChange={handleChange} style={inputStyle}>
@@ -309,12 +310,12 @@ export default function UserForm({ usuarioId = null }) {
       </div>
 
       {/* Botones */}
-      <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+      <div className="users-form-actions">
         <button
           onClick={() => router.push("/admin/users")}
           style={{
             padding: "10px 22px", border: "1px solid var(--color-border)",
-            borderRadius: 8, background: "#fff", fontSize: 13, cursor: "pointer", color: "#555",
+            borderRadius: 8, background: "#fff", fontSize: 13, cursor: "pointer", color: "var(--color-text)",
           }}
         >Cancelar</button>
         <button

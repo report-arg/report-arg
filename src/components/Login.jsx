@@ -50,8 +50,10 @@ export default function Login() {
       }
 
       toast.success('Inicio de sesión exitoso');
-      router.push(callbackUrl);
-      router.refresh();
+      setTimeout(() => {
+        router.push(callbackUrl);
+        router.refresh();
+      }, 600);
     } catch (error) {
       toast.error('No se pudo iniciar sesión. Intentá nuevamente.');
     }

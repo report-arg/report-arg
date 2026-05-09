@@ -174,8 +174,10 @@ export default function ResetPassword() {
               </div>
               <h2 className="reset-success-title">Enlace enviado</h2>
               <p className="reset-success-text">Revisa tu casilla de correo. Te enviamos las instrucciones para restablecer tu acceso.</p>
-              <button onClick={() => setSent(false)} className="btn-primary">Enviar nuevamente</button>
-              <Link href="/login" className="reset-back">Volver al inicio de sesión</Link>
+              <div className="reset-success-actions">
+                <button onClick={() => setSent(false)} className="btn-primary">Enviar nuevamente</button>
+                <Link href="/login" className="reset-back">Volver al inicio de sesión</Link>
+              </div>
             </div>
           </div>
         </div>

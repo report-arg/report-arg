@@ -75,24 +75,18 @@ export default function UserTable() {
 
       {/* Modal confirmar eliminación */}
       {confirmDelete && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
-          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
-        }}>
-          <div style={{
-            background: "#fff", borderRadius: 12, padding: 28,
-            maxWidth: 380, width: "90%", border: "1px solid var(--color-border)",
-          }}>
-            <h3 style={{ margin: "0 0 8px", fontSize: 16, color: "#333" }}>¿Eliminar usuario?</h3>
-            <p style={{ margin: "0 0 20px", fontSize: 13, color: "#666" }}>
+        <div className="users-modal-backdrop">
+          <div className="users-modal-card">
+            <h3 className="users-modal-title">¿Eliminar usuario?</h3>
+            <p className="users-modal-text">
               Esta acción no se puede deshacer. Se eliminará a <strong>{confirmDelete.nombre}</strong>.
             </p>
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <div className="users-modal-actions">
               <button
                 onClick={() => setConfirmDelete(null)}
                 style={{
                   padding: "8px 18px", border: "1px solid var(--color-border)",
-                  borderRadius: 8, background: "#fff", fontSize: 13, cursor: "pointer",
+                  borderRadius: 8, background: "#fff", fontSize: 13, cursor: "pointer", color: "var(--color-text)",
                 }}
               >Cancelar</button>
               <button
@@ -137,21 +131,21 @@ export default function UserTable() {
 
       {/* Error */}
       {error && (
-        <p style={{ textAlign: "center", color: "var(--color-danger)", padding: "16px 0", fontSize: 13 }}>
+        <p className="users-error-state">
           {error}
         </p>
       )}
 
       {/* Loading */}
       {loading && (
-        <p style={{ textAlign: "center", color: "#aaa", padding: "32px 0", fontSize: 14 }}>
+        <p className="users-empty-state">
           Cargando usuarios...
         </p>
       )}
 
       {/* Sin resultados */}
       {!loading && !error && usuarios.length === 0 && (
-        <p style={{ textAlign: "center", color: "#aaa", padding: "32px 0", fontSize: 14 }}>
+        <p className="users-empty-state">
           No se encontraron usuarios con esos criterios.
         </p>
       )}
