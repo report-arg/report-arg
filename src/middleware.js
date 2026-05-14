@@ -1,12 +1,9 @@
-import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
 
-export default withAuth({
-  pages: {
-    signIn: "/login",
-  },
-});
+export function middleware(request) {
+  return NextResponse.next();
+}
 
 export const config = {
-  // Protege cualquier ruta que empiece con /admin
   matcher: ["/admin/:path*"],
 };
