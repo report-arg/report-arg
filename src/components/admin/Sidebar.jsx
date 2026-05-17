@@ -11,7 +11,7 @@ const navItems = [
   { label: "Usuarios",         href: "/admin/users",         icon: Users           },
   { label: "Roles y Permisos", href: "/admin/roles",         icon: Shield          },
   { label: "Instituciones",    href: "/admin/institutions",  icon: Building2       },
-  {label: "Categorias",        href: "/admin/categories",    icon: Tag             },
+  { label: "Categorías",       href: "/admin/categories",    icon: Tag             },
   { label: "Configuración",    href: "/admin/settings",      icon: Settings        },
 ];
 
@@ -67,10 +67,6 @@ export default function Sidebar({ open, onClose }) {
 
         {/* FOOTER */}
         <div className="sidebar-footer">
-          <div className="status">
-            <span className="status-dot" />
-            System Status: Healthy
-          </div>
         </div>
       </aside>
     </>

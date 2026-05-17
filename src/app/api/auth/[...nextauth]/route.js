@@ -37,7 +37,8 @@ const authOptions = {
           id: String(data.user.id),
           email: data.user.email,
           role: data.user.role,
-          name: data.user.email,
+          name: data.user.nombre || data.user.email,
+          foto: data.user.foto || null,
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
         };
@@ -97,6 +98,7 @@ const authOptions = {
         token.userId = user.id;
         token.name = user.name || token.name;
         token.email = user.email || token.email;
+        token.foto = user.foto || token.foto || null;
       }
       return token;
     },
@@ -107,6 +109,7 @@ const authOptions = {
       session.user.role = token.role;
       session.user.name = token.name || session.user.name;
       session.user.email = token.email || session.user.email;
+      session.user.foto = token.foto || null;
       return session;
     }
   },

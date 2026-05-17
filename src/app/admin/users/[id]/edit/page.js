@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
 import Navbar from "@/components/admin/Navbar";
 import UserForm from "@/components/admin/UserForm";
+import Breadcrumb from "@/components/admin/Breadcrumb";
 
 export default function EditUserPage() {
   const { id } = useParams();
@@ -17,7 +18,7 @@ export default function EditUserPage() {
         <Navbar section="Usuarios" onMenuClick={() => setSidebarOpen(true)} />
         <main className="admin-main">
           <div className="users-page-header users-page-header-single">
-            <p className="users-breadcrumb">ADMIN PANEL › USUARIOS › EDITAR</p>
+            <Breadcrumb items={[{ label: "ADMIN PANEL", href: "/admin" }, { label: "USUARIOS", href: "/admin/users" }, { label: "EDITAR" }]} />
             <h1 className="users-title">
               Editar Usuario
             </h1>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
 import Navbar from "@/components/admin/Navbar";
+import Breadcrumb from "@/components/admin/Breadcrumb";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -85,7 +86,7 @@ export default function EditarCategoriaPage() {
       <div className="admin-content">
         <Navbar section="Categorías" onMenuClick={() => setSidebarOpen(true)} />
         <main className="admin-main">
-          <p style={{ color: "#aaa", fontSize: 14 }}>Cargando categoría...</p>
+          <p style={{ color: "var(--color-muted)", fontSize: 14 }}>Cargando categoría...</p>
         </main>
       </div>
     </div>
@@ -99,17 +100,17 @@ export default function EditarCategoriaPage() {
         <main className="admin-main">
 
           <div style={{ marginBottom: 28 }}>
-            <p style={{ margin: 0, fontSize: 12, color: "#aaa", letterSpacing: 1 }}>ADMIN PANEL › CATEGORÍAS</p>
+            <Breadcrumb items={[{ label: "ADMIN PANEL", href: "/admin" }, { label: "CATEGORÍAS", href: "/admin/categories" }, { label: "EDITAR" }]} />
             <h1 style={{ margin: "6px 0 4px", fontSize: 26, fontWeight: "bold", color: "var(--color-primary)" }}>
               Editar Categoría
             </h1>
-            <p style={{ margin: 0, fontSize: 14, color: "#666" }}>
+            <p style={{ margin: 0, fontSize: 14, color: "var(--color-muted)" }}>
               Modificá los detalles de la categoría existente.
             </p>
           </div>
 
           <div className="card" style={{ padding: 24 }}>
-            <p style={{ margin: "0 0 20px", fontSize: 11, color: "#aaa", fontWeight: 600, letterSpacing: 1 }}>
+            <p style={{ margin: "0 0 20px", fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 1 }}>
               EDITAR CATEGORÍA — {form.codigo}
             </p>
 
@@ -157,7 +158,7 @@ export default function EditarCategoriaPage() {
                   <input type="checkbox" name="estado" checked={form.estado === "activo"} onChange={handleChange} />
                   <span className="cat-toggle-slider" />
                 </label>
-                <span style={{ fontSize: 13, fontWeight: 600, color: form.estado === "activo" ? "var(--color-success)" : "#aaa" }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: form.estado === "activo" ? "var(--color-success)" : "var(--color-muted)" }}>
                   {form.estado === "activo" ? "ACTIVO" : "INACTIVO"}
                 </span>
               </div>
@@ -187,7 +188,7 @@ export default function EditarCategoriaPage() {
               </button>
               <button onClick={handleSubmit} disabled={saving}
                 style={{
-                  padding: "10px 24px", background: saving ? "#aaa" : "var(--color-primary)",
+                  padding: "10px 24px", background: saving ? "var(--color-muted)" : "var(--color-primary)",
                   color: "#fff", border: "none", borderRadius: 8,
                   fontSize: 14, fontWeight: "bold", cursor: saving ? "not-allowed" : "pointer",
                 }}>

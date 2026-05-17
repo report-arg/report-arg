@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Navbar from "@/components/admin/Navbar";
 import UserTable from "@/components/admin/UserTable";
+import Breadcrumb from "@/components/admin/Breadcrumb";
 import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -46,7 +47,7 @@ export default function UsersPage() {
           {/* Encabezado */}
           <div className="page-header users-page-header">
             <div>
-              <p className="users-breadcrumb">ADMIN PANEL › USUARIOS</p>
+              <Breadcrumb items={[{ label: "ADMIN PANEL", href: "/admin" }, { label: "USUARIOS" }]} />
               <h1 className="users-title">
                 Gestión de Usuarios
               </h1>
