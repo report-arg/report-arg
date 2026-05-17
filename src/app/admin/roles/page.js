@@ -4,6 +4,7 @@ import { useState } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Navbar from "@/components/admin/Navbar";
 import RolesPanel from "@/components/admin/RolesPanel";
+import Breadcrumb from "@/components/admin/Breadcrumb";
 
 export default function RolesPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -19,7 +20,7 @@ export default function RolesPage() {
           {/* Encabezado */}
           <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
             <div>
-              <p style={{ margin: 0, fontSize: 12, color: "#aaa", letterSpacing: 1 }}>ADMIN PANEL › ROLES Y PERMISOS</p>
+              <Breadcrumb items={[{ label: "ADMIN PANEL", href: "/admin" }, { label: "ROLES Y PERMISOS" }]} />
               <h1 style={{ margin: "6px 0 8px", fontSize: 28, fontWeight: "bold", color: "var(--color-primary)" }}>
                 Roles y Permisos
               </h1>

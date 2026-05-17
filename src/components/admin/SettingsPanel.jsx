@@ -10,17 +10,6 @@ const estadosIniciales = [
   { nombre: "Rechazado",  desc: "Reporte inválido o duplicado",           color: "#888780", bg: "#F1EFE8", text: "#444441", tipo: "Final"      },
 ];
 
-const categoriasIniciales = [
-  { nombre: "Baches y pavimento",  color: "#378ADD" },
-  { nombre: "Iluminación pública", color: "#EF9F27" },
-  { nombre: "Residuos / basura",   color: "#639922" },
-  { nombre: "Árboles / espacios",  color: "#1D9E75" },
-  { nombre: "Denuncias varias",    color: "#D4537E" },
-  { nombre: "Otros",               color: "#888780" },
-];
-
-const coloresExtra = ["#7F77DD", "#D85A30", "#1D9E75", "#D4537E", "#378ADD"];
-
 const zonasHorarias = [
   "America/Argentina/Buenos_Aires",
   "America/Argentina/Cordoba",
@@ -29,7 +18,7 @@ const zonasHorarias = [
   "America/Argentina/Salta",
 ];
 
-const tabs = ["Parámetros generales", "Categorías", "Estados del flujo", "Notificaciones"];
+const tabs = ["Parámetros generales", "Estados del flujo", "Notificaciones"];
 
 export default function SettingsPanel() {
   const [tabActivo, setTabActivo] = useState(0);
@@ -48,14 +37,6 @@ export default function SettingsPanel() {
   const [generalCambios, setGeneralCambios] = useState(false);
   const [generalGuardadoOk, setGeneralGuardadoOk] = useState(false);
 
-  // Categorías
-  const [categorias, setCategorias] = useState([]);
-  const [nuevaCat, setNuevaCat] = useState("");
-  const [catCambios, setCatCambios] = useState(false);
-  const [catGuardadoOk, setCatGuardadoOk] = useState(false);
-  const [catError, setCatError] = useState("");
-  const [catLoading, setCatLoading] = useState(false);
-  
   // Notificaciones
   const [notifs, setNotifs] = useState({
     emailCrear:      true,
@@ -66,20 +47,6 @@ export default function SettingsPanel() {
   });
   const [notifsCambios, setNotifsCambios] = useState(false);
   const [notifsGuardadoOk, setNotifsGuardadoOk] = useState(false);
-
-  useEffect(() => {
-  fetchCategorias();
-  }, []);
-
-  async function fetchCategorias() {
-    try {
-      const res = await fetch(`${API_URL}/api/admin/categorias`);
-      const data = await res.json();
-        if (data.ok) setCategorias(data.data);
-        } catch (err) {
-        console.error('Error cargando categorías:', err);
-        }
-  }
 
   // --- Handlers generales ---
   function handleGeneralChange(e) {
@@ -112,53 +79,6 @@ export default function SettingsPanel() {
     setGeneralGuardadoOk(false);
   }
 
-  // --- Handlers categorías ---
-  
-  async function agregarCategoria() {
-  if (!nuevaCat.trim()) return;
-  setCatError("");
-  setCatLoading(true);
-  try {
-    const res = await fetch(`${API_URL}/api/admin/categorias`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre: nuevaCat.trim() }),
-    });
-    const data = await res.json();
-    if (!data.ok) {
-      setCatError(data.mensaje);
-      return;
-    }
-    await fetchCategorias();
-    setNuevaCat("");
-    setCatGuardadoOk(true);
-    setTimeout(() => setCatGuardadoOk(false), 3000);
-  } catch (err) {
-    setCatError('Error al agregar categoría');
-  } finally {
-    setCatLoading(false);
-  }
-}
-
-  async function eliminarCategoria(id) {
-    setCatError("");
-    try {
-      const res = await fetch(`${API_URL}/api/admin/categorias/${id}`, {
-        method: 'DELETE',
-      });
-      const data = await res.json();
-      if (!data.ok) {
-        setCatError(data.mensaje);
-        return;
-      }
-      await fetchCategorias();
-    } catch (err) {
-      setCatError('Error al eliminar categoría');
-    }
-  }
-
-
-
   // --- Handlers notificaciones ---
   function toggleNotif(key) {
     setNotifs(prev => ({ ...prev, [key]: !prev[key] }));
@@ -183,15 +103,15 @@ export default function SettingsPanel() {
   };
 
   const labelStyle = {
-    margin: "0 0 6px", fontSize: 11, color: "#aaa",
+    margin: "0 0 6px", fontSize: 11, color: "var(--color-label)",
     fontWeight: 600, letterSpacing: 1, display: "block",
   };
 
   // Determinar cambios y handlers del tab activo
-  const hayCambios   = [generalCambios, catCambios, false, notifsCambios][tabActivo];
-  const guardadoOk   = [generalGuardadoOk, catGuardadoOk, false, notifsGuardadoOk][tabActivo];
-  const onGuardar    = [guardarGeneral, null, null, guardarNotifs][tabActivo];
-  const onDescartar  = [descartarGeneral, null, null, descartarNotifs][tabActivo];
+  const hayCambios   = [generalCambios, false, notifsCambios][tabActivo];
+  const guardadoOk   = [generalGuardadoOk, false, notifsGuardadoOk][tabActivo];
+  const onGuardar    = [guardarGeneral, null, guardarNotifs][tabActivo];
+  const onDescartar  = [descartarGeneral, null, descartarNotifs][tabActivo];
 
   return (
     <div className="card" style={{ padding: 0, overflow: "hidden" }}>
@@ -281,69 +201,8 @@ export default function SettingsPanel() {
           </div>
         )}
 
-        {/* Categorías */}
-        {tabActivo === 1 && (
-          <div>
-            <p style={{ margin: "0 0 14px", fontSize: 13, color: "#666" }}>
-              Categorías activas para clasificar reportes ciudadanos.
-            </p>
-
-            {catError && (
-              <p style={{ fontSize: 13, color: "var(--color-danger)", marginBottom: 12 }}>{catError}</p>
-            )}
-
-            <div style={{ marginBottom: 16 }}>
-              {categorias.length === 0 && (
-                <p style={{ fontSize: 13, color: "#aaa" }}>No hay categorías cargadas.</p>
-              )}
-              {categorias.map((c, i) => (
-                <span key={c.id} style={{
-                  display: "inline-flex", alignItems: "center", gap: 6,
-                  padding: "4px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600,
-                  margin: "4px 4px 4px 0", border: "1px solid var(--color-border)",
-                  background: "#f9f9f9", color: "#333",
-                }}>
-                <span style={{
-                  width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
-                  background: coloresExtra[i % coloresExtra.length],
-                }} />
-                {c.nombre}
-                <span
-                  onClick={() => eliminarCategoria(c.id)}
-                  style={{ cursor: "pointer", color: "#E24B4A", fontSize: 14, lineHeight: 1 }}
-                >×</span>
-              </span>
-            ))}
-          </div>
-
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            style={{ ...inputStyle, maxWidth: 240 }}
-            placeholder="Nueva categoría..."
-            value={nuevaCat}
-            onChange={e => setNuevaCat(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && agregarCategoria()}
-            disabled={catLoading}
-          />
-          <button
-            onClick={agregarCategoria}
-            disabled={catLoading}
-            style={{
-              padding: "8px 16px", background: "var(--color-primary)",
-              color: "#fff", border: "none", borderRadius: 8,
-              fontSize: 13, fontWeight: "bold",
-              cursor: catLoading ? "not-allowed" : "pointer",
-              opacity: catLoading ? 0.7 : 1,
-            }}
-          >
-          {catLoading ? "Agregando..." : "+ Agregar"}
-      </button>
-    </div>
-  </div>
-)}
-
         {/* Estados del flujo */}
-        {tabActivo === 2 && (
+        {tabActivo === 1 && (
           <div>
             <p style={{ margin: "0 0 14px", fontSize: 13, color: "#666" }}>
               Estados disponibles en el flujo de resolución de reportes.
@@ -368,7 +227,7 @@ export default function SettingsPanel() {
         )}
 
         {/* Notificaciones */}
-        {tabActivo === 3 && (
+        {tabActivo === 2 && (
           <div>
             <p style={{ margin: "0 0 14px", fontSize: 13, color: "#666" }}>
               Controlá qué eventos generan notificaciones en el sistema.
@@ -406,8 +265,8 @@ export default function SettingsPanel() {
           </div>
         )}
 
-        {/* Botones — no mostrar en Estados (tab 2) */}
-        {tabActivo !== 2 && (
+        {/* Botones — no mostrar en Estados (tab 1) */}
+        {tabActivo !== 1 && (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--color-border)" }}>
             <div>
               {guardadoOk && (

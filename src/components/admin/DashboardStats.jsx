@@ -117,7 +117,7 @@ export default function DashboardStats() {
             background: "#fff", borderRadius: 10,
             border: "1px solid var(--color-border)", padding: "16px 20px",
           }}>
-            <p style={{ margin: 0, fontSize: 11, color: "#aaa", fontWeight: 600, letterSpacing: 1 }}>{s.label}</p>
+            <p style={{ margin: 0, fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 1 }}>{s.label}</p>
             <p style={{ margin: "6px 0 2px", fontSize: 26, fontWeight: "bold", color: "var(--color-primary)" }}>{s.value}</p>
             <p style={{ margin: 0, fontSize: 12, color: s.subColor, fontWeight: "bold" }}>{s.sub}</p>
           </div>
@@ -129,9 +129,9 @@ export default function DashboardStats() {
 
         {/* Categorías */}
         <div style={{ background: "#fff", borderRadius: 10, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
-          <p style={{ margin: "0 0 14px", fontSize: 11, color: "#aaa", fontWeight: 600, letterSpacing: 1 }}>REPORTES POR CATEGORÍA</p>
+          <p style={{ margin: "0 0 14px", fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 1 }}>REPORTES POR CATEGORÍA</p>
           {porCategoria.length === 0 && (
-            <p style={{ fontSize: 13, color: "#aaa" }}>Sin datos disponibles.</p>
+            <p style={{ fontSize: 13, color: "var(--color-muted)" }}>Sin datos disponibles.</p>
           )}
           {porCategoria.map((c) => (
             <div key={c.categoria} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
@@ -139,14 +139,14 @@ export default function DashboardStats() {
               <div style={{ flex: 1, height: 8, background: "var(--color-border)", borderRadius: 4, overflow: "hidden" }}>
                 <div style={{ width: `${Math.round((c.cantidad / maxCat) * 100)}%`, height: "100%", background: "#378ADD", borderRadius: 4 }} />
               </div>
-              <span style={{ fontSize: 12, color: "#aaa", width: 36, textAlign: "right", flexShrink: 0 }}>{c.cantidad}</span>
+              <span style={{ fontSize: 12, color: "var(--color-muted)", width: 36, textAlign: "right", flexShrink: 0 }}>{c.cantidad}</span>
             </div>
           ))}
         </div>
 
         {/* Gráfico */}
         <div style={{ background: "#fff", borderRadius: 10, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
-          <p style={{ margin: "0 0 14px", fontSize: 11, color: "#aaa", fontWeight: 600, letterSpacing: 1 }}>ACTIVIDAD MENSUAL</p>
+          <p style={{ margin: "0 0 14px", fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 1 }}>ACTIVIDAD MENSUAL</p>
           <div style={{ position: "relative", width: "100%", height: 200 }}>
             <canvas ref={chartRef} role="img" aria-label="Gráfico de reportes por mes" />
           </div>
@@ -156,7 +156,7 @@ export default function DashboardStats() {
 
       {/* Últimos reportes */}
       <div style={{ background: "#fff", borderRadius: 10, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
-        <p style={{ margin: "0 0 14px", fontSize: 11, color: "#aaa", fontWeight: 600, letterSpacing: 1 }}>ÚLTIMOS REPORTES</p>
+        <p style={{ margin: "0 0 14px", fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 1 }}>ÚLTIMOS REPORTES</p>
         {ultimos.length === 0 && (
           <p style={{ fontSize: 13, color: "#aaa" }}>Sin reportes recientes.</p>
         )}

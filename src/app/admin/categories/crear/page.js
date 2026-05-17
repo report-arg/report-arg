@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
 import Navbar from "@/components/admin/Navbar";
+import Breadcrumb from "@/components/admin/Breadcrumb";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -53,7 +54,7 @@ export default function CrearCategoriaPage() {
       });
       const data = await res.json();
       if (!data.ok) return setError(data.mensaje);
-      setSuccess("La categoría ha sido validada correctamente y está lista para guardarse.");
+      setSuccess("Categoría creada correctamente.");
       setTimeout(() => router.push("/admin/categories"), 1500);
     } catch {
       setError("Error al conectar con el servidor");
@@ -70,17 +71,17 @@ export default function CrearCategoriaPage() {
         <main className="admin-main">
 
           <div style={{ marginBottom: 28 }}>
-            <p style={{ margin: 0, fontSize: 12, color: "#aaa", letterSpacing: 1 }}>ADMIN PANEL › CATEGORÍAS</p>
+            <Breadcrumb items={[{ label: "ADMIN PANEL", href: "/admin" }, { label: "CATEGORÍAS", href: "/admin/categories" }, { label: "CREAR" }]} />
             <h1 style={{ margin: "6px 0 4px", fontSize: 26, fontWeight: "bold", color: "var(--color-primary)" }}>
               Crear nueva Categoría
             </h1>
-            <p style={{ margin: 0, fontSize: 14, color: "#666" }}>
+            <p style={{ margin: 0, fontSize: 14, color: "var(--color-muted)" }}>
               Completá la información para registrar una nueva categoría.
             </p>
           </div>
 
           <div className="card" style={{ padding: 24 }}>
-            <p style={{ margin: "0 0 20px", fontSize: 11, color: "#aaa", fontWeight: 600, letterSpacing: 1 }}>
+            <p style={{ margin: "0 0 20px", fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 1 }}>
               NUEVA CATEGORÍA
             </p>
 
@@ -131,7 +132,7 @@ export default function CrearCategoriaPage() {
                   <input type="checkbox" name="estado" checked={form.estado === "activo"} onChange={handleChange} />
                   <span className="cat-toggle-slider" />
                 </label>
-                <span style={{ fontSize: 13, fontWeight: 600, color: form.estado === "activo" ? "var(--color-success)" : "#aaa" }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: form.estado === "activo" ? "var(--color-success)" : "var(--color-muted)" }}>
                   {form.estado === "activo" ? "ACTIVO" : "INACTIVO"}
                 </span>
               </div>
@@ -153,7 +154,7 @@ export default function CrearCategoriaPage() {
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 24 }}>
               <button onClick={handleSubmit} disabled={saving}
                 style={{
-                  padding: "10px 24px", background: saving ? "#aaa" : "var(--color-primary)",
+                  padding: "10px 24px", background: saving ? "var(--color-muted)" : "var(--color-primary)",
                   color: "#fff", border: "none", borderRadius: 8,
                   fontSize: 14, fontWeight: "bold", cursor: saving ? "not-allowed" : "pointer",
                 }}>

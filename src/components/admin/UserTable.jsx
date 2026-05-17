@@ -41,6 +41,7 @@ export default function UserTable() {
       const res  = await fetch(`${API_URL}/api/admin/usuarios?${params}`);
       const data = await res.json();
       if (data.ok) {
+        setError("");
         setUsuarios(data.data);
       } else {
         setError('Error al cargar usuarios');

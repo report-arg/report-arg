@@ -1,17 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Search, Bell, HelpCircle, Menu, X } from "lucide-react";
+import { Bell, HelpCircle, Menu, User, LogOut, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-const tipoBadgeStyle = {
-  Usuario:   { background: "#E6F1FB", color: "#0C447C" },
-  Reporte:   { background: "#EAF3DE", color: "#27500A" },
-  Categoría: { background: "#FAEEDA", color: "#633806" },
-  Sección:   { background: "#F1EFE8", color: "#444441" },
-};
 
 function FaqItem({ item, last }) {
   const [abierto, setAbierto] = useState(false);
@@ -38,13 +32,7 @@ function FaqItem({ item, last }) {
 
 export default function Navbar({ section = "Dashboard", onMenuClick }) {
   const router = useRouter();
-
-  // Búsqueda
-  const [query,         setQuery]         = useState("");
-  const [searchOpen,    setSearchOpen]    = useState(false);
-  const [resultados,    setResultados]    = useState([]);
-  const [loadingSearch, setLoadingSearch] = useState(false);
-  const searchRef = useRef(null);
+  const { data: session } = useSession();
 
   // Notificaciones
   const [notifOpen,     setNotifOpen]     = useState(false);
@@ -57,38 +45,31 @@ export default function Navbar({ section = "Dashboard", onMenuClick }) {
   const [helpOpen, setHelpOpen] = useState(false);
   const helpRef = useRef(null);
 
-  // Búsqueda con debounce
-  useEffect(() => {
-    if (query.trim().length < 1) {
-      setResultados([]);
-      return;
-    }
-    const timeout = setTimeout(async () => {
-      setLoadingSearch(true);
-      try {
-        const res  = await fetch(`${API_URL}/api/admin/buscar?q=${encodeURIComponent(query)}`);
-        const data = await res.json();
-        if (data.ok) setResultados(data.data);
-      } catch (err) {
-        console.error('Error búsqueda:', err);
-      } finally {
-        setLoadingSearch(false);
-      }
-    }, 300);
-    return () => clearTimeout(timeout);
-  }, [query]);
+  // Perfil usuario
+  const [profileOpen, setProfileOpen]   = useState(false);
+  const [perfil,      setPerfil]        = useState(null);
+  const profileRef = useRef(null);
 
   // Cargar notificaciones al abrir panel
   useEffect(() => {
     if (notifOpen) fetchNotifs();
   }, [notifOpen]);
 
+  // Cargar perfil cuando hay sesión
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    fetch(`${API_URL}/api/admin/usuarios/${session.user.id}`)
+      .then(r => r.json())
+      .then(d => { if (d.ok) setPerfil(d.data); })
+      .catch(() => {});
+  }, [session?.user?.id]);
+
   // Cerrar paneles al click afuera
   useEffect(() => {
     function handleClick(e) {
-      if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false);
-      if (notifRef.current && !notifRef.current.contains(e.target))   setNotifOpen(false);
-      if (helpRef.current  && !helpRef.current.contains(e.target))    setHelpOpen(false);
+      if (notifRef.current   && !notifRef.current.contains(e.target))    setNotifOpen(false);
+      if (helpRef.current    && !helpRef.current.contains(e.target))     setHelpOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target))  setProfileOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -125,12 +106,6 @@ export default function Navbar({ section = "Dashboard", onMenuClick }) {
     }
   }
 
-  function irA(href) {
-    setQuery("");
-    setSearchOpen(false);
-    router.push(href);
-  }
-
   return (
     <header className="navbar">
 
@@ -139,70 +114,6 @@ export default function Navbar({ section = "Dashboard", onMenuClick }) {
         <button className="navbar-hamburger" onClick={onMenuClick}>
           <Menu size={22} />
         </button>
-      </div>
-
-      {/* Centro — búsqueda */}
-      <div ref={searchRef} className="navbar-search-wrapper hide-mobile" style={{ position: "relative" }}>
-        <Search size={14} className="navbar-search-icon" />
-        <input
-          type="text"
-          placeholder="Buscar usuarios, reportes, categorías..."
-          className="navbar-search"
-          value={query}
-          onChange={e => { setQuery(e.target.value); setSearchOpen(true); }}
-          onFocus={() => setSearchOpen(true)}
-        />
-        {query && (
-          <X
-            size={14}
-            style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#aaa" }}
-            onClick={() => { setQuery(""); setSearchOpen(false); setResultados([]); }}
-          />
-        )}
-
-        {/* Dropdown resultados */}
-        {searchOpen && query.trim().length >= 1 && (
-          <div style={{
-            position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0,
-            background: "#fff", border: "1px solid var(--color-border)",
-            borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-            zIndex: 999, maxHeight: 320, overflowY: "auto",
-          }}>
-            {loadingSearch ? (
-              <p style={{ padding: "14px 16px", fontSize: 13, color: "#aaa", margin: 0 }}>
-                Buscando...
-              </p>
-            ) : resultados.length === 0 ? (
-              <p style={{ padding: "14px 16px", fontSize: 13, color: "#aaa", margin: 0 }}>
-                Sin resultados para "{query}"
-              </p>
-            ) : (
-              resultados.map((r, i) => (
-                <div
-                  key={i}
-                  onClick={() => irA(r.href)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 12,
-                    padding: "10px 14px", cursor: "pointer",
-                    borderBottom: i < resultados.length - 1 ? "1px solid var(--color-border)" : "none",
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                >
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
-                    ...(tipoBadgeStyle[r.tipo] || tipoBadgeStyle["Sección"]),
-                    flexShrink: 0,
-                  }}>{r.tipo}</span>
-                  <div>
-                    <p style={{ margin: 0, fontSize: 13, color: "#333", fontWeight: 500 }}>{r.label}</p>
-                    <p style={{ margin: 0, fontSize: 11, color: "#aaa" }}>{r.sub}</p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
       </div>
 
       {/* Derecha */}
@@ -333,12 +244,103 @@ export default function Navbar({ section = "Dashboard", onMenuClick }) {
         </div>
 
         {/* Usuario */}
-        <div className="navbar-user">
-          <div className="navbar-user-info hide-mobile">
-            <p className="navbar-user-name">Admin Root</p>
-            <p className="navbar-user-role">Super Administrador</p>
+        <div ref={profileRef} style={{ position: "relative" }}>
+          <div
+            className="navbar-user"
+            onClick={() => setProfileOpen(prev => !prev)}
+            style={{ cursor: "pointer" }}
+          >
+            <div className="navbar-user-info hide-mobile">
+              <p className="navbar-user-name">
+                {perfil?.nombre || session?.user?.name || "Usuario"}
+              </p>
+              <p className="navbar-user-role">
+                {(() => {
+                  const rol = perfil?.rol || session?.user?.role;
+                  if (rol === "admin")       return "Administrador";
+                  if (rol === "institucion") return "Institución";
+                  if (rol === "ciudadano")   return "Ciudadano";
+                  return rol ?? "—";
+                })()}
+              </p>
+            </div>
+            {(perfil?.foto || session?.user?.foto) ? (
+              <img
+                src={perfil?.foto || session?.user?.foto}
+                alt="avatar"
+                className="navbar-avatar"
+                style={{ objectFit: "cover" }}
+              />
+            ) : (
+              <div className="navbar-avatar">
+                {(perfil?.nombre || session?.user?.name || "?")
+                  .split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()}
+              </div>
+            )}
+            <ChevronDown
+              size={14}
+              style={{
+                color: "#aaa",
+                transition: "transform 0.2s",
+                transform: profileOpen ? "rotate(180deg)" : "rotate(0deg)",
+              }}
+            />
           </div>
-          <div className="navbar-avatar">A</div>
+
+          {profileOpen && (
+            <div style={{
+              position: "absolute", top: "calc(100% + 10px)", right: 0,
+              width: 220, background: "#fff",
+              border: "1px solid var(--color-border)", borderRadius: 10,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.1)", zIndex: 999,
+              overflow: "hidden",
+            }}>
+              {/* Header del dropdown */}
+              <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--color-border)", background: "#fafbff" }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#333" }}>
+                  {perfil?.nombre || session?.user?.name || "Usuario"}
+                </p>
+                <p style={{ margin: "2px 0 0", fontSize: 11, color: "#aaa" }}>
+                  {session?.user?.email}
+                </p>
+              </div>
+
+              {/* Opciones */}
+              <div style={{ padding: "6px 0" }}>
+                <button
+                  onClick={() => { setProfileOpen(false); router.push("/admin/profile"); }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    width: "100%", padding: "10px 16px",
+                    background: "none", border: "none", cursor: "pointer",
+                    fontSize: 13, color: "#333", textAlign: "left",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f5f7ff"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}
+                >
+                  <User size={15} style={{ color: "var(--color-primary)" }} />
+                  Mi Perfil
+                </button>
+
+                <div style={{ height: 1, background: "var(--color-border)", margin: "4px 0" }} />
+
+                <button
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    width: "100%", padding: "10px 16px",
+                    background: "none", border: "none", cursor: "pointer",
+                    fontSize: 13, color: "var(--color-danger)", textAlign: "left",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#fff5f5"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}
+                >
+                  <LogOut size={15} />
+                  Cerrar Sesión
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>

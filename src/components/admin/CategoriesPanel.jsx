@@ -25,7 +25,14 @@ export default function CategoriesPanel() {
   const [filtroTipo,    setFiltroTipo]    = useState("");
   const [filtroEstado,  setFiltroEstado]  = useState("");
 
+  // Paginación
+  const [pagina,    setPagina]    = useState(1);
+  const [porPagina, setPorPagina] = useState(5);
+
   useEffect(() => { fetchCategorias(); }, []);
+
+  // Volver a página 1 al cambiar filtros
+  useEffect(() => { setPagina(1); }, [filtroTipo, filtroEstado]);
 
   async function fetchCategorias() {
     setLoading(true);
@@ -66,9 +73,16 @@ export default function CategoriesPanel() {
   });
 
   const filtrosActivos = [
-    filtroTipo   && `Tipo: ${filtroTipo}`,
-    filtroEstado && `Estado: ${filtroEstado}`,
+    filtroTipo   && { label: `Tipo: ${filtroTipo}`,     onRemove: () => setFiltroTipo("") },
+    filtroEstado && { label: `Estado: ${filtroEstado}`, onRemove: () => setFiltroEstado("") },
   ].filter(Boolean);
+
+  // Paginación
+  const totalFiltradas = categoriasFiltradas.length;
+  const totalPaginas   = porPagina === 0 ? 1 : Math.ceil(totalFiltradas / porPagina);
+  const categoriasVisibles = porPagina === 0
+    ? categoriasFiltradas
+    : categoriasFiltradas.slice((pagina - 1) * porPagina, pagina * porPagina);
 
   return (
     <div>
@@ -147,13 +161,19 @@ export default function CategoriesPanel() {
         {/* Filtros activos */}
         {filtrosActivos.length > 0 && (
           <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 12, color: "#aaa" }}>Filtros activos:</span>
+            <span style={{ fontSize: 12, color: "var(--color-muted)" }}>Filtros activos:</span>
             {filtrosActivos.map(f => (
-              <span key={f} style={{
-                padding: "2px 10px", borderRadius: 99, fontSize: 12,
+              <span key={f.label} style={{
+                padding: "2px 6px 2px 10px", borderRadius: 99, fontSize: 12,
                 background: "var(--color-primary-light)", color: "var(--color-primary)",
-                fontWeight: 600,
-              }}>{f} ✕</span>
+                fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4,
+              }}>
+                {f.label}
+                <button onClick={f.onRemove} style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  color: "var(--color-primary)", fontSize: 13, lineHeight: 1, padding: "0 2px",
+                }}>✕</button>
+              </span>
             ))}
           </div>
         )}
@@ -177,12 +197,12 @@ export default function CategoriesPanel() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", color: "#aaa" }}>Cargando categorías...</td></tr>
+                <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", color: "var(--color-muted)" }}>Cargando categorías...</td></tr>
               )}
               {!loading && categoriasFiltradas.length === 0 && (
-                <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", color: "#aaa" }}>No hay categorías para mostrar.</td></tr>
+                <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", color: "var(--color-muted)" }}>No hay categorías para mostrar.</td></tr>
               )}
-              {!loading && categoriasFiltradas.map((c, i) => (
+              {!loading && categoriasVisibles.map((c, i) => (
                 <tr key={c.id} className={i % 2 === 0 ? "row" : "row alt"}>
                   <td style={{ fontWeight: 600, color: "var(--color-primary)", fontSize: 13 }}>{c.codigo}</td>
                   <td style={{ color: "#333" }}>{c.nombre}</td>
@@ -196,10 +216,12 @@ export default function CategoriesPanel() {
                     </span>
                   </td>
                   <td>
-                    <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 13,
-                      color: c.estado === "activo" ? "var(--color-success)" : "#aaa" }}>
-                      <span style={{ width: 8, height: 8, borderRadius: "50%",
-                        background: c.estado === "activo" ? "var(--color-success)" : "#ccc", display: "inline-block" }} />
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 12,
+                      padding: "3px 10px", borderRadius: 99,
+                      background: c.estado === "activo" ? "#dcfce7" : "#f3f4f6",
+                      color: c.estado === "activo" ? "var(--color-success)" : "var(--color-muted)" }}>
+                      <span style={{ width: 7, height: 7, borderRadius: "50%",
+                        background: c.estado === "activo" ? "var(--color-success)" : "#9ca3af", display: "inline-block" }} />
                       {c.estado === "activo" ? "Activo" : "Inactivo"}
                     </span>
                   </td>
@@ -210,7 +232,7 @@ export default function CategoriesPanel() {
                         <button onClick={() => setConfirmBaja(c)}
                           title="Desactivar" style={{
                             background: "none", border: "none", cursor: "pointer",
-                            color: "#aaa", padding: 4,
+                        color: "var(--color-muted)", padding: 4,
                           }}>
                           <MinusCircle size={18} />
                         </button>
@@ -229,26 +251,67 @@ export default function CategoriesPanel() {
             </tbody>
           </table>
           {!loading && (
-            <div style={{ padding: "12px 20px", fontSize: 13, color: "#aaa", borderTop: "1px solid var(--color-border)" }}>
-              Mostrando {categoriasFiltradas.length} de {categorias.length} categorías
+            <div style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between",
+              alignItems: "center", borderTop: "1px solid var(--color-border)", flexWrap: "wrap", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 13, color: "var(--color-muted)" }}>
+                  {porPagina === 0 || totalFiltradas === 0
+                    ? `Mostrando ${totalFiltradas} de ${categorias.length} categorías`
+                    : `Mostrando ${Math.min((pagina - 1) * porPagina + 1, totalFiltradas)} a ${Math.min(pagina * porPagina, totalFiltradas)} de ${totalFiltradas} categorías`}
+                </span>
+                <select value={porPagina} onChange={e => { setPorPagina(Number(e.target.value)); setPagina(1); }}
+                  style={{ padding: "4px 8px", fontSize: 12, border: "1px solid var(--color-border)",
+                    borderRadius: 6, background: "#fff", cursor: "pointer", color: "var(--color-text)" }}>
+                  <option value={5}>5 por página</option>
+                  <option value={10}>10 por página</option>
+                  <option value={0}>Todas</option>
+                </select>
+              </div>
+              {porPagina > 0 && totalPaginas > 1 && (
+                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                  <button onClick={() => setPagina(p => Math.max(p - 1, 1))} disabled={pagina === 1}
+                    style={{ padding: "5px 14px", border: "1px solid var(--color-border)", borderRadius: 6,
+                      background: "#fff", cursor: pagina === 1 ? "not-allowed" : "pointer",
+                      color: pagina === 1 ? "#bbb" : "var(--color-text)", fontSize: 13 }}>
+                    Anterior
+                  </button>
+                  {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(n => (
+                    <button key={n} onClick={() => setPagina(n)}
+                      style={{ padding: "5px 12px", border: "1px solid var(--color-border)", borderRadius: 6,
+                        background: n === pagina ? "var(--color-primary)" : "#fff",
+                        color: n === pagina ? "#fff" : "var(--color-text)",
+                        cursor: "pointer", fontSize: 13, fontWeight: n === pagina ? 700 : 400 }}>
+                      {n}
+                    </button>
+                  ))}
+                  <button onClick={() => setPagina(p => Math.min(p + 1, totalPaginas))} disabled={pagina === totalPaginas}
+                    style={{ padding: "5px 14px", border: "1px solid var(--color-border)", borderRadius: 6,
+                      background: "#fff", cursor: pagina === totalPaginas ? "not-allowed" : "pointer",
+                      color: pagina === totalPaginas ? "#bbb" : "var(--color-text)", fontSize: 13 }}>
+                    Siguiente
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Mobile cards */}
         <div className="cards">
-          {loading && <p style={{ padding: 24, textAlign: "center", color: "#aaa" }}>Cargando...</p>}
-          {!loading && categoriasFiltradas.map(c => (
+          {loading && <p style={{ padding: 24, textAlign: "center", color: "var(--color-muted)" }}>Cargando...</p>}
+          {!loading && categoriasVisibles.map(c => (
             <div key={c.id} className="card-user">
               <div className="row-top">
                 <div>
                   <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-primary)" }}>{c.codigo}</span>
                   <p style={{ margin: "2px 0 0", fontWeight: 700, color: "#333", fontSize: 14 }}>{c.nombre}</p>
                 </div>
-                <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 12,
-                  color: c.estado === "activo" ? "var(--color-success)" : "#aaa" }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%",
-                    background: c.estado === "activo" ? "var(--color-success)" : "#ccc", display: "inline-block" }} />
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 700, fontSize: 12,
+                  padding: "2px 8px", borderRadius: 99,
+                  background: c.estado === "activo" ? "#dcfce7" : "#f3f4f6",
+                  color: c.estado === "activo" ? "var(--color-success)" : "var(--color-muted)" }}>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%",
+                    background: c.estado === "activo" ? "var(--color-success)" : "#9ca3af", display: "inline-block" }} />
                   {c.estado === "activo" ? "Activo" : "Inactivo"}
                 </span>
               </div>
@@ -260,11 +323,11 @@ export default function CategoriesPanel() {
                 }}>
                   {tipoBadge[c.tipo]?.label ?? c.tipo}
                 </span>
-                <span style={{ fontSize: 12, color: "#aaa" }}>Orden: {c.orden}</span>
+                <span style={{ fontSize: 12, color: "var(--color-muted)" }}>Orden: {c.orden}</span>
                 <div className="actions">
                   {c.estado === "activo" && (
                     <button onClick={() => setConfirmBaja(c)} style={{
-                      background: "none", border: "none", cursor: "pointer", color: "#aaa", padding: 4,
+                      background: "none", border: "none", cursor: "pointer", color: "var(--color-muted)", padding: 4,
                     }}>
                       <MinusCircle size={18} />
                     </button>
@@ -279,6 +342,46 @@ export default function CategoriesPanel() {
               </div>
             </div>
           ))}
+
+          {/* Paginación mobile */}
+          {!loading && (
+            <div style={{ padding: "12px 4px", display: "flex", flexDirection: "column",
+              gap: 10, borderTop: "1px solid var(--color-border)", marginTop: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
+                  {porPagina === 0 || totalFiltradas === 0
+                    ? `${totalFiltradas} de ${categorias.length} categorías`
+                    : `${Math.min((pagina - 1) * porPagina + 1, totalFiltradas)}–${Math.min(pagina * porPagina, totalFiltradas)} de ${totalFiltradas}`}
+                </span>
+                <select value={porPagina} onChange={e => { setPorPagina(Number(e.target.value)); setPagina(1); }}
+                  style={{ padding: "4px 8px", fontSize: 12, border: "1px solid var(--color-border)",
+                    borderRadius: 6, background: "#fff", cursor: "pointer", color: "var(--color-text)" }}>
+                  <option value={5}>5 por página</option>
+                  <option value={10}>10 por página</option>
+                  <option value={0}>Todas</option>
+                </select>
+              </div>
+              {porPagina > 0 && totalPaginas > 1 && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
+                  <button onClick={() => setPagina(p => Math.max(p - 1, 1))} disabled={pagina === 1}
+                    style={{ flex: 1, padding: "8px 0", border: "1px solid var(--color-border)", borderRadius: 6,
+                      background: "#fff", cursor: pagina === 1 ? "not-allowed" : "pointer",
+                      color: pagina === 1 ? "#bbb" : "var(--color-text)", fontSize: 13 }}>
+                    ← Anterior
+                  </button>
+                  <span style={{ fontSize: 13, color: "var(--color-muted)", whiteSpace: "nowrap" }}>
+                    {pagina} / {totalPaginas}
+                  </span>
+                  <button onClick={() => setPagina(p => Math.min(p + 1, totalPaginas))} disabled={pagina === totalPaginas}
+                    style={{ flex: 1, padding: "8px 0", border: "1px solid var(--color-border)", borderRadius: 6,
+                      background: "#fff", cursor: pagina === totalPaginas ? "not-allowed" : "pointer",
+                      color: pagina === totalPaginas ? "#bbb" : "var(--color-text)", fontSize: 13 }}>
+                    Siguiente →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
       </div>

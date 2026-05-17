@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Navbar from "@/components/admin/Navbar";
 import UserForm from "@/components/admin/UserForm";
+import Breadcrumb from "@/components/admin/Breadcrumb";
 
 export default function NewUserPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -23,7 +24,7 @@ export default function NewUserPage() {
         <Navbar section="Usuarios" onMenuClick={() => setSidebarOpen(true)} />
         <main className="admin-main">
           <div className="users-page-header users-page-header-single">
-            <p className="users-breadcrumb">ADMIN PANEL › USUARIOS › NUEVO</p>
+            <Breadcrumb items={[{ label: "ADMIN PANEL", href: "/admin" }, { label: "USUARIOS", href: "/admin/users" }, { label: "NUEVO" }]} />
             <h1 className="users-title">
               Crear Usuario
             </h1>
