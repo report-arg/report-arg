@@ -3,6 +3,7 @@
 @import "../styles/institution-register.css";
 @import "../styles/reset-password.css";
 @import "../styles/auth.css";
+@import "../styles/home.css";
 
 :root {
   --azul: 30 58 138;            /* #1e3a8a */
@@ -36,3 +37,35 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.estado-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.estado-recibido   { background: #E6F1FB; color: #0C447C; }
+.estado-en-proceso { background: #FAEEDA; color: #633806; }
+.estado-resuelto   { background: #EAF3DE; color: #27500A; }
+.estado-rechazado  { background: #FEE2E2; color: #991B1B; }
+
+.estado-btn {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1.5px solid var(--color-border, #e5e9f5);
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+.estado-btn:disabled { cursor: default; }
+.estado-btn.active.estado-recibido   { background: #E6F1FB; color: #0C447C; border-color: #0C447C; }
+.estado-btn.active.estado-en-proceso { background: #FAEEDA; color: #633806; border-color: #633806; }
+.estado-btn.active.estado-resuelto   { background: #EAF3DE; color: #27500A; border-color: #27500A; }
+.estado-btn.active.estado-rechazado  { background: #FEE2E2; color: #991B1B; border-color: #991B1B; }

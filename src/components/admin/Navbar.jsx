@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bell, HelpCircle, Menu, User, LogOut, ChevronDown } from "lucide-react";
+import { Bell, HelpCircle, Menu, User, LogOut, ChevronDown, Home } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 
@@ -308,7 +308,7 @@ export default function Navbar({ section = "Dashboard", onMenuClick }) {
               {/* Opciones */}
               <div style={{ padding: "6px 0" }}>
                 <button
-                  onClick={() => { setProfileOpen(false); router.push("/admin/profile"); }}
+                  onClick={() => { setProfileOpen(false); router.push("/profile"); }}
                   style={{
                     display: "flex", alignItems: "center", gap: 10,
                     width: "100%", padding: "10px 16px",
@@ -320,6 +320,21 @@ export default function Navbar({ section = "Dashboard", onMenuClick }) {
                 >
                   <User size={15} style={{ color: "var(--color-primary)" }} />
                   Mi Perfil
+                </button>
+
+                <button
+                  onClick={() => { setProfileOpen(false); router.push("/home"); }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    width: "100%", padding: "10px 16px",
+                    background: "none", border: "none", cursor: "pointer",
+                    fontSize: 13, color: "#333", textAlign: "left",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f5f7ff"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}
+                >
+                  <Home size={15} style={{ color: "var(--color-primary)" }} />
+                  Ir al Home
                 </button>
 
                 <div style={{ height: 1, background: "var(--color-border)", margin: "4px 0" }} />
