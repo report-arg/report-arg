@@ -156,7 +156,12 @@ export default function DashboardStats() {
 
       {/* Últimos reportes */}
       <div style={{ background: "#fff", borderRadius: 10, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
-        <p style={{ margin: "0 0 14px", fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 1 }}>ÚLTIMOS REPORTES</p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <p style={{ margin: 0, fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 1 }}>ÚLTIMOS REPORTES</p>
+          <a href="/admin/reclamos" style={{ fontSize: 12, color: "var(--color-primary)", fontWeight: 600, textDecoration: "none" }}>
+            Ver todos →
+          </a>
+        </div>
         {ultimos.length === 0 && (
           <p style={{ fontSize: 13, color: "#aaa" }}>Sin reportes recientes.</p>
         )}

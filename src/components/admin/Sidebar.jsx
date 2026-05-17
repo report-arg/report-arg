@@ -4,10 +4,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Shield, Settings, Building2, X, Tag } from "lucide-react";
+import { LayoutDashboard, Users, Shield, Settings, Building2, X, Tag, FileText } from "lucide-react";
 
 const navItems = [
   { label: "Dashboard",        href: "/admin",               icon: LayoutDashboard },
+  { label: "Reportes",         href: "/admin/reclamos",      icon: FileText        },
   { label: "Usuarios",         href: "/admin/users",         icon: Users           },
   { label: "Roles y Permisos", href: "/admin/roles",         icon: Shield          },
   { label: "Instituciones",    href: "/admin/institutions",  icon: Building2       },

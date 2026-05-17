@@ -20,7 +20,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [socialLoading, setSocialLoading] = useState(null);
   const router = useRouter();
-  const callbackUrl = '/admin';
+  const callbackUrl = '/home';
 
   const {
     register,
