@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(request) {
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  const secret = process.env.NEXTAUTH_SECRET || "clave-secreta-desarrollo";
+  const token = await getToken({ req: request, secret });
 
   if (!token) {
     const loginUrl = new URL("/login", request.url);
