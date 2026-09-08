@@ -100,7 +100,10 @@ export default function HomeSidebar({ open = false, onClose = () => {}, role = "
           </Link>
           <button
             className="home-nav-item"
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={async () => {
+              await signOut({ redirect: false });
+              window.location.href = "/login";
+            }}
           >
             <LogOut size={18} className="home-nav-icon" />
             Cerrar Sesión

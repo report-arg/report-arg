@@ -338,7 +338,10 @@ export default function Navbar({ section = "Dashboard", onMenuClick }) {
                 <div style={{ height: 1, background: "var(--color-border)", margin: "4px 0" }} />
 
                 <button
-                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  onClick={async () => {
+                    await signOut({ redirect: false });
+                    window.location.href = "/login";
+                  }}
                   style={{
                     display: "flex", alignItems: "center", gap: 10,
                     width: "100%", padding: "10px 16px",

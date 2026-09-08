@@ -281,7 +281,10 @@ export default function ProfilePage() {
               <p style={{ margin: "0 0 2px", fontWeight: 600, fontSize: 14, color: "#333" }}>Sesión de Usuario</p>
               <p style={{ margin: 0, fontSize: 12, color: "#888" }}>Desconectá este dispositivo.</p>
             </div>
-            <button onClick={() => signOut({ callbackUrl: "/login" })}
+            <button onClick={async () => {
+              await signOut({ redirect: false });
+              window.location.href = "/login";
+            }}
               style={{
                 padding: "8px 14px", borderRadius: 8, border: "none",
                 background: "#ef4444", color: "#fff", fontSize: 12, fontWeight: 700,
