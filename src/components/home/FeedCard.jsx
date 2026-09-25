@@ -10,9 +10,14 @@ import apiClient from "@/services/apiClient";
 import Image from "next/image";
 
 const ESTADO_LABELS = {
-  recibido:   { label: "Recibido",   cls: "pendiente"  },
-  en_proceso: { label: "En proceso", cls: "en_proceso" },
-  resuelto:   { label: "Resuelto",   cls: "resuelto"   },
+  "Pendiente":   { label: "Pendiente",   cls: "pendiente"   },
+  "En revisión": { label: "En revisión", cls: "en_proceso"  },
+  "En proceso":  { label: "En proceso",  cls: "en_proceso"  },
+  "Resuelto":    { label: "Resuelto",    cls: "resuelto"    },
+  "Cancelado":   { label: "Cancelado",   cls: "rechazado"   },
+  recibido:      { label: "Pendiente",   cls: "pendiente"   },
+  en_proceso:    { label: "En proceso",  cls: "en_proceso"  },
+  resuelto:      { label: "Resuelto",    cls: "resuelto"    },
 };
 
 function tiempoRelativo(fechaStr) {
