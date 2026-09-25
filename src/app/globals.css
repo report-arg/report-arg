@@ -5,6 +5,7 @@
 @import "../styles/reset-password.css";
 @import "../styles/auth.css";
 @import "../styles/home.css";
+@import "../styles/brand.css";
 
 :root {
   --azul: 30 58 138;            /* #1e3a8a */

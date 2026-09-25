@@ -1,0 +1,43 @@
+/* Tokens de Identidad Visual ReportARG */
+:root {
+  /* Paleta de Marca (Brand Azure / Blue) */
+  --color-brand-50: #F0F7FF;
+  --color-brand-100: #E0EFFF;
+  --color-brand-200: #BDE0FF;
+  --color-brand-300: #85C8FF;
+  --color-brand-400: #47A3FF;
+  --color-brand-500: #1479FF;
+  --color-brand-600: #005CE6; /* Color Principal de Marca */
+  --color-brand-700: #0046B3;
+  --color-brand-800: #00358A;
+  --color-brand-900: #002966;
+
+  /* Estados y Colores Semánticos */
+  --color-brand-success-50: #ECFDF5;
+  --color-brand-success-500: #10B981;
+  --color-brand-success-600: #059669;
+
+  --color-brand-warning-50: #FFFBEB;
+  --color-brand-warning-500: #F59E0B;
+  --color-brand-warning-600: #D97706;
+
+  --color-brand-danger-50: #FEF2F2;
+  --color-brand-danger-500: #EF4444;
+  --color-brand-danger-600: #DC2626;
+
+  --color-brand-info-50: #EFF6FF;
+  --color-brand-info-500: #3B82F6;
+  --color-brand-info-600: #2563EB;
+
+  /* Neutros de la Identidad */
+  --color-brand-neutral-50: #F8FAFC;
+  --color-brand-neutral-100: #F1F5F9;
+  --color-brand-neutral-200: #E2E8F0;
+  --color-brand-neutral-300: #CBD5E1;
+  --color-brand-neutral-400: #94A3B8;
+  --color-brand-neutral-500: #64748B;
+  --color-brand-neutral-600: #475569;
+  --color-brand-neutral-700: #334155;
+  --color-brand-neutral-800: #1E293B;
+  --color-brand-neutral-900: #0F172A;
+}
