@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import {
-  CheckCircle, MapPin, MessageCircle, Share2, Send, Trash2,
+  CheckCircle, MapPin, Share2, Trash2,
   ChevronDown, ChevronUp,
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
@@ -51,173 +51,11 @@ function ConfirmModal({ mensaje, onConfirmar, onCancelar, cargando }) {
   );
 }
 
-function ComentariosSection({ idReclamo, onNuevoComentario }) {
-  const { data: session } = useSession();
-
-  const [comentarios,       setComentarios]       = useState([]);
-  const [cargados,          setCargados]          = useState(false);
-  const [cargando,          setCargando]          = useState(false);
-  const [texto,             setTexto]             = useState("");
-  const [enviando,          setEnviando]          = useState(false);
-  const [error,             setError]             = useState("");
-  const [confirmComentario, setConfirmComentario] = useState(null);
-  const [eliminandoCom,     setEliminandoCom]     = useState(false);
-
-  useEffect(() => {
-    async function cargar() {
-      setCargando(true);
-      try {
-        const res  = await apiClient.get(`/comentarios/${idReclamo}`);
-        const data = res.data;
-        if (data.ok) setComentarios(data.data);
-      } catch {
-        // sin conexión: la lista queda vacía
-      } finally {
-        setCargando(false);
-        setCargados(true);
-      }
-    }
-    cargar();
-  }, [idReclamo]);
-
-  async function enviarComentario(e) {
-    e.preventDefault();
-    if (!texto.trim()) return;
-    if (!session?.user?.id) {
-      setError("Debés iniciar sesión para comentar.");
-      return;
-    }
-
-    setError("");
-    setEnviando(true);
-    try {
-      const res  = await apiClient.post(`/comentarios`, {
-          id_reclamo: idReclamo,
-          id_usuario: session.user.id,
-          texto:      texto.trim(),
-      });
-      const data = res.data;
-      if (data.ok) {
-        setComentarios(prev => [
-          ...prev,
-          {
-            id:             data.id,
-            texto:          texto.trim(),
-            fecha_creacion: new Date().toISOString(),
-            autorNombre:    session.user.name || session.user.email,
-            autorFoto:      session.user.foto || null,
-          },
-        ]);
-        onNuevoComentario?.();
-        setTexto("");
-      } else {
-        setError(data.mensaje || "No se pudo enviar el comentario.");
-      }
-    } catch {
-      setError("Error de conexión.");
-    } finally {
-      setEnviando(false);
-    }
-  }
-
-  async function eliminarComentario() {
-    setEliminandoCom(true);
-    try {
-      const res  = await apiClient.delete(`/comentarios/${confirmComentario.id}`, {
-        data: { id_usuario: session.user.id }
-      });
-      const data = res.data;
-      if (data.ok) setComentarios(prev => prev.filter(x => x.id !== confirmComentario.id));
-    } finally {
-      setEliminandoCom(false);
-      setConfirmComentario(null);
-    }
-  }
-
-  return (
-    <div className="fc-comments">
-      {cargando && <p className="fc-comments-loading">Cargando comentarios…</p>}
-
-      {!cargando && cargados && comentarios.length === 0 && (
-        <p className="fc-comments-empty">Sé el primero en comentar.</p>
-      )}
-
-      <ul className="fc-comments-list">
-        {comentarios.map(c => (
-          <li key={c.id} className="fc-comment-item">
-            <div className="fc-comment-avatar" style={{ position: "relative" }}>
-              {c.autorFoto
-                ? <Image src={c.autorFoto} alt={c.autorNombre} fill unoptimized style={{ objectFit: "cover" }} />
-                : iniciales(c.autorNombre)}
-            </div>
-            <div className="fc-comment-body">
-              <span className="fc-comment-author">{c.autorNombre || "Usuario"}</span>
-              <span className="fc-comment-time">{tiempoRelativo(c.fecha_creacion)}</span>
-              <p className="fc-comment-text">{c.texto}</p>
-            </div>
-            {session?.user?.id && Number(session.user.id) === Number(c.id_usuario) && (
-              <button
-                className="fc-comment-delete"
-                title="Eliminar comentario"
-                onClick={() => setConfirmComentario({ id: c.id })}
-              >
-                <Trash2 size={13} />
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-
-      {session?.user ? (
-        <form className="fc-comment-form" onSubmit={enviarComentario}>
-          <div className="fc-comment-avatar small" style={{ position: "relative" }}>
-            {session.user.foto
-              ? <Image src={session.user.foto} alt="" fill unoptimized style={{ objectFit: "cover" }} />
-              : iniciales(session.user.name || session.user.email)}
-          </div>
-          <input
-            className="fc-comment-input"
-            type="text"
-            placeholder="Escribí un comentario…"
-            value={texto}
-            onChange={e => setTexto(e.target.value)}
-            maxLength={500}
-            disabled={enviando}
-          />
-          <button
-            className="fc-comment-send"
-            type="submit"
-            disabled={enviando || !texto.trim()}
-            title="Enviar"
-          >
-            <Send size={15} />
-          </button>
-        </form>
-      ) : (
-        <p className="fc-comments-login">Iniciá sesión para comentar.</p>
-      )}
-
-      {error && <p className="fc-comments-error">{error}</p>}
-
-      {confirmComentario && (
-        <ConfirmModal
-          mensaje="¿Deseás eliminar este comentario? Esta acción no se puede deshacer."
-          cargando={eliminandoCom}
-          onConfirmar={eliminarComentario}
-          onCancelar={() => setConfirmComentario(null)}
-        />
-      )}
-    </div>
-  );
-}
-
 function ComunicadoCard({ item, onEliminado }) {
   const { data: session } = useSession();
-  const [expandido,           setExpandido]           = useState(false);
-  const [comentariosAbiertos, setComentariosAbiertos] = useState(false);
-  const [totalComentarios,    setTotalComentarios]    = useState(Number(item.cantidadComentarios) || 0);
-  const [eliminando,          setEliminando]          = useState(false);
-  const [modalAbierto,        setModalAbierto]        = useState(false);
+  const [expandido,    setExpandido]    = useState(false);
+  const [eliminando,   setEliminando]   = useState(false);
+  const [modalAbierto, setModalAbierto] = useState(false);
 
   const esPropietario = session?.user?.id && Number(session.user.id) === Number(item.id_usuario);
   const fechaCompleta = fechaExacta(item.fecha_creacion);
@@ -328,8 +166,8 @@ function ComunicadoCard({ item, onEliminado }) {
 export default function FeedCard({ item, onEliminado }) {
   const tiempo = tiempoRelativo(item.fecha_creacion);
 
-  // Discriminación conceptual explícita por tipo de publicación (Point 6)
-  if (item.tipo === "comunicado" || item.esInstitucion) {
+  // Discriminación conceptual explícita por tipo de publicación
+  if (item.tipo === "comunicado") {
     return <ComunicadoCard item={item} onEliminado={onEliminado} />;
   }
 
@@ -379,7 +217,7 @@ export default function FeedCard({ item, onEliminado }) {
         )}
       </div>
 
-      {/* Regla de Negocio (Point 9): Reclamos NO tienen comentarios públicos. Solo Compartir. */}
+      {/* Regla de Negocio: Reclamos NO tienen comentarios públicos. Solo Compartir. */}
       <div className="feed-card-footer">
         <button
           className="feed-card-action"
@@ -391,3 +229,4 @@ export default function FeedCard({ item, onEliminado }) {
     </article>
   );
 }
+
