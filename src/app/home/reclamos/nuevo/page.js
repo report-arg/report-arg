@@ -14,18 +14,17 @@ import apiClient from "@/services/apiClient";
 import { uploadImage } from "@/services/uploadService";
 
 const ICON_RULES = [
-  { keys: ["luz", "alumbrado", "iluminac", "luminaria"], Icon: Lightbulb },
-  { keys: ["seguridad", "prevenci", "delito", "violencia"], Icon: ShieldCheck },
-  { keys: ["agua", "cloaca", "cloacal", "hidráulic", "inundac"], Icon: Droplets },
-  { keys: ["transporte", "tránsito", "colectivo", "parada", "vial"], Icon: Bus },
-  { keys: ["residuo", "basura", "higiene", "limpieza"], Icon: Trash2 },
-  { keys: ["verde", "espacio", "jardín", "parque", "arbol"], Icon: Trees },
-  { keys: ["infraestructura", "obra", "pavimento", "veredas"], Icon: Building2 },
-  { keys: ["conectiv", "wifi", "internet"], Icon: Wifi },
-  { keys: ["mantenim", "reparaci"], Icon: Wrench },
-  { keys: ["salud", "hospital", "sanitario"], Icon: Heart },
-  { keys: ["contaminac", "ambiental"], Icon: Waves },
-  { keys: ["social", "comunitario", "barrio"], Icon: Sparkles },
+  { keys: ["luz", "iluminac", "luminaria"], Icon: Lightbulb },
+  { keys: ["alumbrado"], Icon: Lightbulb },
+  { keys: ["seguridad", "delito", "riesgo"], Icon: ShieldCheck },
+  { keys: ["agua", "presión", "suministro"], Icon: Droplets },
+  { keys: ["transporte", "colectivo", "parada"], Icon: Bus },
+  { keys: ["residuo", "basura", "limpieza"], Icon: Trash2 },
+  { keys: ["obras", "viales", "vereda", "calle"], Icon: Building2 },
+  { keys: ["espacios", "parque", "plaza"], Icon: Trees },
+  { keys: ["alerta", "emergencia", "corte programado"], Icon: AlertCircle },
+  { keys: ["información", "general", "interés"], Icon: Sparkles },
+  { keys: ["salud", "vacunación", "sanitaria"], Icon: Heart },
 ];
 
 function getIcono(nombre = "", desc = "") {
@@ -44,7 +43,7 @@ export default function NuevoReclamoPage() {
 
   const [categorias, setCategorias] = useState([]);
   const [loadingCats, setLoadingCats] = useState(true);
-  const [form, setForm] = useState({ titulo: "", descripcion: "", id_categoria: null, direccion: "" });
+  const [form, setForm] = useState({ titulo: "", descripcion: "", id_categoria: null, direccion: "", visibilidad: "publico" });
   const [coords, setCoords] = useState({ latitud: null, longitud: null });
   const [fotos, setFotos] = useState([]);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -148,23 +147,26 @@ export default function NuevoReclamoPage() {
 
     setSubmitting(true);
     try {
+      const urlsSubidas = fotos.map(f => f.url).filter(Boolean);
       const res = await apiClient.post(`/reclamos`, {
         titulo: form.titulo.trim(),
         descripcion: form.descripcion.trim(),
         id_categoria: form.id_categoria,
-        id_usuario: session.user.id,
         direccion: form.direccion.trim(),
         latitud: coords.latitud,
         longitud: coords.longitud,
+        visibilidad: form.visibilidad,
+        imagen_url: urlsSubidas.length > 0 ? urlsSubidas[0] : null,
       });
       const data = res.data;
       if (data.ok) {
-        router.push("/home");
+        router.push("/home/reclamos");
       } else {
         setError(data.mensaje || "Error al publicar el reclamo.");
       }
-    } catch {
-      setError("Error de conexión. Intentá de nuevo.");
+    } catch (err) {
+      const msg = err.response?.data?.mensaje || "Error de conexión. Intentá de nuevo.";
+      setError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -207,6 +209,40 @@ export default function NuevoReclamoPage() {
               rows={4}
             />
             {fieldErrors.descripcion && <p className="nr-field-error">{fieldErrors.descripcion}</p>}
+          </div>
+
+          {/* Selector de Visibilidad (HU-01 / HU-02) */}
+          <div className="nr-field">
+            <label className="nr-label">Tipo de visibilidad</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+              <button
+                type="button"
+                className={`nr-cat-card ${form.visibilidad === 'publico' ? 'selected' : ''}`}
+                onClick={() => setForm(p => ({ ...p, visibilidad: 'publico' }))}
+                style={{ textAlign: 'left', padding: '12px 14px', alignItems: 'flex-start' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontSize: '13px', color: form.visibilidad === 'publico' ? '#2563eb' : '#334155' }}>
+                  🌐 Reclamo Público
+                </div>
+                <span className="nr-cat-desc" style={{ marginTop: '4px', fontSize: '11px', lineHeight: 1.3 }}>
+                  Visible en el feed de la comunidad. Los vecinos pueden indicar que también les afecta.
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className={`nr-cat-card ${form.visibilidad === 'privado' ? 'selected' : ''}`}
+                onClick={() => setForm(p => ({ ...p, visibilidad: 'privado' }))}
+                style={{ textAlign: 'left', padding: '12px 14px', alignItems: 'flex-start' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontSize: '13px', color: form.visibilidad === 'privado' ? '#dc2626' : '#334155' }}>
+                  🔒 Reclamo Privado
+                </div>
+                <span className="nr-cat-desc" style={{ marginTop: '4px', fontSize: '11px', lineHeight: 1.3 }}>
+                  Información sensible. Su ubicación y datos se resguardan y solo los gestiona la institución.
+                </span>
+              </button>
+            </div>
           </div>
 
           <div className="nr-field">
