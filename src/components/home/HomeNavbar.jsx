@@ -22,10 +22,10 @@ export default function HomeNavbar({ onMenuClick = () => {} }) {
   const [perfil,       setPerfil]       = useState(null);
   const [profileOpen,  setProfileOpen]  = useState(false);
 
-  // Cargar datos del perfil cuando hay sesión
+  // Cargar datos del perfil cuando hay sesión desde el endpoint seguro /auth/me
   useEffect(() => {
     if (!session?.user?.id) return;
-    apiClient.get(`/admin/usuarios/${session.user.id}`)
+    apiClient.get(`/auth/me`)
       .then(r => r.data)
       .then(d => { if (d.ok) setPerfil(d.data); })
       .catch(() => {});
@@ -70,9 +70,11 @@ export default function HomeNavbar({ onMenuClick = () => {} }) {
       <div className="home-navbar-right">
         <div className="home-location-badge">
           <MapPin size={12} />
-          {perfil?.ciudad && perfil?.provincia
-            ? `${perfil.ciudad}, ${perfil.provincia}`
-            : "Argentina"}
+          {perfil?.ciudad_activa && perfil?.provincia_activa
+            ? `${perfil.ciudad_activa}, ${perfil.provincia_activa}`
+            : perfil?.ciudad_declarada && perfil?.provincia_declarada
+              ? `${perfil.ciudad_declarada}, ${perfil.provincia_declarada}`
+              : "Sin ciudad activa"}
         </div>
 
         <button className="home-icon-btn" title="Notificaciones">
