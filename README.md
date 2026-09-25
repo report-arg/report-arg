@@ -17,6 +17,14 @@ El objetivo principal es **centralizar la información local** —como cortes de
 
 ---
 
+## 📚 Documentación de Arquitectura
+
+Para consultar las decisiones de arquitectura general, modelo territorial y reglas del sistema, acceder a la documentación del repositorio backend:
+- [Arquitectura y Reglas Generales](../reportarg-api/docs/arquitectura_y_reglas.md)
+- [Módulo de Reclamos - Sprint 4](../reportarg-api/docs/sprint4_reclamos.md)
+
+---
+
 ## 🎯 Objetivos del Sistema
 
 - Facilitar la **difusión de información** oficial y vecinal.  
