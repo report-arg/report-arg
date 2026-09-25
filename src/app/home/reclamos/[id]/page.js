@@ -4,42 +4,13 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-  ArrowLeft, MapPin, Clock, Tag, Building2, Eye, ShieldAlert,
-  Calendar, CheckCircle2, History, AlertTriangle, UserCheck, AlertCircle, FileText
+  ArrowLeft, MapPin, Tag, Building2,
+  Calendar, History, AlertTriangle, UserCheck
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
-
-const ESTADO_BADGES = {
-  "Pendiente": { bg: "#f1f5f9", text: "#334155", border: "#cbd5e1" },
-  "En revisión": { bg: "#e0e7ff", text: "#3730a3", border: "#a5b4fc" },
-  "En proceso": { bg: "#fef3c7", text: "#92400e", border: "#fde68a" },
-  "Resuelto": { bg: "#dcfce7", text: "#166534", border: "#86efac" },
-  "Cancelado": { bg: "#fee2e2", text: "#991b1b", border: "#fca5a5" },
-};
-
-function formatearFecha(fechaStr) {
-  if (!fechaStr) return "";
-  const f = new Date(fechaStr);
-  return f.toLocaleDateString("es-AR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
-
-function tiempoRelativo(fechaStr) {
-  if (!fechaStr) return "";
-  const diff = Date.now() - new Date(fechaStr).getTime();
-  const min = Math.floor(diff / 60000);
-  const hs = Math.floor(diff / 3600000);
-  const dias = Math.floor(diff / 86400000);
-  if (min < 1) return "Ahora";
-  if (min < 60) return `Hace ${min} min`;
-  if (hs < 24) return `Hace ${hs}h`;
-  return `Hace ${dias} día${dias > 1 ? "s" : ""}`;
-}
+import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
+import ClaimVisibilityBadge from "@/components/reclamos/ClaimVisibilityBadge";
+import { formatearFecha } from "@/utils/dateFormatters";
 
 export default function ReclamoDetallePage() {
   const params = useParams();
@@ -98,8 +69,6 @@ export default function ReclamoDetallePage() {
 
   if (!reclamo) return null;
 
-  const badgeEst = ESTADO_BADGES[reclamo.estado] || ESTADO_BADGES["Pendiente"];
-
   return (
     <div style={{ maxWidth: "720px", margin: "0 auto", padding: "20px 16px" }}>
 
@@ -129,32 +98,8 @@ export default function ReclamoDetallePage() {
 
         {/* Encabezado con Badges */}
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-          <span style={{
-            fontSize: "11px",
-            fontWeight: 700,
-            padding: "4px 10px",
-            borderRadius: "12px",
-            backgroundColor: badgeEst.bg,
-            color: badgeEst.text,
-            border: `1px solid ${badgeEst.border}`
-          }}>
-            {reclamo.estado}
-          </span>
-
-          <span style={{
-            fontSize: "11px",
-            fontWeight: 600,
-            padding: "4px 10px",
-            borderRadius: "12px",
-            backgroundColor: reclamo.visibilidad === "privado" ? "#fee2e2" : "#e0f2fe",
-            color: reclamo.visibilidad === "privado" ? "#991b1b" : "#0369a1",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "4px"
-          }}>
-            {reclamo.visibilidad === "privado" ? <ShieldAlert size={12} /> : <Eye size={12} />}
-            {reclamo.visibilidad === "privado" ? "Reclamo Privado" : "Reclamo Público"}
-          </span>
+          <ClaimStatusBadge estado={reclamo.estado} />
+          <ClaimVisibilityBadge visibilidad={reclamo.visibilidad} />
 
           {reclamo.editado === 1 && (
             <span style={{ fontSize: "11px", fontWeight: 600, backgroundColor: "#f1f5f9", color: "#475569", padding: "4px 8px", borderRadius: "6px" }}>
