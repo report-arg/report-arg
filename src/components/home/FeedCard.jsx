@@ -315,28 +315,15 @@ function ComunicadoCard({ item, onEliminado }) {
       <div className="feed-card-footer">
         <button
           className="feed-card-action"
-          onClick={() => setComentariosAbiertos(v => !v)}
-        >
-          <MessageCircle size={15} />
-          {comentariosAbiertos ? "Ocultar" : `Comentarios (${totalComentarios})`}
-        </button>
-        <button
-          className="feed-card-action"
           onClick={() => compartir({ titulo: item.titulo, descripcion: item.descripcion, id: item.id })}
         >
           <Share2 size={15} /> Compartir
         </button>
       </div>
-
-      {comentariosAbiertos && (
-        <ComentariosSection
-          idReclamo={item.id}
-          onNuevoComentario={() => setTotalComentarios(n => n + 1)}
-        />
-      )}
     </article>
   );
 }
+
 
 export default function FeedCard({ item, onEliminado }) {
   const tiempo = tiempoRelativo(item.fecha_creacion);

@@ -8,8 +8,9 @@ export default function ClaimProgress({ estado }) {
     return (
       <div className="reclamo-progress-row" style={{ marginTop: '12px' }}>
         <span className="mis-reclamos-badge" style={{ backgroundColor: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5' }}>
-          ❌ Reclamo cancelado
+          Reclamo cancelado
         </span>
+
       </div>
     );
   }
