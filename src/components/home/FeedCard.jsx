@@ -8,40 +8,8 @@ import {
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import Image from "next/image";
-
-const ESTADO_LABELS = {
-  "Pendiente":   { label: "Pendiente",   cls: "pendiente"   },
-  "En revisión": { label: "En revisión", cls: "en_proceso"  },
-  "En proceso":  { label: "En proceso",  cls: "en_proceso"  },
-  "Resuelto":    { label: "Resuelto",    cls: "resuelto"    },
-  "Cancelado":   { label: "Cancelado",   cls: "rechazado"   },
-  recibido:      { label: "Pendiente",   cls: "pendiente"   },
-  en_proceso:    { label: "En proceso",  cls: "en_proceso"  },
-  resuelto:      { label: "Resuelto",    cls: "resuelto"    },
-};
-
-function tiempoRelativo(fechaStr) {
-  const diff = Date.now() - new Date(fechaStr).getTime();
-  const min  = Math.floor(diff / 60000);
-  if (min < 1)  return "Ahora";
-  if (min < 60) return `Hace ${min} min`;
-  const hs = Math.floor(min / 60);
-  if (hs < 24)  return `Hace ${hs} h`;
-  const dias = Math.floor(hs / 24);
-  if (dias < 7) return `Hace ${dias} d`;
-  return new Date(fechaStr).toLocaleDateString("es-AR", { day: "numeric", month: "short" });
-}
-
-function fechaExacta(fechaStr) {
-  return new Date(fechaStr).toLocaleString("es-AR", {
-    day:    "numeric",
-    month:  "short",
-    year:   "numeric",
-    hour:   "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
+import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
+import { tiempoRelativo, fechaExacta } from "@/utils/dateFormatters";
 
 function iniciales(nombre) {
   if (!nombre) return "?";
@@ -103,7 +71,7 @@ function ComentariosSection({ idReclamo, onNuevoComentario }) {
         const data = res.data;
         if (data.ok) setComentarios(data.data);
       } catch {
-        // sin conexión: no mostramos error, la lista queda vacía
+        // sin conexión: la lista queda vacía
       } finally {
         setCargando(false);
         setCargados(true);
@@ -257,9 +225,7 @@ function ComunicadoCard({ item, onEliminado }) {
   async function eliminarComunicado() {
     setEliminando(true);
     try {
-      const res  = await apiClient.delete(`/reclamos/comunicado/${item.id}`, {
-        data: { id_usuario: session.user.id }
-      });
+      const res  = await apiClient.delete(`/comunicados/${item.id}`);
       const data = res.data;
       if (data.ok) onEliminado?.(item.id);
     } finally {
@@ -373,12 +339,10 @@ function ComunicadoCard({ item, onEliminado }) {
 }
 
 export default function FeedCard({ item, onEliminado }) {
-  const estado = ESTADO_LABELS[item.estado] ?? { label: item.estado, cls: "pendiente" };
   const tiempo = tiempoRelativo(item.fecha_creacion);
 
-  const [comentariosAbiertos, setComentariosAbiertos] = useState(false);
-
-  if (item.esInstitucion) {
+  // Discriminación conceptual explícita por tipo de publicación (Point 6)
+  if (item.tipo === "comunicado" || item.esInstitucion) {
     return <ComunicadoCard item={item} onEliminado={onEliminado} />;
   }
 
@@ -403,7 +367,7 @@ export default function FeedCard({ item, onEliminado }) {
             </div>
           </div>
         </div>
-        <span className={`feed-card-badge ${estado.cls}`}>{estado.label}</span>
+        <ClaimStatusBadge estado={item.estado} />
       </div>
 
       <div className="feed-card-body">
@@ -414,16 +378,22 @@ export default function FeedCard({ item, onEliminado }) {
         {item.descripcion && (
           <p className="feed-card-desc">{item.descripcion}</p>
         )}
+        {item.imagen && (
+          <div className="feed-card-img-wrap" style={{ position: "relative" }}>
+            <Image
+              className="feed-card-img"
+              src={item.imagen}
+              alt={item.titulo}
+              fill
+              unoptimized
+              style={{ objectFit: "cover" }}
+            />
+          </div>
+        )}
       </div>
 
+      {/* Regla de Negocio (Point 9): Reclamos NO tienen comentarios públicos. Solo Compartir. */}
       <div className="feed-card-footer">
-        <button
-          className="feed-card-action"
-          onClick={() => setComentariosAbiertos(v => !v)}
-        >
-          <MessageCircle size={15} />
-          {comentariosAbiertos ? "Ocultar" : "Comentar"}
-        </button>
         <button
           className="feed-card-action"
           onClick={() => compartir({ titulo: item.titulo, descripcion: item.descripcion, id: item.id })}
@@ -431,9 +401,6 @@ export default function FeedCard({ item, onEliminado }) {
           <Share2 size={15} /> Compartir
         </button>
       </div>
-
-      {comentariosAbiertos && <ComentariosSection idReclamo={item.id} />}
     </article>
   );
 }
-
