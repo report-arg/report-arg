@@ -6,10 +6,11 @@ import { useSession, signOut } from "next-auth/react";
 import { Search, Bell, MapPin, ChevronDown, User, LogOut, Menu, Shield } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import Image from "next/image";
+import ReportArgLogo from "@/components/brand/ReportArgLogo";
 
 const ROL_LABEL = {
-  admin:      "Administrador",
-  ciudadano:  "Ciudadano",
+  admin: "Administrador",
+  ciudadano: "Ciudadano",
   institucion: "Institución",
 };
 
@@ -18,11 +19,10 @@ export default function HomeNavbar({ onMenuClick = () => {} }) {
   const { data: session } = useSession();
   const profileRef = useRef(null);
 
-  const [busqueda,     setBusqueda]     = useState("");
-  const [perfil,       setPerfil]       = useState(null);
-  const [profileOpen,  setProfileOpen]  = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [perfil, setPerfil] = useState(null);
+  const [profileOpen, setProfileOpen] = useState(false);
 
-  // Cargar datos del perfil cuando hay sesión desde el endpoint seguro /auth/me
   useEffect(() => {
     if (!session?.user?.id) return;
     apiClient.get(`/auth/me`)
@@ -31,7 +31,6 @@ export default function HomeNavbar({ onMenuClick = () => {} }) {
       .catch(() => {});
   }, [session?.user?.id]);
 
-  // Cerrar dropdown al hacer click afuera
   useEffect(() => {
     function handleClick(e) {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
@@ -42,42 +41,58 @@ export default function HomeNavbar({ onMenuClick = () => {} }) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  function handleSearchSubmit(e) {
+    if (e.key === "Enter" && busqueda.trim()) {
+      router.push(`/home/explorar?q=${encodeURIComponent(busqueda.trim())}`);
+    }
+  }
+
   const nombreMostrado = perfil?.nombre || session?.user?.name || "Usuario";
-  const rolMostrado    = ROL_LABEL[perfil?.rol ?? session?.user?.role] ?? "—";
-  const fotoUrl        = perfil?.foto || session?.user?.foto || null;
-  const iniciales      = nombreMostrado
+  const rolMostrado = ROL_LABEL[perfil?.rol ?? session?.user?.role] ?? "—";
+  const fotoUrl = perfil?.foto || session?.user?.foto || null;
+  const iniciales = nombreMostrado
     .split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
 
   const esAdmin = (perfil?.rol ?? session?.user?.role) === "admin";
 
+  const ciudad = perfil?.ciudad_activa || perfil?.ciudad_declarada || null;
+  const provincia = perfil?.provincia_activa || perfil?.provincia_declarada || null;
+  const ubicacionTexto = ciudad
+    ? `${ciudad}${provincia ? `, ${provincia}` : ""}`
+    : "Sin ciudad activa";
+
   return (
     <header className="home-navbar">
       {/* Hamburger — solo mobile */}
-      <button className="home-hamburger" onClick={onMenuClick}>
+      <button className="home-hamburger" onClick={onMenuClick} aria-label="Abrir menú">
         <Menu size={22} />
       </button>
 
+      {/* Buscador inteligente */}
       <div className="home-navbar-search">
         <Search size={14} className="home-navbar-search-icon" />
         <input
           type="text"
-          placeholder="Buscar reclamos, comunicados, zonas..."
+          placeholder="Buscar reportes, comunicados, temas..."
           value={busqueda}
           onChange={e => setBusqueda(e.target.value)}
+          onKeyDown={handleSearchSubmit}
         />
       </div>
 
       <div className="home-navbar-right">
-        <div className="home-location-badge">
-          <MapPin size={12} />
-          {perfil?.ciudad_activa && perfil?.provincia_activa
-            ? `${perfil.ciudad_activa}, ${perfil.provincia_activa}`
-            : perfil?.ciudad_declarada && perfil?.provincia_declarada
-              ? `${perfil.ciudad_declarada}, ${perfil.provincia_declarada}`
-              : "Sin ciudad activa"}
+        {/* Contexto Territorial Dinámico */}
+        <div className="home-location-badge" title="Ciudad activa del usuario">
+          <MapPin size={12} className="text-[var(--color-brand-600)] shrink-0" />
+          <span>{ubicacionTexto}</span>
         </div>
 
-        <button className="home-icon-btn" title="Notificaciones">
+        {/* Notificaciones */}
+        <button
+          className="home-icon-btn"
+          title="Notificaciones"
+          onClick={() => router.push("/home/notificaciones")}
+        >
           <Bell size={18} />
         </button>
 

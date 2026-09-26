@@ -1,43 +1,228 @@
-/* Tokens de Identidad Visual ReportARG */
+/* ============================================================
+   SISTEMA DE IDENTIDAD VISUAL REPORTARG — FUENTE DE VERDAD
+   ============================================================ */
+
 :root {
-  /* Paleta de Marca (Brand Azure / Blue) */
-  --color-brand-50: #F0F7FF;
+  /* Tipografía Principal */
+  --font-family-base: var(--font-manrope), "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Paleta de Marca (Brand Blue / Azure Refinado) */
+  --color-brand-50:  #F0F7FF;
   --color-brand-100: #E0EFFF;
   --color-brand-200: #BDE0FF;
   --color-brand-300: #85C8FF;
   --color-brand-400: #47A3FF;
   --color-brand-500: #1479FF;
-  --color-brand-600: #005CE6; /* Color Principal de Marca */
-  --color-brand-700: #0046B3;
-  --color-brand-800: #00358A;
-  --color-brand-900: #002966;
+  --color-brand-600: #005CE6; /* Color Principal de Marca y Acción Primaria */
+  --color-brand-700: #0046B3; /* Hover de Acción Primaria */
+  --color-brand-800: #00358A; /* Active / Encabezados */
+  --color-brand-900: #002966; /* Superficies Oscuras */
 
   /* Estados y Colores Semánticos */
-  --color-brand-success-50: #ECFDF5;
-  --color-brand-success-500: #10B981;
+  --color-brand-success-50:  #ECFDF5;
+  --color-brand-success-100: #D1FAE5;
   --color-brand-success-600: #059669;
 
-  --color-brand-warning-50: #FFFBEB;
-  --color-brand-warning-500: #F59E0B;
+  --color-brand-warning-50:  #FFFBEB;
+  --color-brand-warning-100: #FEF3C7;
   --color-brand-warning-600: #D97706;
 
-  --color-brand-danger-50: #FEF2F2;
-  --color-brand-danger-500: #EF4444;
-  --color-brand-danger-600: #DC2626;
+  --color-brand-danger-50:   #FEF2F2;
+  --color-brand-danger-100:  #FEE2E2;
+  --color-brand-danger-600:  #DC2626;
 
-  --color-brand-info-50: #EFF6FF;
-  --color-brand-info-500: #3B82F6;
-  --color-brand-info-600: #2563EB;
+  --color-brand-info-50:     #EFF6FF;
+  --color-brand-info-100:    #DBEAFE;
+  --color-brand-info-600:    #2563EB;
 
   /* Neutros de la Identidad */
-  --color-brand-neutral-50: #F8FAFC;
-  --color-brand-neutral-100: #F1F5F9;
-  --color-brand-neutral-200: #E2E8F0;
-  --color-brand-neutral-300: #CBD5E1;
-  --color-brand-neutral-400: #94A3B8;
-  --color-brand-neutral-500: #64748B;
-  --color-brand-neutral-600: #475569;
-  --color-brand-neutral-700: #334155;
-  --color-brand-neutral-800: #1E293B;
-  --color-brand-neutral-900: #0F172A;
+  --color-brand-neutral-50:  #F8FAFC; /* Fondo general de la app */
+  --color-brand-neutral-100: #F1F5F9; /* Fondo de contenedores suaves / hover */
+  --color-brand-neutral-200: #E2E8F0; /* Bordes por defecto */
+  --color-brand-neutral-300: #CBD5E1; /* Bordes activos / inputs */
+  --color-brand-neutral-400: #94A3B8; /* Iconos deshabilitados / placeholders */
+  --color-brand-neutral-500: #64748B; /* Texto secundario / metadata */
+  --color-brand-neutral-600: #475569; /* Texto cuerpo secundario */
+  --color-brand-neutral-700: #334155; /* Labels / botones secundarios */
+  --color-brand-neutral-800: #1E293B; /* Encabezados secundarios */
+  --color-brand-neutral-900: #0F172A; /* Texto principal de alto contraste */
+
+  /* Escala de Radio de Bordes */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Escala de Sombras Sútiles */
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 2px 4px 0 rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+}
+
+/* Aplicación global de tipografía Manrope */
+body {
+  font-family: var(--font-family-base);
+  background-color: var(--color-brand-neutral-50);
+  color: var(--color-brand-neutral-900);
+}
+
+/* Reglas de Contraste y Legibilidad Global para Placeholders */
+input::placeholder,
+textarea::placeholder {
+  color: #64748b !important; /* Slate 500 para legibilidad y contraste accesible */
+  opacity: 1 !important;
+}
+
+/* ============================================================
+   SISTEMA GLOBAL DE BOTONES Y CTA PRINCIPAL
+   ============================================================ */
+
+/* CTA Principal del Ciudadano ("Reportar un problema") */
+.btn-primary-report {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family-base);
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  background-color: var(--color-brand-600);
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-xs);
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.btn-primary-report:hover {
+  background-color: var(--color-brand-700);
+}
+
+.btn-primary-report:active {
+  background-color: var(--color-brand-800);
+  transform: scale(0.98);
+}
+
+.btn-primary-report:focus-visible {
+  outline: 2px solid var(--color-brand-400);
+  outline-offset: 2px;
+}
+
+/* Botón Primario Genérico */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: var(--color-brand-600);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.btn-primary:hover { background-color: var(--color-brand-700); }
+.btn-primary:active { transform: scale(0.98); }
+
+/* Botón Secundario */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-brand-neutral-700);
+  background-color: var(--color-brand-neutral-100);
+  border: 1px solid var(--color-brand-neutral-200);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.btn-secondary:hover {
+  background-color: var(--color-brand-neutral-200);
+  color: var(--color-brand-neutral-900);
+}
+
+/* Botón Terciario / Ghost */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-brand-neutral-600);
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.btn-ghost:hover {
+  background-color: var(--color-brand-neutral-100);
+  color: var(--color-brand-neutral-900);
+}
+
+/* ============================================================
+   SUPERFICIES, CHIPS Y BADGES
+   ============================================================ */
+
+/* Superficie de Card Limpia */
+.card-surface {
+  background-color: #ffffff;
+  border: 1px solid var(--color-brand-neutral-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Chip Interactivo / Filtro Seleccionable */
+.chip-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family-base);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-brand-neutral-700);
+  background-color: #ffffff;
+  border: 1px solid var(--color-brand-neutral-200);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.chip-filter:hover {
+  border-color: var(--color-brand-neutral-300);
+  background-color: var(--color-brand-neutral-50);
+}
+.chip-filter-active {
+  background-color: var(--color-brand-50);
+  border-color: var(--color-brand-600);
+  color: var(--color-brand-600);
+  font-weight: 700;
+}
+
+/* Badge No Interactivo */
+.badge-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family-base);
+  font-size: 11px;
+  font-weight: 600;
+  background-color: var(--color-brand-neutral-100);
+  color: var(--color-brand-neutral-700);
 }
