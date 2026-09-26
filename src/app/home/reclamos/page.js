@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { FilePlus2, MapPin, Clock, Tag, ChevronRight, Building2 } from "lucide-react";
+import { MapPin, Clock, ChevronRight, Building2 } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
 import ClaimVisibilityBadge from "@/components/reclamos/ClaimVisibilityBadge";
 import ClaimProgress from "@/components/reclamos/ClaimProgress";
-import { tiempoRelativo } from "@/utils/dateFormatters";
+import EmptyState from "@/components/common/EmptyState";
+import { getCategoryIcon, ReportProblemIcon } from "@/components/brand/icons";
+import { tiempoRelativo, fechaExacta } from "@/utils/dateFormatters";
 
 export default function MisReclamosPage() {
   const { data: session, status } = useSession();
@@ -21,121 +23,128 @@ export default function MisReclamosPage() {
     if (status === "loading" || !session?.user?.id) return;
     apiClient.get(`/reclamos/mis-reclamos`)
       .then(r => r.data)
-      .then(d => { if (d.ok) setReclamos(d.data); })
-      .catch(() => { })
+      .then(d => { if (d.ok) setReclamos(d.data || []); })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [session, status]);
 
   return (
-    <div className="home-feed-wrapper" style={{ padding: '20px 16px' }}>
+    <div className="w-full max-w-3xl mx-auto px-4 py-6">
 
-      <div className="mr-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <div className="mr-header-text">
-          <h2 className="mr-title" style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Mis Reclamos</h2>
-          <p className="mr-sub" style={{ fontSize: '13px', color: '#64748b' }}>Seguí el estado de los reclamos que enviaste</p>
+      {/* Header Mis Reclamos */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200/80">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+            Mis reclamos
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Seguí el avance y las actualizaciones de tus reportes en la ciudad
+          </p>
         </div>
+
         <button
-          className="mr-nuevo-btn"
           onClick={() => router.push("/home/reclamos/nuevo")}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            backgroundColor: '#2563eb',
-            color: '#ffffff',
-            fontWeight: 600,
-            fontSize: '13px',
-            padding: '8px 14px',
-            borderRadius: '8px',
-            border: 'none',
-            cursor: 'pointer'
-          }}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] transition-colors cursor-pointer shadow-xs self-start sm:self-auto"
         >
-          <FilePlus2 size={16} />
-          Nuevo reclamo
+          <ReportProblemIcon size={16} />
+          <span>Reportar un problema</span>
         </button>
       </div>
 
-      {loading && <p className="feed-loading">Cargando tus reclamos...</p>}
-
-      {!loading && reclamos.length === 0 && (
-        <div className="feed-empty" style={{ textAlign: 'center', padding: '40px 20px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <p style={{ fontSize: '15px', fontWeight: 600, color: '#334155' }}>Todavía no registraste ningún reclamo.</p>
-          <p style={{ fontSize: '13px', color: '#64748b', marginTop: '6px' }}>
-            Reportá problemas de tu ciudad para informar a las instituciones y darle seguimiento.
-          </p>
-          <button
-            onClick={() => router.push("/home/reclamos/nuevo")}
-            style={{ marginTop: '16px', backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
-          >
-            Crear mi primer reclamo
-          </button>
+      {loading && (
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="p-4 rounded-xl bg-white border border-slate-200 animate-pulse">
+              <div className="w-1/3 h-4 bg-slate-200 rounded mb-2" />
+              <div className="w-2/3 h-5 bg-slate-100 rounded mb-2" />
+              <div className="w-full h-8 bg-slate-50 rounded" />
+            </div>
+          ))}
         </div>
       )}
 
-      {!loading && reclamos.map(r => (
-        <div
-          key={r.id}
-          className="mis-reclamos-card"
-          onClick={() => router.push(`/home/reclamos/${r.id}`)}
-          style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '12px',
-            padding: '16px',
-            marginBottom: '14px',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            cursor: 'pointer',
-            transition: 'transform 0.1s ease, box-shadow 0.1s ease'
-          }}
-        >
-          <div className="mis-reclamos-card-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div style={{ flex: 1, minWidth: 0, paddingRight: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <ClaimVisibilityBadge visibilidad={r.visibilidad} />
+      {!loading && reclamos.length === 0 && (
+        <EmptyState
+          title="Todavía no registradas ningún reporte"
+          description="Reportá los problemas que veas en tu ciudad para informar a las autoridades y darles seguimiento."
+          actionLabel="Reportar un problema"
+          onAction={() => router.push("/home/reclamos/nuevo")}
+        />
+      )}
 
-                {r.editado === 1 && (
-                  <span style={{ fontSize: '10px', backgroundColor: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px' }}>
-                    Editado
+      {!loading && (
+        <div className="space-y-3.5">
+          {reclamos.map(r => {
+            const CategoryIcon = getCategoryIcon(r.categoriaCodigo || r.categoriaNombre, r.categoriaNombre);
+            const fechaLarga = fechaExacta(r.fecha_creacion);
+
+            return (
+              <div
+                key={r.id}
+                onClick={() => router.push(`/home/reclamos/${r.id}`)}
+                className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:shadow-sm hover:border-[var(--color-brand-200)] transition-all cursor-pointer group"
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <ClaimVisibilityBadge visibilidad={r.visibilidad} />
+
+                      {r.categoriaNombre && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[11px] font-semibold">
+                          <CategoryIcon size={12} className="text-[var(--color-brand-600)]" />
+                          <span>{r.categoriaNombre}</span>
+                        </span>
+                      )}
+
+                      {r.editado === 1 && (
+                        <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                          Editado
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="text-base font-bold text-slate-900 group-hover:text-[var(--color-brand-600)] transition-colors leading-snug">
+                      {r.titulo}
+                    </h3>
+                  </div>
+
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <ClaimStatusBadge estado={r.estado} />
+                    <ChevronRight size={16} className="text-slate-300 group-hover:text-[var(--color-brand-600)] transition-colors mt-1" />
+                  </div>
+                </div>
+
+                {/* Metadatos adicionales */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 my-2 pt-1 border-t border-slate-100">
+                  {r.institucionNombre && (
+                    <span className="inline-flex items-center gap-1 font-medium text-[var(--color-brand-700)]">
+                      <Building2 size={13} />
+                      <span>{r.institucionNombre}</span>
+                    </span>
+                  )}
+
+                  {r.direccion && (
+                    <span className="inline-flex items-center gap-1 text-slate-600">
+                      <MapPin size={13} className="text-slate-400" />
+                      <span className="truncate max-w-[220px]">{r.direccion}</span>
+                    </span>
+                  )}
+
+                  <span className="inline-flex items-center gap-1" title={fechaLarga}>
+                    <Clock size={13} className="text-slate-400" />
+                    <span>{tiempoRelativo(r.fecha_creacion)}</span>
                   </span>
-                )}
+                </div>
+
+                {/* Barra de progreso visual de estado del reclamo */}
+                <div className="mt-3">
+                  <ClaimProgress estado={r.estado} />
+                </div>
               </div>
-
-              <p className="mis-reclamos-card-title" style={{ fontSize: '15px', fontWeight: 600, color: '#0f172a', margin: '4px 0' }}>
-                {r.titulo}
-              </p>
-
-              <div className="mis-reclamos-meta" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '12px', color: '#64748b', marginTop: '6px' }}>
-                {r.categoriaNombre && (
-                  <span className="mis-reclamos-meta-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    <Tag size={12} /> {r.categoriaNombre}
-                  </span>
-                )}
-                {r.institucionNombre && (
-                  <span className="mis-reclamos-meta-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#2563eb' }}>
-                    <Building2 size={12} /> {r.institucionNombre}
-                  </span>
-                )}
-                {r.direccion && (
-                  <span className="mis-reclamos-meta-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    <MapPin size={12} /> {r.direccion}
-                  </span>
-                )}
-                <span className="mis-reclamos-meta-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  <Clock size={12} /> {tiempoRelativo(r.fecha_creacion)}
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-              <ClaimStatusBadge estado={r.estado} />
-              <ChevronRight size={16} color="#94a3b8" />
-            </div>
-          </div>
-
-          <ClaimProgress estado={r.estado} />
+            );
+          })}
         </div>
-      ))}
+      )}
     </div>
   );
 }

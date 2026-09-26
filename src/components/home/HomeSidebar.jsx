@@ -5,17 +5,20 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
-  Home, Search, FileText, BarChart2, Map,
+  Home, Search, FileText, Activity, Map, Bell,
   Settings, HelpCircle, LogOut, X, Megaphone,
   Shield, PlusSquare,
 } from "lucide-react";
+import ReportArgLogo from "@/components/brand/ReportArgLogo";
+import { ReportProblemIcon } from "@/components/brand/icons";
 
 const BASE_LINKS = [
-  { href: "/home",          label: "Inicio",          icon: Home      },
-  { href: "/home/explorar", label: "Explorar",         icon: Search    },
-  { href: "/home/reclamos", label: "Mis Reclamos",     icon: FileText  },
-  { href: "/home/mapa",     label: "Mapa",             icon: Map       },
-  { href: "/home/estadisticas", label: "Estadísticas", icon: BarChart2 },
+  { href: "/home",               label: "Inicio",               icon: Home     },
+  { href: "/home/explorar",      label: "Explorar",             icon: Search   },
+  { href: "/home/reclamos",      label: "Mis Reclamos",         icon: FileText },
+  { href: "/home/mapa",          label: "Mapa",                 icon: Map      },
+  { href: "/home/actividad",     label: "Actividad en mi ciudad", icon: Activity },
+  { href: "/home/notificaciones",label: "Notificaciones",       icon: Bell     },
 ];
 
 const INST_EXTRA = [
@@ -40,9 +43,9 @@ export default function HomeSidebar({ open = false, onClose = () => {}, role = "
   const subtitleMap = {
     admin:       "ADMINISTRADOR",
     institucion: "GESTIÓN INSTITUCIONAL",
-    ciudadano:   "GESTIÓN CIUDADANA",
+    ciudadano:   "EXPERIENCIA CIUDADANA",
   };
-  const subtitle = subtitleMap[role] ?? "GESTIÓN CIUDADANA";
+  const subtitle = subtitleMap[role] ?? "EXPERIENCIA CIUDADANA";
 
   return (
     <>
@@ -54,17 +57,30 @@ export default function HomeSidebar({ open = false, onClose = () => {}, role = "
       <aside className={`home-sidebar ${open ? "open" : ""}`}>
         <div className="home-sidebar-logo">
           <Link href="/home" onClick={onClose} style={{ textDecoration: "none" }}>
-            <Image src="/logo.png" alt="ReportARG" width={110} height={38} style={{ objectFit: "contain" }} />
-            <p className="home-sidebar-logo-sub">{subtitle}</p>
+            <ReportArgLogo variant="horizontal" size={28} />
+            <p className="home-sidebar-logo-sub" style={{ marginTop: 4 }}>{subtitle}</p>
           </Link>
-          <button className="home-sidebar-close-btn" onClick={onClose}>
+          <button className="home-sidebar-close-btn" onClick={onClose} aria-label="Cerrar menú">
             <X size={20} />
           </button>
         </div>
 
-        {/* CTA contextual */}
+        {/* CTA contextual para ciudadano o institución */}
+        {role === "ciudadano" && (
+          <div style={{ padding: "12px 16px 4px" }}>
+            <button
+              className="btn-primary-report"
+              style={{ width: "100%", justifyContent: "center" }}
+              onClick={() => { router.push("/home/reclamos/nuevo"); onClose(); }}
+            >
+              <ReportProblemIcon size={16} />
+              Reportar un problema
+            </button>
+          </div>
+        )}
+
         {role === "institucion" && (
-          <div style={{ padding: "10px 16px 4px" }}>
+          <div style={{ padding: "12px 16px 4px" }}>
             <button
               className="hs-cta-btn"
               onClick={() => { router.push("/home/institucion/comunicados/nuevo"); onClose(); }}
@@ -90,13 +106,9 @@ export default function HomeSidebar({ open = false, onClose = () => {}, role = "
         </nav>
 
         <div className="home-sidebar-footer">
-          <Link href="/home/perfil" className="home-nav-item" onClick={onClose}>
+          <Link href="/profile" className="home-nav-item" onClick={onClose}>
             <Settings size={18} className="home-nav-icon" />
-            Configuración
-          </Link>
-          <Link href="/home/ayuda" className="home-nav-item" onClick={onClose}>
-            <HelpCircle size={18} className="home-nav-icon" />
-            Ayuda
+            Mi Perfil
           </Link>
           <button
             className="home-nav-item"

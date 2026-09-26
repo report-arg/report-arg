@@ -1,16 +1,16 @@
 /* home.css — estilos del panel ciudadano */
 
 :root {
-  --home-primary:       #2D3A8C;
-  --home-primary-light: #eef1fb;
-  --home-danger:        #ef4444;
-  --home-success:       #16a34a;
-  --home-warning:       #d97706;
-  --home-border:        #e5e9f5;
-  --home-bg:            #f4f6fb;
+  --home-primary:       #005CE6;
+  --home-primary-light: #F0F7FF;
+  --home-danger:        #DC2626;
+  --home-success:       #059669;
+  --home-warning:       #D97706;
+  --home-border:        #E2E8F0;
+  --home-bg:            #F8FAFC;
   --home-card:          #ffffff;
-  --home-text:          #1a1a2e;
-  --home-muted:         #6b7280;
+  --home-text:          #0F172A;
+  --home-muted:         #64748B;
   --home-sidebar-w:     240px;
   --home-right-w:       280px;
 }
@@ -20,7 +20,7 @@
   display: flex;
   min-height: 100vh;
   background: var(--home-bg);
-  font-family: "Inter", Arial, sans-serif;
+  font-family: var(--font-manrope), "Manrope", system-ui, sans-serif;
 }
 
 /* sidebar izquierdo */
