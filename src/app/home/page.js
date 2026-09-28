@@ -4,61 +4,20 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-  FilePlus2, Megaphone, LayoutGrid, Map, Shield,
-  ChevronLeft, ChevronRight, SlidersHorizontal, X,
+  ChevronLeft, ChevronRight, SlidersHorizontal, X, RefreshCw,
 } from "lucide-react";
 import FeedCard from "@/components/home/FeedCard";
+import CitizenHomeHeader from "@/components/home/CitizenHomeHeader";
+import EmptyState from "@/components/common/EmptyState";
+import { getCategoryIcon } from "@/components/brand/icons";
 import { toast } from "sonner";
 import apiClient from "@/services/apiClient";
 
-// acciones por rol: 
-function QuickActions({ role, router }) {
-  const isInst = role === "institucion";
-  const isAdmin = role === "admin";
-
-  return (
-    <div className="hf-quick-actions">
-      <button className="hf-qa-btn primary" onClick={() => router.push("/home/reclamos/nuevo")}>
-        <FilePlus2 size={20} />
-        <span>Crear Reclamo</span>
-      </button>
-
-      {(isInst || isAdmin) && (
-        <button
-          className="hf-qa-btn inst"
-          onClick={() => router.push("/home/institucion/comunicados/nuevo")}
-        >
-          <Megaphone size={20} />
-          <span>Nuevo Comunicado</span>
-        </button>
-      )}
-
-      <button className="hf-qa-btn secondary" onClick={() => router.push("/home/explorar")}>
-        <LayoutGrid size={20} />
-        <span>Explorar</span>
-      </button>
-
-      <button className="hf-qa-btn secondary" onClick={() => router.push("/home/mapa")}>
-        <Map size={20} />
-        <span>Mapa</span>
-      </button>
-
-      {isAdmin && (
-        <button className="hf-qa-btn admin" onClick={() => router.push("/admin")}>
-          <Shield size={20} />
-          <span>Panel Admin</span>
-        </button>
-      )}
-    </div>
-  );
-}
-
-// pag principal: 
 export default function HomePage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const role = session?.user?.role ?? "ciudadano";
 
+  const [perfil, setPerfil] = useState(null);
   const [categorias, setCategorias] = useState([]);
   const [feed, setFeed] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,11 +25,21 @@ export default function HomePage() {
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [pagina, setPagina] = useState(1);
 
-  // filtros
+  // Filtros
   const [tipo, setTipo] = useState("todos");   // todos | comunicado | reclamo
   const [categoriaId, setCategoriaId] = useState(null);
   const [mostrarFil, setMostrarFil] = useState(false);
 
+  // Cargar datos del perfil del usuario para obtener contexto territorial real
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    apiClient.get(`/auth/me`)
+      .then(r => r.data)
+      .then(d => { if (d.ok) setPerfil(d.data); })
+      .catch(() => {});
+  }, [session?.user?.id]);
+
+  // Cargar lista de categorías públicas
   useEffect(() => {
     apiClient.get(`/feed/categorias`)
       .then(r => r.data)
@@ -88,7 +57,7 @@ export default function HomePage() {
       const res = await apiClient.get(`/feed?${params}`);
       const data = res.data;
       if (data.ok) {
-        setFeed(data.data);
+        setFeed(data.data || []);
         setTotal(data.total ?? 0);
         setTotalPaginas(data.totalPaginas ?? 1);
       } else {
@@ -96,105 +65,167 @@ export default function HomePage() {
       }
     } catch (error) {
       toast.error("Ocurrió un error inesperado al cargar el feed");
+    } finally {
+      setLoading(false);
     }
-    finally { setLoading(false); }
   }, [tipo, categoriaId, pagina]);
 
   useEffect(() => { fetchFeed(); }, [fetchFeed]);
 
   function cambiarTipo(t) { setTipo(t); setPagina(1); }
   function cambiarCat(id) { setCategoriaId(id); setPagina(1); }
-  function limpiar() { setTipo("todos"); setCategoriaId(null); setPagina(1); }
+  function limpiarFiltros() { setTipo("todos"); setCategoriaId(null); setPagina(1); }
 
   const hayFiltros = tipo !== "todos" || categoriaId !== null;
   const catActiva = categorias.find(c => c.id === categoriaId);
 
   return (
-    <div className="hf-wrapper">
+    <div className="w-full max-w-3xl mx-auto px-4 py-6 sm:px-6">
 
-      {/* acciones rápidas */}
-      <QuickActions role={role} router={router} />
+      {/* Encabezado humano con contexto territorial y CTA principal */}
+      <CitizenHomeHeader perfil={perfil} />
 
-      {/* barra de filtros */}
-      <div className="hf-filter-bar">
-        {/* tabs tipo */}
-        <div className="hf-tipo-tabs">
-          {["todos", "comunicado", "reclamo"].map(t => (
+      {/* Barra de Filtros */}
+      <div className="mb-4 p-2.5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-wrap items-center justify-between gap-2">
+        {/* Tabs por Tipo */}
+        <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl">
+          {[
+            { id: "todos", label: "Todo" },
+            { id: "reclamo", label: "Reclamos" },
+            { id: "comunicado", label: "Comunicados" },
+          ].map(t => (
             <button
-              key={t}
-              className={`hf-tipo-tab ${tipo === t ? "active" : ""}`}
-              onClick={() => cambiarTipo(t)}
+              key={t.id}
+              onClick={() => cambiarTipo(t.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                tipo === t.id
+                  ? "bg-white text-slate-900 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
             >
-              {t === "todos" ? "Todo" : t === "comunicado" ? "Comunicados" : "Reclamos"}
+              {t.label}
             </button>
           ))}
         </div>
 
-        {/* botón filtrar por categoría */}
-        <button
-          className={`hf-filter-toggle ${mostrarFil ? "active" : ""}`}
-          onClick={() => setMostrarFil(v => !v)}
-        >
-          <SlidersHorizontal size={14} />
-          Categoría
-          {catActiva && <span className="hf-filter-dot" />}
-        </button>
-
-        {/* limpiar */}
-        {hayFiltros && (
-          <button className="hf-clear-btn" onClick={limpiar}>
-            <X size={13} /> Limpiar
+        <div className="flex items-center gap-2">
+          {/* Botón desplegable de Categorías */}
+          <button
+            onClick={() => setMostrarFil(v => !v)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+              catActiva || mostrarFil
+                ? "bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border-[var(--color-brand-200)]"
+                : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+            }`}
+          >
+            <SlidersHorizontal size={13} />
+            <span>{catActiva ? catActiva.nombre : "Categorías"}</span>
+            {catActiva && (
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-600)]" />
+            )}
           </button>
-        )}
+
+          {hayFiltros && (
+            <button
+              onClick={limpiarFiltros}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Limpiar todos los filtros"
+            >
+              <X size={13} />
+              <span>Limpiar</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* chips de categoría (desplegable) */}
+      {/* Grid de Chips de Categorías (Desplegable) */}
       {mostrarFil && (
-        <div className="hf-cat-chips">
+        <div className="mb-4 p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-wrap gap-1.5">
           <button
-            className={`hf-chip ${categoriaId === null ? "active" : ""}`}
             onClick={() => cambiarCat(null)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              categoriaId === null
+                ? "bg-[var(--color-brand-600)] text-white shadow-xs"
+                : "bg-white text-slate-700 hover:bg-slate-200/60 border border-slate-200"
+            }`}
           >
             Todas
           </button>
-          {categorias.map(c => (
-            <button
-              key={c.id}
-              className={`hf-chip ${categoriaId === c.id ? "active" : ""}`}
-              onClick={() => cambiarCat(c.id)}
-            >
-              {c.nombre}
-            </button>
-          ))}
+
+          {categorias.map(cat => {
+            const CategoryIcon = getCategoryIcon(cat.codigo || cat.nombre, cat.nombre);
+            const isSelected = categoriaId === cat.id;
+
+            return (
+              <button
+                key={cat.id}
+                onClick={() => cambiarCat(cat.id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  isSelected
+                    ? "bg-[var(--color-brand-600)] text-white shadow-xs"
+                    : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+                }`}
+              >
+                <CategoryIcon size={14} className={isSelected ? "text-white" : "text-[var(--color-brand-600)]"} />
+                <span>{cat.nombre}</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
-      {/* resumen resultados */}
-      <div className="hf-results-row">
-        <span className="hf-results-text">
-          {loading ? "Buscando…" : (
+      {/* Contador de resultados */}
+      <div className="flex items-center justify-between mb-3 px-1">
+        <span className="text-xs text-slate-500 font-medium">
+          {loading ? (
+            "Consultando actividad en tu ciudad..."
+          ) : (
             <>
-              <strong>{total}</strong> publicación{total !== 1 ? "es" : ""}
-              {catActiva && <> · <em>{catActiva.nombre}</em></>}
+              Mostrando <strong className="text-slate-900">{total}</strong> publicación{total !== 1 ? "es" : ""}
+              {catActiva && <> en <span className="font-bold text-[var(--color-brand-700)]">{catActiva.nombre}</span></>}
             </>
           )}
         </span>
+
+        <button
+          onClick={fetchFeed}
+          className="text-slate-400 hover:text-slate-600 p-1 rounded transition-colors"
+          title="Actualizar feed"
+        >
+          <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+        </button>
       </div>
 
-      {/* feed */}
+      {/* Feed Content */}
       {loading && (
-        <div className="hf-skeleton-list">
-          {[1, 2, 3].map(i => <div key={i} className="hf-skeleton-card" />)}
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="p-4 rounded-xl bg-white border border-slate-200 animate-pulse">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-full bg-slate-200" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="w-32 h-3.5 bg-slate-200 rounded" />
+                  <div className="w-20 h-2.5 bg-slate-100 rounded" />
+                </div>
+              </div>
+              <div className="w-3/4 h-5 bg-slate-200 rounded mb-2" />
+              <div className="w-full h-12 bg-slate-100 rounded" />
+            </div>
+          ))}
         </div>
       )}
 
       {!loading && feed.length === 0 && (
-        <div className="hf-empty">
-          <p>No hay publicaciones{catActiva ? ` en "${catActiva.nombre}"` : ""}.</p>
-          {hayFiltros && (
-            <button className="hf-clear-btn" onClick={limpiar}>Limpiar filtros</button>
-          )}
-        </div>
+        <EmptyState
+          title={catActiva ? `No hay reportes en ${catActiva.nombre}` : "Por acá está todo tranquilo"}
+          description={
+            hayFiltros
+              ? "No encontramos publicaciones que coincidan con los filtros seleccionados."
+              : "Todavía no hay publicaciones en tu ciudad. ¡Sé el primero en reportar un problema!"
+          }
+          actionLabel={hayFiltros ? "Limpiar filtros" : "Reportar un problema"}
+          onAction={hayFiltros ? limpiarFiltros : () => router.push("/home/reclamos/nuevo")}
+        />
       )}
 
       {!loading && feed.map(item => (
@@ -205,23 +236,29 @@ export default function HomePage() {
         />
       ))}
 
-      {/* paginación */}
+      {/* Paginación */}
       {!loading && totalPaginas > 1 && (
-        <div className="hf-pagination">
+        <div className="flex items-center justify-center gap-3 mt-6 mb-8">
           <button
-            className="hf-page-btn"
             onClick={() => setPagina(p => Math.max(p - 1, 1))}
             disabled={pagina === 1}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
           >
-            <ChevronLeft size={16} /> Anterior
+            <ChevronLeft size={15} />
+            <span>Anterior</span>
           </button>
-          <span className="hf-page-info">{pagina} / {totalPaginas}</span>
+
+          <span className="text-xs font-bold text-slate-600 px-2">
+            {pagina} / {totalPaginas}
+          </span>
+
           <button
-            className="hf-page-btn"
             onClick={() => setPagina(p => Math.min(p + 1, totalPaginas))}
             disabled={pagina === totalPaginas}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
           >
-            Siguiente <ChevronRight size={16} />
+            <span>Siguiente</span>
+            <ChevronRight size={15} />
           </button>
         </div>
       )}

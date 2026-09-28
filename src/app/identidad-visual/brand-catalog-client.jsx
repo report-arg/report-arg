@@ -30,15 +30,17 @@ import {
   StatusResolved,
   StatusCanceled
 } from '@/components/brand/icons';
-import { BRAND_COLORS, TOKEN_ROLES, SEMANTIC_COLORS } from '@/components/brand/brandTokens';
+import { BRAND_COLORS, TOKEN_ROLES, SEMANTIC_COLORS, TYPOGRAPHY_SCALE, CTA_SPEC, BUTTON_HIERARCHY, SURFACE_SPECS } from '@/components/brand/brandTokens';
 
 const SECTIONS = [
   { id: 'logo', label: '1. Logo Candidato Aprobado' },
-  { id: 'palette', label: '2. Paleta & Roles de Color' },
-  { id: 'categories', label: '3. Categorías Reales & Fallback' },
-  { id: 'icons', label: '4. Iconografía & Legibilidad' },
-  { id: 'states', label: '5. Seguimiento de Estados' },
-  { id: 'ui-cards', label: '6. Comparación Reclamo vs Comunicado' }
+  { id: 'typography', label: '2. Tipografía Manrope & Jerarquía' },
+  { id: 'palette', label: '3. Paleta & Roles de Color' },
+  { id: 'cta-buttons', label: '4. CTA Principal & Botones' },
+  { id: 'categories', label: '5. Categorías Reales & Fallback' },
+  { id: 'icons', label: '6. Iconografía & Legibilidad' },
+  { id: 'states', label: '7. Seguimiento de Estados' },
+  { id: 'ui-cards', label: '8. Comparación Reclamo vs Comunicado' }
 ];
 
 export default function BrandCatalogClient() {
@@ -176,7 +178,59 @@ export default function BrandCatalogClient() {
           )}
 
           {/* ==================================================== */}
-          {/* SECCIÓN 2: PALETA DE COLORES Y ROLES REALES           */}
+          {/* SECCIÓN 2: TIPOGRAFÍA MANROPE Y ESCALA TIPOGRÁFICA     */}
+          {/* ==================================================== */}
+          {activeSection === 'typography' && (
+            <section className="space-y-8 animate-in fade-in duration-200">
+              <div className="border-b border-slate-200 pb-4">
+                <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+                  2. Tipografía Manrope & Jerarquía Tipográfica
+                </h2>
+                <p className="text-xs text-slate-600 mt-1">
+                  Familia única consistente para toda la experiencia. Jerarquía construida mediante peso, tamaño y espacio (sin uso excesivo de MAYÚSCULAS).
+                </p>
+              </div>
+
+              <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <h3 className="text-sm font-bold text-slate-900">Escala de Jerarquía de Texto</h3>
+                  <span className="text-xs font-semibold text-[var(--color-brand-600)] bg-[var(--color-brand-50)] px-2.5 py-1 rounded-full">
+                    Fuente: Manrope
+                  </span>
+                </div>
+
+                <div className="space-y-4 divide-y divide-slate-100">
+                  {TYPOGRAPHY_SCALE.map((t) => (
+                    <div key={t.level} className="pt-3 first:pt-0 flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-brand-600)] block mb-1">
+                          {t.level} ({t.size})
+                        </span>
+                        <p className={`text-slate-900 ${
+                          t.level.includes('Display') ? 'text-2xl font-800' :
+                          t.level.includes('H2') ? 'text-xl font-bold' :
+                          t.level.includes('H3') ? 'text-base font-bold' :
+                          t.level.includes('Card') ? 'text-base font-bold' :
+                          t.level.includes('Body Small') ? 'text-xs font-medium' :
+                          t.level.includes('Meta') ? 'text-xs font-medium text-slate-500' :
+                          t.level.includes('Label') ? 'text-xs font-semibold text-slate-700' :
+                          'text-sm font-normal'
+                        }`}>
+                          El ciudadano reporta y le da seguimiento a su ciudad
+                        </p>
+                      </div>
+                      <span className="text-[11px] text-slate-400 font-mono shrink-0 sm:text-right">
+                        {t.use}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ==================================================== */}
+          {/* SECCIÓN 3: PALETA DE COLORES Y ROLES REALES           */}
           {/* ==================================================== */}
           {activeSection === 'palette' && (
             <section className="space-y-8 animate-in fade-in duration-200">
@@ -268,7 +322,72 @@ export default function BrandCatalogClient() {
           )}
 
           {/* ==================================================== */}
-          {/* SECCIÓN 3: CATEGORÍAS REALES & FALLBACK               */}
+          {/* SECCIÓN 4: CTA PRINCIPAL & JERARQUÍA DE BOTONES       */}
+          {/* ==================================================== */}
+          {activeSection === 'cta-buttons' && (
+            <section className="space-y-8 animate-in fade-in duration-200">
+              <div className="border-b border-slate-200 pb-4">
+                <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+                  4. CTA Principal & Jerarquía de Botones
+                </h2>
+                <p className="text-xs text-slate-600 mt-1">
+                  Definición formal de la acción principal del ciudadano ("Reportar un problema") y la jerarquía de botones secundarios y ghost.
+                </p>
+              </div>
+
+              {/* Muestra del CTA Principal */}
+              <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <h3 className="text-sm font-bold text-slate-900">CTA Principal de la Experiencia Ciudadano</h3>
+                  <span className="text-xs font-semibold text-[var(--color-brand-600)] bg-[var(--color-brand-50)] px-2.5 py-1 rounded-full">
+                    Icono: MapPinPlus
+                  </span>
+                </div>
+
+                <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 block mb-1">{CTA_SPEC.label}</span>
+                    <p className="text-xs text-slate-500 max-w-md">{CTA_SPEC.description}</p>
+                  </div>
+
+                  <button className="btn-primary-report">
+                    <ReportProblemIcon size={16} />
+                    <span>{CTA_SPEC.label}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Jerarquía de Botones */}
+              <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-xs space-y-4">
+                <h3 className="text-sm font-bold text-slate-900">Niveles de Jerarquía de Botones</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {BUTTON_HIERARCHY.map((btn) => (
+                    <div key={btn.level} className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-3">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-brand-600)] block mb-1">
+                          {btn.level}
+                        </span>
+                        <p className="text-xs text-slate-600">{btn.use}</p>
+                      </div>
+                      <button className={
+                        btn.level.includes('PRIMARY CTA') ? 'btn-primary-report' :
+                        btn.level.includes('PRIMARY') ? 'btn-primary' :
+                        btn.level.includes('SECONDARY') ? 'btn-secondary' :
+                        btn.level.includes('DANGER') ? 'px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-600 border border-rose-200' :
+                        'btn-ghost'
+                      }>
+                        {btn.level.includes('PRIMARY CTA') && <ReportProblemIcon size={16} />}
+                        <span>Acción</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ==================================================== */}
+          {/* SECCIÓN 5: CATEGORÍAS REALES & FALLBACK               */}
           {/* ==================================================== */}
           {activeSection === 'categories' && (
             <section className="space-y-8 animate-in fade-in duration-200">

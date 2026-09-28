@@ -167,9 +167,9 @@ export const CategoryFallbackIcon = (props) => (
 
 export const ReportProblemIcon = (props) => (
   <IconBase {...props}>
-    <rect x="3" y="3" width="18" height="18" rx="3" />
-    <path d="M12 8v4.5" />
-    <circle cx="12" cy="15.5" r="0.85" fill="currentColor" stroke="none" />
+    <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+    <path d="M12 7v6" />
+    <path d="M9 10h6" />
   </IconBase>
 );
 
@@ -249,17 +249,35 @@ export const REAL_CATEGORIES = [
 ];
 
 /**
- * Retorna el icono correspondiente según el código de la categoría de la DB.
+ * Retorna el icono correspondiente según el código o nombre de la categoría de la DB.
  * Si la categoría es nueva o desconocida, retorna `CategoryFallbackIcon`.
  *
- * @param {string} code - Código de la categoría (ej. 'LUZ', 'AGUA', 'SEG')
+ * @param {string} codeOrName - Código o nombre de la categoría (ej. 'LUZ', 'Cortes de luz', 'AGUA')
+ * @param {string} [nameFallback] - Nombre alternativo de la categoría
  * @returns {React.ComponentType}
  */
-export function getCategoryIcon(code) {
-  if (!code) return CategoryFallbackIcon;
-  const normalized = String(code).toUpperCase().trim();
-  const match = REAL_CATEGORIES.find((c) => c.code === normalized);
-  return match ? match.component : CategoryFallbackIcon;
+export function getCategoryIcon(codeOrName, nameFallback = '') {
+  if (!codeOrName && !nameFallback) return CategoryFallbackIcon;
+
+  const inputCode = String(codeOrName || '').toUpperCase().trim();
+  const matchCode = REAL_CATEGORIES.find((c) => c.code === inputCode);
+  if (matchCode) return matchCode.component;
+
+  const textToSearch = (String(codeOrName || '') + ' ' + String(nameFallback || '')).toLowerCase();
+
+  if (textToSearch.includes('luz') || textToSearch.includes('electr')) return ElectricityIcon;
+  if (textToSearch.includes('agua') || textToSearch.includes('cloac')) return WaterIcon;
+  if (textToSearch.includes('segur') || textToSearch.includes('riesgo') || textToSearch.includes('delito')) return SecurityIcon;
+  if (textToSearch.includes('transp') || textToSearch.includes('colectiv') || textToSearch.includes('parada')) return TransportIcon;
+  if (textToSearch.includes('resid') || textToSearch.includes('basur') || textToSearch.includes('limp')) return TrashIcon;
+  if (textToSearch.includes('obra') || textToSearch.includes('vial') || textToSearch.includes('calle') || textToSearch.includes('vereda')) return StreetIcon;
+  if (textToSearch.includes('alumbrad') || textToSearch.includes('foco') || textToSearch.includes('luminaria')) return LightingIcon;
+  if (textToSearch.includes('espacio') || textToSearch.includes('plaza') || textToSearch.includes('parque')) return PublicSpaceIcon;
+  if (textToSearch.includes('alerta') || textToSearch.includes('urgente')) return AlertCategoryIcon;
+  if (textToSearch.includes('salud') || textToSearch.includes('sanitar') || textToSearch.includes('vacuna')) return HealthIcon;
+  if (textToSearch.includes('info')) return InfoCategoryIcon;
+
+  return CategoryFallbackIcon;
 }
 
 export const ALL_BRAND_ICONS = {

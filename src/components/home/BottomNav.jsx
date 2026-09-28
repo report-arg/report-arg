@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Search, FilePlus2, Bell, Megaphone, Shield } from "lucide-react";
+import { Home, Search, FileText, Activity, Megaphone, Shield } from "lucide-react";
+import { ReportProblemIcon } from "@/components/brand/icons";
 
 export default function BottomNav({ role = "ciudadano" }) {
   const pathname = usePathname();
@@ -10,24 +11,26 @@ export default function BottomNav({ role = "ciudadano" }) {
 
   // Botón central diferente por rol
   const ctaHref =
-    role === "admin"       ? "/admin"                                :
-    role === "institucion" ? "/home/institucion/comunicados/nuevo"   :
+    role === "admin"       ? "/admin"                              :
+    role === "institucion" ? "/home/institucion/comunicados/nuevo" :
                              "/home/reclamos/nuevo";
+
   const CtaIcon =
-    role === "admin"       ? Shield    :
-    role === "institucion" ? Megaphone :
-                             FilePlus2;
+    role === "admin"       ? Shield            :
+    role === "institucion" ? Megaphone         :
+                             ReportProblemIcon;
+
   const ctaLabel =
-    role === "admin"       ? "Admin"       :
-    role === "institucion" ? "Comunicado"  :
-                             "Reclamo";
+    role === "admin"       ? "Admin"      :
+    role === "institucion" ? "Comunicado" :
+                             "Reportar";
 
   const tabs = [
-    { href: "/home",          label: "Inicio",   icon: Home   },
-    { href: "/home/explorar", label: "Explorar", icon: Search },
+    { href: "/home",          label: "Inicio",    icon: Home     },
+    { href: "/home/explorar", label: "Explorar",  icon: Search   },
     null, // hueco para el CTA central
-    { href: "/home/reclamos", label: "Reclamos", icon: Bell   },
-    { href: "/home/mapa",     label: "Mapa",     icon: Search },
+    { href: "/home/reclamos", label: "Reclamos",  icon: FileText },
+    { href: "/home/actividad",label: "Actividad", icon: Activity },
   ];
 
   return (
@@ -39,6 +42,7 @@ export default function BottomNav({ role = "ciudadano" }) {
               key="cta"
               className="home-bottom-cta"
               onClick={() => router.push(ctaHref)}
+              title={ctaLabel}
             >
               <CtaIcon size={22} />
               <span>{ctaLabel}</span>
