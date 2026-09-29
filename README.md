@@ -89,11 +89,19 @@ El frontend de ReportARG está construido con tecnologías modernas para asegura
 
 ## 📂 Estructura de carpetas principal
 
-- **/src/app/**: Contiene las rutas principales de la aplicación usando el App Router de Next.js (por ejemplo, `/login`, `/home`, `/admin`, etc.).
-- **/src/components/**: Todos los componentes reutilizables de React. Aquí encontrarás componentes del Panel de Admin, componentes de UI generales (botones, tablas) y layouts.
+- **/src/app/**: Contiene las rutas principales de la aplicación usando el App Router de Next.js, separadas por dominios de negocio:
+  - `/ciudadano`: Portal principal para vecinos (explorar, mapa, reclamos propios).
+  - `/institucion`: Portal para instituciones verificadas (bandeja de reclamos, comunicados).
+  - `/admin`: Panel de administración global.
+  - `/auth`: Rutas públicas de autenticación (`/login`, `/register`, etc.).
+- **/src/components/**: Todos los componentes reutilizables de React organizados temáticamente:
+  - `auth/`: Formularios de login, registro de ciudadanos e instituciones.
+  - `feed/`: Tarjetas de feed (comunicados, reclamos) y layouts del feed.
+  - `ui/`: Componentes genéricos de interfaz (EmptyState, etc.).
+  - `layout/`: Componentes estructurales (AppShell, AppNavbar, AppSidebar, AppBottomNav).
 - **/src/services/**: Archivos dedicados a interactuar con la API, como `apiClient.js` (cliente HTTP base).
-- **/src/styles/**: Hojas de estilo globales (ej. `globals.css`, `admin-dash.css`).
-- **/src/utils/**: Funciones auxiliares, esquemas de validación Zod (`schemas.js`), y variables globales (`constants.js`).
+- **/src/styles/**: Hojas de estilo globales.
+- **/src/utils/**: Funciones auxiliares, formateadores de fecha, esquemas de validación y constantes globales.
 
 ---
 
@@ -106,11 +114,11 @@ El sistema maneja 3 tipos de roles de usuarios, y las rutas/vistas se protegen u
    - **Rutas clave:** `/admin` y todas sus sub-rutas (`/admin/users`, `/admin/institutions`, `/admin/categories`, `/admin/reclamos`, `/admin/roles`, `/admin/settings`).
    
 2. **Ciudadano (`ciudadano`)**
-   - El usuario común, vecino del barrio. Puede generar reclamos y consumir comunicados.
-   - **Rutas clave:** `/home`, `/home/reclamos`, `/home/mapa`.
+   - El usuario común, vecino del barrio. Puede generar reclamos, visualizar el mapa público y participar en el feed comunitario.
+   - **Rutas clave:** `/ciudadano`, `/ciudadano/reclamos`, `/ciudadano/mapa`, `/ciudadano/explorar`.
 
 3. **Institución (`institucion`)**
-   - Cuentas verificadas para organizaciones (ej. municipalidad, policía, hospital). Pueden emitir comunicados oficiales.
-   - **Rutas clave:** `/home/institucion`, `/home/institucion/comunicados`.
+   - Cuentas verificadas para organizaciones (ej. municipalidad, policía, hospital). Pueden emitir comunicados oficiales y gestionar los reclamos que les sean asignados.
+   - **Rutas clave:** `/institucion`, `/institucion/reclamos`, `/institucion/comunicados`.
 
-> **Nota:** Todos los roles (incluyendo ciudadanos e instituciones) tienen acceso al panel de su perfil en `/profile` para modificar su información, contraseña y visualizar sus propios reportes.
+> **Nota:** Todos los roles (incluyendo ciudadanos e instituciones) tienen acceso al panel de su perfil en `/profile` (o el correspondiente de su portal) para modificar su información, contraseña y visualizar sus configuraciones.
