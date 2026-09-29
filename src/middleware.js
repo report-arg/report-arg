@@ -16,9 +16,20 @@ export async function middleware(request) {
   if (request.nextUrl.pathname.startsWith("/admin") && token.role !== "admin") {
     return NextResponse.redirect(new URL("/home", request.url));
   }
+
+  // Verificación de rol para rutas de institución
+  if (request.nextUrl.pathname.startsWith("/institucion") && token.role !== "institucion") {
+    return NextResponse.redirect(new URL("/home", request.url));
+  }
+
+  // Redirigir a las instituciones que intenten entrar al feed ciudadano
+  if (request.nextUrl.pathname === "/home" && token.role === "institucion") {
+    return NextResponse.redirect(new URL("/institucion", request.url));
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/home/:path*", "/home", "/profile"],
+  matcher: ["/admin/:path*", "/institucion/:path*", "/home/:path*", "/home", "/profile"],
 };

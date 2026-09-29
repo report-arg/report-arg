@@ -22,7 +22,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="es" className={manrope.variable}>
+    <html lang="es" className={manrope.variable} suppressHydrationWarning>
       <body
         className={`${manrope.className} font-sans antialiased`}
         suppressHydrationWarning

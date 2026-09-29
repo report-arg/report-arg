@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import {
   ArrowLeft, MapPin, Building2, Calendar, History,
-  AlertTriangle, UserCheck, Edit3, XCircle, Check, Loader2
+  AlertTriangle, UserCheck, Edit3, XCircle, Check, Loader2, RefreshCw
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
@@ -25,14 +25,17 @@ export default function ReclamoDetallePage() {
   const [historial, setHistorial] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [errorStatus, setErrorStatus] = useState(null);
 
-  // Modales de Edición y Cancelación
+  // Modales de Edición, Cancelación y Reapertura
   const [editModal, setEditModal] = useState(false);
   const [cancelModal, setCancelModal] = useState(false);
+  const [reopenModal, setReopenModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [editForm, setEditForm] = useState({ titulo: "", descripcion: "", direccion: "" });
   const [motivoCancelacion, setMotivoCancelacion] = useState("");
+  const [motivoReapertura, setMotivoReapertura] = useState("");
 
   const fetchDetalle = () => {
     if (!params.id) return;
@@ -50,11 +53,13 @@ export default function ReclamoDetallePage() {
           });
         } else {
           setError(d.mensaje || "Error al obtener reclamo.");
+          setErrorStatus(r.status || 500);
         }
       })
       .catch(err => {
         const msg = err.response?.data?.mensaje || "No se pudo cargar el reclamo.";
         setError(msg);
+        setErrorStatus(err.response?.status || 500);
       })
       .finally(() => setLoading(false));
   };
@@ -107,6 +112,29 @@ export default function ReclamoDetallePage() {
     }
   }
 
+  async function handleReabrirReclamo(e) {
+    e.preventDefault();
+    if (!motivoReapertura.trim()) {
+      return toast.error("Por favor ingresá un motivo para la reapertura.");
+    }
+    setSaving(true);
+    try {
+      const res = await apiClient.patch(`/reclamos/${params.id}/reabrir`, { motivo: motivoReapertura });
+      if (res.data?.ok) {
+        toast.success("Reclamo reabierto exitosamente.");
+        setReopenModal(false);
+        setMotivoReapertura("");
+        fetchDetalle();
+      } else {
+        toast.error(res.data?.mensaje || "No se pudo reabrir el reclamo.");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.mensaje || "Error al reabrir reclamo.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto p-8 text-center text-text-muted text-sm">
@@ -116,11 +144,25 @@ export default function ReclamoDetallePage() {
   }
 
   if (error) {
+    let tituloError = "No pudimos cargar el reclamo";
+    let descError = error;
+
+    if (errorStatus === 403) {
+      tituloError = "Acceso restringido";
+      descError = "No tenés permiso para ver este reclamo.";
+    } else if (errorStatus === 404) {
+      tituloError = "Reclamo no encontrado";
+      descError = "El reclamo no existe o fue eliminado.";
+    } else if (errorStatus === 500) {
+      tituloError = "Error interno";
+      descError = "Ocurrió un error inesperado al intentar obtener el reclamo.";
+    }
+
     return (
       <div className="max-w-lg mx-auto my-10 p-6 rounded-2xl bg-red-50 border border-red-200 text-center text-red-900">
         <AlertTriangle size={36} className="mx-auto mb-2 text-red-600" />
-        <h3 className="text-base font-bold mb-1">Acceso restringido</h3>
-        <p className="text-xs text-red-700 mb-4">{error}</p>
+        <h3 className="text-base font-bold mb-1">{tituloError}</h3>
+        <p className="text-xs text-red-700 mb-4">{descError}</p>
         <button
           onClick={() => router.back()}
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-colors"
@@ -179,6 +221,19 @@ export default function ReclamoDetallePage() {
               >
                 <XCircle size={13} />
                 <span>Cancelar</span>
+              </button>
+            </div>
+          )}
+
+          {/* Acciones de Reapertura solo si es autor y el estado es Resuelto o Cancelado */}
+          {esAutor && (reclamo.estado === "Resuelto" || reclamo.estado === "Cancelado") && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setReopenModal(true)}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer"
+              >
+                <RefreshCw size={13} />
+                <span>Reabrir reclamo</span>
               </button>
             </div>
           )}
@@ -420,6 +475,50 @@ export default function ReclamoDetallePage() {
                 >
                   {saving ? <Loader2 size={13} className="animate-spin" /> : <XCircle size={14} />}
                   <span>Confirmar cancelación</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Reabrir */}
+      {reopenModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-surface rounded-2xl p-5 shadow-xl border border-border-subtle">
+            <h3 className="text-base font-bold text-text-primary mb-1">Reabrir Reclamo</h3>
+            <p className="text-xs text-text-muted mb-4">
+              ¿El problema persiste? Podés reabrir este reclamo para que la institución vuelva a revisarlo.
+            </p>
+            <form onSubmit={handleReabrirReclamo} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-text-secondary mb-1">Motivo de la reapertura (Obligatorio)</label>
+                <textarea
+                  value={motivoReapertura}
+                  onChange={e => setMotivoReapertura(e.target.value)}
+                  placeholder="Ej. El pozo volvió a abrirse con la última lluvia"
+                  rows={3}
+                  required
+                  className="w-full text-xs p-2.5 rounded-xl border border-border-subtle focus:outline-hidden focus:border-amber-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setReopenModal(false)}
+                  disabled={saving}
+                  className="px-3.5 py-2 text-xs font-semibold text-text-secondary hover:bg-surface-subtle rounded-xl transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-colors shadow-xs"
+                >
+                  {saving ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={14} />}
+                  <span>Confirmar reapertura</span>
                 </button>
               </div>
             </form>
