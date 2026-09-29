@@ -13,6 +13,8 @@ const ESTADO_CONFIG = {
   resuelto: { label: "Publicado", cls: "inst-com-badge-publicado", icon: Eye },
   // 'rechazado' = borrador (mapeado desde el frontend)
   rechazado: { label: "Borrador", cls: "inst-com-badge-borrador", icon: EyeOff },
+  publicado: { label: "Publicado", cls: "inst-com-badge-publicado", icon: Eye },
+  Publicado: { label: "Publicado", cls: "inst-com-badge-publicado", icon: Eye },
 };
 
 function tiempoRelativo(fechaStr) {

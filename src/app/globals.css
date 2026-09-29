@@ -8,35 +8,123 @@
 @import "../styles/brand.css";
 
 :root {
-  --azul: 30 58 138;            /* #1e3a8a */
-  --celeste: 132 155 255;       /* #849bff */
-  --celeste-claro: 168 184 253; /* #a8b8fd */
-  --amarillo: 248 212 98;       /* #f8d462 */
-  --azul-suave: 96 165 250;     /* #60a5fa */
+  /* ============================================================
+     SISTEMA DE TOKENS SEMÁNTICOS (CIUDADANO)
+     ============================================================ */
+  --background: #f4f6fb;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-subtle: #f8fafc;
+  
+  --border-subtle: #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #475569;
+
+  --primary: #005ce6;
+  --primary-hover: #0046b3;
+  --primary-subtle: #eff6ff;
+
+  --official-surface: #f4f8fc;
+  --official-border: #dbeafe;
+
+  /* Tokens del Sidebar */
+  --sidebar-bg: #0f172a;
+  --sidebar-text: #f1f5f9;
+  --sidebar-text-muted: #94a3b8;
+  --sidebar-hover: #1e293b;
+  --sidebar-active: #1e293b;
+  --sidebar-active-text: #60a5fa;
+  --sidebar-border: #1e293b;
+
+  /* Estados en Light Mode */
+  --status-recibido-bg: #E6F1FB;
+  --status-recibido-text: #0C447C;
+  --status-en-proceso-bg: #FAEEDA;
+  --status-en-proceso-text: #633806;
+  --status-resuelto-bg: #EAF3DE;
+  --status-resuelto-text: #27500A;
+  --status-rechazado-bg: #FEE2E2;
+  --status-rechazado-text: #991B1B;
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-subtle: var(--surface-subtle);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-subtle: var(--primary-subtle);
+
+  --color-official-surface: var(--official-surface);
+  --color-official-border: var(--official-border);
+
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-text: var(--sidebar-text);
+  --color-sidebar-text-muted: var(--sidebar-text-muted);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-text: var(--sidebar-active-text);
+  --color-sidebar-border: var(--sidebar-border);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-
-  --color-primary: var(--azul);
-  --color-secondary: var(--celeste);
-  --color-background-soft: var(--celeste-claro);
-  --color-accent: var(--amarillo);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  /* Arquitectura Dark Mode */
+  --background: #020617;
+  --surface: #0f172a;
+  --surface-elevated: #1e293b;
+  --surface-subtle: #0f172a;
+  
+  --border-subtle: #1e293b;
+  --border-strong: #334155;
+
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-muted: #cbd5e1;
+
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --primary-subtle: #1e3a8a;
+
+  --official-surface: #111c38;
+  --official-border: #1e3a8a;
+
+  --sidebar-bg: #090e17;
+  --sidebar-text: #f8fafc;
+  --sidebar-text-muted: #cbd5e1;
+  --sidebar-hover: #1e293b;
+  --sidebar-active: #1e293b;
+  --sidebar-active-text: #60a5fa;
+  --sidebar-border: #1e293b;
+
+  /* Estados en Dark Mode */
+  --status-recibido-bg: #172554;
+  --status-recibido-text: #60a5fa;
+  --status-en-proceso-bg: #451a03;
+  --status-en-proceso-text: #fbbf24;
+  --status-resuelto-bg: #14532d;
+  --status-resuelto-text: #4ade80;
+  --status-rechazado-bg: #450a0a;
+  --status-rechazado-text: #f87171;
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: var(--text-primary);
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -49,25 +137,25 @@ body {
   white-space: nowrap;
 }
 
-.estado-recibido   { background: #E6F1FB; color: #0C447C; }
-.estado-en-proceso { background: #FAEEDA; color: #633806; }
-.estado-resuelto   { background: #EAF3DE; color: #27500A; }
-.estado-rechazado  { background: #FEE2E2; color: #991B1B; }
+.estado-recibido   { background: var(--status-recibido-bg); color: var(--status-recibido-text); }
+.estado-en-proceso { background: var(--status-en-proceso-bg); color: var(--status-en-proceso-text); }
+.estado-resuelto   { background: var(--status-resuelto-bg); color: var(--status-resuelto-text); }
+.estado-rechazado  { background: var(--status-rechazado-bg); color: var(--status-rechazado-text); }
 
 .estado-btn {
   padding: 8px 10px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
-  border: 1.5px solid var(--color-border, #e5e9f5);
-  background: #fff;
-  color: #333;
+  border: 1.5px solid var(--border-subtle);
+  background: var(--surface);
+  color: var(--text-primary);
   cursor: pointer;
   text-align: center;
   transition: all 0.15s;
 }
 .estado-btn:disabled { cursor: default; }
-.estado-btn.active.estado-recibido   { background: #E6F1FB; color: #0C447C; border-color: #0C447C; }
-.estado-btn.active.estado-en-proceso { background: #FAEEDA; color: #633806; border-color: #633806; }
-.estado-btn.active.estado-resuelto   { background: #EAF3DE; color: #27500A; border-color: #27500A; }
-.estado-btn.active.estado-rechazado  { background: #FEE2E2; color: #991B1B; border-color: #991B1B; }
+.estado-btn.active.estado-recibido   { background: var(--status-recibido-bg); color: var(--status-recibido-text); border-color: var(--status-recibido-text); }
+.estado-btn.active.estado-en-proceso { background: var(--status-en-proceso-bg); color: var(--status-en-proceso-text); border-color: var(--status-en-proceso-text); }
+.estado-btn.active.estado-resuelto   { background: var(--status-resuelto-bg); color: var(--status-resuelto-text); border-color: var(--status-resuelto-text); }
+.estado-btn.active.estado-rechazado  { background: var(--status-rechazado-bg); color: var(--status-rechazado-text); border-color: var(--status-rechazado-text); }

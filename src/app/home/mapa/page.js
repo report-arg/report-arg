@@ -44,49 +44,56 @@ export default function MapaPage() {
   const visibles = filtro ? reclamos.filter(r => r.estado === filtro) : reclamos;
 
   return (
-    <div style={{ padding: "16px 16px 32px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+    <div className="w-full max-w-6xl mx-auto px-4 py-6">
+      <div className="flex items-center gap-3 mb-5">
         <button
           onClick={() => router.back()}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--home-primary)", display: "flex", alignItems: "center", gap: 4, fontWeight: 600, fontSize: 14 }}
+          className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary-hover transition-colors cursor-pointer"
         >
           <ArrowLeft size={18} /> Volver
         </button>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#1a1a2e" }}>
+        <h1 className="text-xl font-bold text-text-primary m-0 tracking-tight">
           Mapa de Reclamos
         </h1>
       </div>
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-        {FILTROS.map(f => (
-          <button
-            key={f.key}
-            onClick={() => setFiltro(f.key)}
-            className={`mapa-filtro-btn${filtro === f.key ? " active" : ""}`}
-          >
-            {f.label}
-            <span className="mapa-count">
-              {f.key === "" ? reclamos.length : reclamos.filter(r => r.estado === f.key).length}
-            </span>
-          </button>
-        ))}
+      <div className="flex flex-wrap gap-2 mb-5">
+        {FILTROS.map(f => {
+          const isActive = filtro === f.key;
+          const count = f.key === "" ? reclamos.length : reclamos.filter(r => r.estado === f.key).length;
+          return (
+            <button
+              key={f.key}
+              onClick={() => setFiltro(f.key)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                isActive 
+                  ? "bg-primary border-primary text-white shadow-xs" 
+                  : "bg-surface border-border-subtle text-text-muted hover:border-primary"
+              }`}
+            >
+              {f.label}
+              <span className={`px-1.5 py-0.5 rounded-lg text-[10px] font-bold ${
+                isActive ? "bg-white/20 text-white" : "bg-primary-subtle text-primary"
+              }`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: seleccionado ? "1fr 300px" : "1fr", gap: 16 }}>
-        <div style={{ borderRadius: 14, overflow: "hidden", height: 500, boxShadow: "0 2px 12px #0001", position: "relative" }}>
+      <div className={`grid gap-4 ${seleccionado ? "grid-cols-1 lg:grid-cols-[1fr_300px]" : "grid-cols-1"}`}>
+        <div className="relative rounded-xl overflow-hidden h-[500px] border border-border-subtle shadow-xs">
           {loading ? (
-            <div className="mapa-loading"><Loader2 size={24} className="spin" /> Cargando datos…</div>
+            <div className="absolute inset-0 flex items-center justify-center bg-surface text-text-muted text-sm gap-2 font-medium z-[1000]">
+              <Loader2 size={24} className="animate-spin text-primary" /> Cargando datos…
+            </div>
           ) : (
             <>
               <MapaReclamos reclamos={visibles} height="500px" onMarkerClick={setSeleccionado} />
               {visibles.length === 0 && (
-                <div style={{
-                  position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)",
-                  background: "rgba(255,255,255,0.92)", borderRadius: 10, padding: "10px 18px",
-                  display: "flex", alignItems: "center", gap: 8, fontSize: 13,
-                  color: "var(--home-muted)", boxShadow: "0 2px 8px #0002", whiteSpace: "nowrap",
-                }}>
-                  <MapPin size={15} />
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-surface/95 backdrop-blur-md border border-border-subtle rounded-xl px-4 py-2.5 flex items-center gap-2 text-sm font-semibold text-text-secondary shadow-md whitespace-nowrap z-[1000]">
+                  <MapPin size={16} className="text-primary" />
                   No hay reclamos con ubicación para este filtro
                 </div>
               )}
@@ -95,35 +102,41 @@ export default function MapaPage() {
         </div>
 
         {seleccionado && (
-          <div className="card" style={{ padding: 18, height: "fit-content" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <span style={{ fontSize: 11, color: "var(--home-muted)", fontWeight: 600 }}>
+          <div className="p-5 rounded-2xl bg-surface border border-border-subtle h-fit shadow-xs relative flex flex-col">
+            <div className="flex justify-between items-start mb-3">
+              <span className="text-[11px] font-bold text-text-muted tracking-wider">
                 RECLAMO #{String(seleccionado.id).padStart(4, "0")}
               </span>
               <button
                 onClick={() => setSeleccionado(null)}
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "var(--home-muted)" }}
-              >x</button>
+                className="text-text-muted hover:text-red-500 transition-colors cursor-pointer p-1 -mr-2 -mt-2 rounded-full hover:bg-surface-subtle"
+              >
+                x
+              </button>
             </div>
-            <p style={{ margin: "8px 0 4px", fontWeight: 700, fontSize: 15 }}>{seleccionado.titulo}</p>
+            <p className="font-bold text-[15px] text-text-primary mb-1 leading-snug">{seleccionado.titulo}</p>
             {seleccionado.categoriaNombre && (
-              <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--home-muted)" }}>{seleccionado.categoriaNombre}</p>
+              <p className="text-xs text-text-muted font-medium mb-4">{seleccionado.categoriaNombre}</p>
             )}
+            
             {seleccionado.direccion && (
-              <div style={{ display: "flex", gap: 6, alignItems: "flex-start", fontSize: 12, color: "var(--home-muted)", marginBottom: 10 }}>
-                <MapPin size={13} style={{ flexShrink: 0, marginTop: 1 }} />
-                <span>{seleccionado.direccion}</span>
+              <div className="flex items-start gap-2 text-xs text-text-secondary mb-5">
+                <MapPin size={14} className="shrink-0 mt-0.5 text-text-muted" />
+                <span className="leading-relaxed">{seleccionado.direccion}</span>
               </div>
             )}
-            <span className={"estado-badge estado-" + seleccionado.estado.replace("_", "-")}>
-              {ESTADO_LABEL[seleccionado.estado]}
-            </span>
+            
+            <div className="mt-auto pt-4 border-t border-border-subtle">
+              <span className={`inline-flex px-2.5 py-1 text-[11px] font-bold rounded-lg bg-[var(--status-${seleccionado.estado.replace("_", "-")}-bg)] text-[var(--status-${seleccionado.estado.replace("_", "-")}-text)]`}>
+                {ESTADO_LABEL[seleccionado.estado]}
+              </span>
+            </div>
           </div>
         )}
       </div>
 
       {!loading && reclamos.length > 0 && (
-        <p style={{ fontSize: 12, color: "var(--home-muted)", marginTop: 8, textAlign: "right" }}>
+        <p className="text-xs font-semibold text-text-muted mt-4 text-right">
           {visibles.length} de {reclamos.length} reclamo{reclamos.length !== 1 ? "s" : ""} con ubicación registrada
         </p>
       )}

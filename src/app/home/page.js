@@ -3,34 +3,24 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import {
-  ChevronLeft, ChevronRight, SlidersHorizontal, X, RefreshCw,
-} from "lucide-react";
+import { ArrowRight, AlertCircle } from "lucide-react";
 import FeedCard from "@/components/home/FeedCard";
-import CitizenHomeHeader from "@/components/home/CitizenHomeHeader";
 import EmptyState from "@/components/common/EmptyState";
-import { getCategoryIcon } from "@/components/brand/icons";
-import { toast } from "sonner";
+import { ReportProblemIcon } from "@/components/brand/icons";
 import apiClient from "@/services/apiClient";
+import { toast } from "sonner";
 
 export default function HomePage() {
   const router = useRouter();
   const { data: session } = useSession();
 
   const [perfil, setPerfil] = useState(null);
-  const [categorias, setCategorias] = useState([]);
   const [feed, setFeed] = useState([]);
+  const [resumen, setResumen] = useState(null);
+  const [tendencias, setTendencias] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
-  const [totalPaginas, setTotalPaginas] = useState(1);
-  const [pagina, setPagina] = useState(1);
 
-  // Filtros
-  const [tipo, setTipo] = useState("todos");   // todos | comunicado | reclamo
-  const [categoriaId, setCategoriaId] = useState(null);
-  const [mostrarFil, setMostrarFil] = useState(false);
-
-  // Cargar datos del perfil del usuario para obtener contexto territorial real
+  // Cargar perfil
   useEffect(() => {
     if (!session?.user?.id) return;
     apiClient.get(`/auth/me`)
@@ -39,229 +29,182 @@ export default function HomePage() {
       .catch(() => {});
   }, [session?.user?.id]);
 
-  // Cargar lista de categorías públicas
+  // Cargar datos de resumen y tendencias
   useEffect(() => {
-    apiClient.get(`/feed/categorias`)
-      .then(r => r.data)
-      .then(d => { if (d.ok) setCategorias(d.data); })
-      .catch(() => { toast.error("No se pudieron cargar las categorías"); });
+    Promise.all([
+      apiClient.get(`/actividad/resumen`).then(r => r.data).catch(() => ({ ok: false })),
+      apiClient.get(`/feed/tendencias`).then(r => r.data).catch(() => ({ ok: false }))
+    ]).then(([resResumen, resTend]) => {
+      if (resResumen.ok) setResumen(resResumen.data);
+      if (resTend.ok) setTendencias(resTend.data || []);
+    });
   }, []);
 
+  // Cargar feed limitado (solo novedades)
   const fetchFeed = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ pagina, limite: 10 });
-      if (tipo !== "todos") params.set("tipo", tipo);
-      if (categoriaId) params.set("categoria", categoriaId);
-
-      const res = await apiClient.get(`/feed?${params}`);
+      // Pedimos 5 ítems recientes de todo tipo
+      const res = await apiClient.get(`/feed?pagina=1&limite=5`);
       const data = res.data;
       if (data.ok) {
         setFeed(data.data || []);
-        setTotal(data.total ?? 0);
-        setTotalPaginas(data.totalPaginas ?? 1);
       } else {
-        toast.error(data.error || "Ocurrió un error al cargar las publicaciones");
+        toast.error(data.mensaje || "Ocurrió un error al cargar las publicaciones");
       }
     } catch (error) {
       toast.error("Ocurrió un error inesperado al cargar el feed");
     } finally {
       setLoading(false);
     }
-  }, [tipo, categoriaId, pagina]);
+  }, []);
 
   useEffect(() => { fetchFeed(); }, [fetchFeed]);
 
-  function cambiarTipo(t) { setTipo(t); setPagina(1); }
-  function cambiarCat(id) { setCategoriaId(id); setPagina(1); }
-  function limpiarFiltros() { setTipo("todos"); setCategoriaId(null); setPagina(1); }
+  const nombreUsuario = perfil?.nombre || session?.user?.name || "Ciudadano";
+  const primerNombre = nombreUsuario.split(" ")[0];
 
-  const hayFiltros = tipo !== "todos" || categoriaId !== null;
-  const catActiva = categorias.find(c => c.id === categoriaId);
+  const ciudad = perfil?.ciudad_activa || perfil?.ciudad_declarada || null;
+  const provincia = perfil?.provincia_activa || perfil?.provincia_declarada || null;
+
+  const ubicacionTexto = ciudad
+    ? `${ciudad}${provincia ? `, ${provincia}` : ""}`
+    : "tu ciudad";
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 py-6 sm:px-6">
+    <div className="w-full max-w-5xl mx-auto px-4 py-8 sm:px-6">
 
-      {/* Encabezado humano con contexto territorial y CTA principal */}
-      <CitizenHomeHeader perfil={perfil} />
+      {/* Cabecera limpia y resumen integrado */}
+      <div className="mb-10 flex flex-col md:flex-row gap-6 md:items-start justify-between">
+        <div className="flex-1">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-text-primary mb-1">
+                Hola, {primerNombre}
+              </h1>
+              <p className="text-sm text-text-secondary">
+                Esto es lo más relevante hoy en <span className="font-semibold text-text-primary">{ubicacionTexto}</span>.
+              </p>
+            </div>
 
-      {/* Barra de Filtros */}
-      <div className="mb-4 p-2.5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-wrap items-center justify-between gap-2">
-        {/* Tabs por Tipo */}
-        <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl">
-          {[
-            { id: "todos", label: "Todo" },
-            { id: "reclamo", label: "Reclamos" },
-            { id: "comunicado", label: "Comunicados" },
-          ].map(t => (
             <button
-              key={t.id}
-              onClick={() => cambiarTipo(t.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                tipo === t.id
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
+              onClick={() => router.push("/home/reclamos/nuevo")}
+              className="btn-primary-report shrink-0"
             >
-              {t.label}
+              <ReportProblemIcon size={16} />
+              <span>Reportar un problema</span>
             </button>
-          ))}
-        </div>
+          </div>
 
-        <div className="flex items-center gap-2">
-          {/* Botón desplegable de Categorías */}
-          <button
-            onClick={() => setMostrarFil(v => !v)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-              catActiva || mostrarFil
-                ? "bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border-[var(--color-brand-200)]"
-                : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
-            }`}
-          >
-            <SlidersHorizontal size={13} />
-            <span>{catActiva ? catActiva.nombre : "Categorías"}</span>
-            {catActiva && (
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-600)]" />
-            )}
-          </button>
-
-          {hayFiltros && (
-            <button
-              onClick={limpiarFiltros}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
-              title="Limpiar todos los filtros"
-            >
-              <X size={13} />
-              <span>Limpiar</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Grid de Chips de Categorías (Desplegable) */}
-      {mostrarFil && (
-        <div className="mb-4 p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-wrap gap-1.5">
-          <button
-            onClick={() => cambiarCat(null)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              categoriaId === null
-                ? "bg-[var(--color-brand-600)] text-white shadow-xs"
-                : "bg-white text-slate-700 hover:bg-slate-200/60 border border-slate-200"
-            }`}
-          >
-            Todas
-          </button>
-
-          {categorias.map(cat => {
-            const CategoryIcon = getCategoryIcon(cat.codigo || cat.nombre, cat.nombre);
-            const isSelected = categoriaId === cat.id;
-
-            return (
-              <button
-                key={cat.id}
-                onClick={() => cambiarCat(cat.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  isSelected
-                    ? "bg-[var(--color-brand-600)] text-white shadow-xs"
-                    : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
-                }`}
-              >
-                <CategoryIcon size={14} className={isSelected ? "text-white" : "text-[var(--color-brand-600)]"} />
-                <span>{cat.nombre}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Contador de resultados */}
-      <div className="flex items-center justify-between mb-3 px-1">
-        <span className="text-xs text-slate-500 font-medium">
-          {loading ? (
-            "Consultando actividad en tu ciudad..."
-          ) : (
-            <>
-              Mostrando <strong className="text-slate-900">{total}</strong> publicación{total !== 1 ? "es" : ""}
-              {catActiva && <> en <span className="font-bold text-[var(--color-brand-700)]">{catActiva.nombre}</span></>}
-            </>
-          )}
-        </span>
-
-        <button
-          onClick={fetchFeed}
-          className="text-slate-400 hover:text-slate-600 p-1 rounded transition-colors"
-          title="Actualizar feed"
-        >
-          <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-        </button>
-      </div>
-
-      {/* Feed Content */}
-      {loading && (
-        <div className="space-y-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="p-4 rounded-xl bg-white border border-slate-200 animate-pulse">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-full bg-slate-200" />
-                <div className="space-y-1.5 flex-1">
-                  <div className="w-32 h-3.5 bg-slate-200 rounded" />
-                  <div className="w-20 h-2.5 bg-slate-100 rounded" />
+          {/* Resumen Compacto con Superficie Suave */}
+          {(resumen || tendencias.length > 0) && (
+            <div className="mt-5 p-4 sm:p-5 rounded-2xl bg-official-surface border border-official-border space-y-4">
+              {resumen && (
+                <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium text-text-secondary">
+                  <span className="font-semibold text-text-primary">
+                    {resumen.activos} {resumen.activos === 1 ? "reporte activo" : "reportes activos"}
+                  </span>
+                  
+                  {resumen.resueltosRecientes?.length > 0 && (
+                    <>
+                      <span className="text-text-muted px-1">•</span>
+                      <span>
+                        <span className="font-semibold text-[var(--status-resuelto-text)]">{resumen.resueltosRecientes.length}</span>{" "}
+                        {resumen.resueltosRecientes.length === 1 ? "resuelto recientemente" : "resueltos recientemente"}
+                      </span>
+                    </>
+                  )}
+                  
+                  {resumen.comunicados > 0 && (
+                    <>
+                      <span className="text-text-muted px-1">•</span>
+                      <span>
+                        <span className="font-semibold text-primary">{resumen.comunicados}</span>{" "}
+                        {resumen.comunicados === 1 ? "comunicado" : "comunicados"}
+                      </span>
+                    </>
+                  )}
                 </div>
+              )}
+
+              {tendencias.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2.5">
+                    Lo más reportado
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {tendencias.slice(0, 3).map((t) => {
+                      // Importar getCategoryIcon dinámicamente si no está en scope
+                      const CategoryIcon = require("@/components/brand/icons").getCategoryIcon(t.codigo || t.nombre, t.nombre);
+                      return (
+                        <div key={t.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-border-subtle text-xs font-semibold text-text-secondary shadow-xs hover:border-primary transition-colors cursor-pointer">
+                          <CategoryIcon size={14} className="text-primary" />
+                          <span>{t.nombre}</span>
+                          <span className="bg-surface-subtle px-1.5 py-0.5 rounded text-[10px] text-text-muted font-bold">{t.total}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Ahora en Viale (Novedades) */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-text-primary">Ahora en {ciudad || "tu ciudad"}</h2>
+          {feed.length > 0 && (
+            <button
+              onClick={() => router.push("/home/explorar")}
+              className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-primary-hover transition-colors cursor-pointer"
+            >
+              Ver todo <ArrowRight size={14} />
+            </button>
+          )}
+        </div>
+
+        {loading && (
+          <div className="space-y-4">
+            {[1, 2].map(i => (
+              <div key={i} className="p-4 rounded-xl bg-surface border border-border-subtle animate-pulse">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-full bg-surface-subtle border border-border-subtle" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="w-32 h-3.5 bg-border-subtle rounded" />
+                    <div className="w-20 h-2.5 bg-surface-subtle rounded" />
+                  </div>
+                </div>
+                <div className="w-3/4 h-5 bg-surface-subtle rounded mb-2" />
+                <div className="w-full h-12 bg-surface-subtle rounded" />
               </div>
-              <div className="w-3/4 h-5 bg-slate-200 rounded mb-2" />
-              <div className="w-full h-12 bg-slate-100 rounded" />
+            ))}
+          </div>
+        )}
+
+        <div>
+          {!loading && feed.length === 0 && (
+            <EmptyState
+              title="No hay novedades recientes"
+              description="Todavía no hay publicaciones en tu ciudad. ¡Sé el primero en reportar un problema!"
+              actionLabel="Reportar un problema"
+              onAction={() => router.push("/home/reclamos/nuevo")}
+            />
+          )}
+
+          {!loading && feed.map(item => (
+            <div key={item.id} className="mb-4">
+              <FeedCard
+                item={item}
+                onEliminado={(id) => setFeed(prev => prev.filter(x => x.id !== id))}
+              />
             </div>
           ))}
         </div>
-      )}
+      </div>
 
-      {!loading && feed.length === 0 && (
-        <EmptyState
-          title={catActiva ? `No hay reportes en ${catActiva.nombre}` : "Por acá está todo tranquilo"}
-          description={
-            hayFiltros
-              ? "No encontramos publicaciones que coincidan con los filtros seleccionados."
-              : "Todavía no hay publicaciones en tu ciudad. ¡Sé el primero en reportar un problema!"
-          }
-          actionLabel={hayFiltros ? "Limpiar filtros" : "Reportar un problema"}
-          onAction={hayFiltros ? limpiarFiltros : () => router.push("/home/reclamos/nuevo")}
-        />
-      )}
-
-      {!loading && feed.map(item => (
-        <FeedCard
-          key={item.id}
-          item={item}
-          onEliminado={(id) => setFeed(prev => prev.filter(x => x.id !== id))}
-        />
-      ))}
-
-      {/* Paginación */}
-      {!loading && totalPaginas > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-6 mb-8">
-          <button
-            onClick={() => setPagina(p => Math.max(p - 1, 1))}
-            disabled={pagina === 1}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
-          >
-            <ChevronLeft size={15} />
-            <span>Anterior</span>
-          </button>
-
-          <span className="text-xs font-bold text-slate-600 px-2">
-            {pagina} / {totalPaginas}
-          </span>
-
-          <button
-            onClick={() => setPagina(p => Math.min(p + 1, totalPaginas))}
-            disabled={pagina === totalPaginas}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
-          >
-            <span>Siguiente</span>
-            <ChevronRight size={15} />
-          </button>
-        </div>
-      )}
     </div>
   );
 }

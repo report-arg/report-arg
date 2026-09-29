@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Search, Bell, MapPin, ChevronDown, User, LogOut, Menu, Shield } from "lucide-react";
+import { Search, Bell, MapPin, ChevronDown, User, LogOut, Menu, Shield, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 import apiClient from "@/services/apiClient";
 import Image from "next/image";
 import ReportArgLogo from "@/components/brand/ReportArgLogo";
@@ -22,6 +23,10 @@ export default function HomeNavbar({ onMenuClick = () => {} }) {
   const [busqueda, setBusqueda] = useState("");
   const [perfil, setPerfil] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -83,7 +88,7 @@ export default function HomeNavbar({ onMenuClick = () => {} }) {
       <div className="home-navbar-right">
         {/* Contexto Territorial Dinámico */}
         <div className="home-location-badge" title="Ciudad activa del usuario">
-          <MapPin size={12} className="text-[var(--color-brand-600)] shrink-0" />
+          <MapPin size={14} className="pin-icon" />
           <span>{ubicacionTexto}</span>
         </div>
 
@@ -128,33 +133,47 @@ export default function HomeNavbar({ onMenuClick = () => {} }) {
           </div>
 
           {profileOpen && (
-            <div style={{
-              position: "absolute", top: "calc(100% + 10px)", right: 0,
-              width: 220, background: "#fff",
-              border: "1px solid var(--home-border)", borderRadius: 10,
-              boxShadow: "0 4px 20px rgba(0,0,0,0.1)", zIndex: 999,
-              overflow: "hidden",
-            }}>
-              <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--home-border)", background: "#fafbff" }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#333" }}>
-                  {nombreMostrado}
-                </p>
-                <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--home-muted)" }}>
-                  {session?.user?.email}
-                </p>
+            <div className="home-profile-dropdown">
+              <div className="home-profile-dropdown-header">
+                <p className="home-profile-dropdown-name">{nombreMostrado}</p>
+                <p className="home-profile-dropdown-email">{session?.user?.email}</p>
               </div>
 
-              <div style={{ padding: "6px 0" }}>
+              <div className="home-profile-dropdown-body">
+                {mounted && (
+                  <div className="px-4 py-3 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-text-secondary">Apariencia</span>
+                    <div className="flex bg-surface-subtle border border-border-subtle rounded-lg p-0.5 shadow-xs">
+                      <button
+                        onClick={() => { setTheme("light"); setProfileOpen(false); }}
+                        className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                          theme === "light"
+                            ? "bg-surface shadow-xs text-primary"
+                            : "text-text-muted hover:text-text-primary"
+                        }`}
+                        title="Tema Claro"
+                      >
+                        <Sun size={14} />
+                      </button>
+                      <button
+                        onClick={() => { setTheme("dark"); setProfileOpen(false); }}
+                        className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                          theme === "dark"
+                            ? "bg-surface shadow-xs text-primary"
+                            : "text-text-muted hover:text-text-primary"
+                        }`}
+                        title="Tema Oscuro"
+                      >
+                        <Moon size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div className="home-profile-dropdown-divider" style={{ margin: 0 }} />
+
                 <button
                   onClick={() => { setProfileOpen(false); router.push("/profile"); }}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    width: "100%", padding: "10px 16px",
-                    background: "none", border: "none", cursor: "pointer",
-                    fontSize: 13, color: "#333", textAlign: "left",
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f5f7ff"}
-                  onMouseLeave={e => e.currentTarget.style.background = "none"}
+                  className="home-profile-dropdown-item"
                 >
                   <User size={15} style={{ color: "var(--home-primary)" }} />
                   Mi Perfil
@@ -163,35 +182,21 @@ export default function HomeNavbar({ onMenuClick = () => {} }) {
                 {esAdmin && (
                   <button
                     onClick={() => { setProfileOpen(false); router.push("/admin"); }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      width: "100%", padding: "10px 16px",
-                      background: "none", border: "none", cursor: "pointer",
-                      fontSize: 13, color: "#333", textAlign: "left",
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#f5f7ff"}
-                    onMouseLeave={e => e.currentTarget.style.background = "none"}
+                    className="home-profile-dropdown-item"
                   >
                     <Shield size={15} style={{ color: "var(--home-primary)" }} />
                     Panel Admin
                   </button>
                 )}
 
-                <div style={{ height: 1, background: "var(--home-border)", margin: "4px 0" }} />
+                <div className="home-profile-dropdown-divider" />
 
                 <button
                   onClick={async () => {
                     await signOut({ redirect: false });
                     window.location.href = "/login";
                   }}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    width: "100%", padding: "10px 16px",
-                    background: "none", border: "none", cursor: "pointer",
-                    fontSize: 13, color: "#ef4444", textAlign: "left",
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#fff5f5"}
-                  onMouseLeave={e => e.currentTarget.style.background = "none"}
+                  className="home-profile-dropdown-item danger"
                 >
                   <LogOut size={15} />
                   Cerrar Sesión

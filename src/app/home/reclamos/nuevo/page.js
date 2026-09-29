@@ -160,35 +160,35 @@ export default function NuevoReclamoPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       {/* Encabezado */}
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200/80">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border-subtle/80">
         <button
           type="button"
           onClick={() => router.back()}
-          className="p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+          className="p-2 rounded-xl bg-surface-subtle text-text-secondary hover:bg-surface-elevated transition-colors cursor-pointer"
           title="Volver"
         >
           <ArrowLeft size={18} />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-xl font-bold text-text-primary tracking-tight">
             Reportar un problema
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-text-muted mt-0.5">
             Ingresá los datos del problema detectado para informar a las instituciones
           </p>
         </div>
       </div>
 
       {/* Formulario principal */}
-      <form onSubmit={handleSubmit} noValidate className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-5">
+      <form onSubmit={handleSubmit} noValidate className="bg-surface rounded-2xl border border-border-subtle p-5 shadow-xs space-y-5">
 
         {/* Título */}
         <div>
-          <label className="block text-xs font-bold text-slate-900 mb-1">
+          <label className="block text-xs font-bold text-text-primary mb-1">
             Título del problema <span className="text-rose-500">*</span>
           </label>
           <input
-            className={`w-full text-xs p-3 rounded-xl border transition-all text-slate-900 placeholder:text-slate-500 font-medium ${
+            className={`w-full text-xs p-3 rounded-xl border transition-all text-text-primary placeholder:text-text-muted font-medium ${
               fieldErrors.titulo ? "border-rose-400 bg-rose-50/30" : "border-slate-300 focus:border-[var(--color-brand-600)]"
             }`}
             placeholder="Ej. Luminaria sin funcionar en esquina San Martín y Belgrano"
@@ -201,11 +201,11 @@ export default function NuevoReclamoPage() {
 
         {/* Descripción */}
         <div>
-          <label className="block text-xs font-bold text-slate-900 mb-1">
+          <label className="block text-xs font-bold text-text-primary mb-1">
             Descripción detallada <span className="text-rose-500">*</span>
           </label>
           <textarea
-            className={`w-full text-xs p-3 rounded-xl border transition-all text-slate-900 placeholder:text-slate-500 font-medium ${
+            className={`w-full text-xs p-3 rounded-xl border transition-all text-text-primary placeholder:text-text-muted font-medium ${
               fieldErrors.descripcion ? "border-rose-400 bg-rose-50/30" : "border-slate-300 focus:border-[var(--color-brand-600)]"
             }`}
             placeholder="Explicá lo que ocurre con precisión (referencias, horarios, afectación)..."
@@ -218,7 +218,7 @@ export default function NuevoReclamoPage() {
 
         {/* Selector de Visibilidad (Público vs Privado) */}
         <div>
-          <label className="block text-xs font-bold text-slate-900 mb-1.5">
+          <label className="block text-xs font-bold text-text-primary mb-1.5">
             Tipo de visibilidad <span className="text-rose-500">*</span>
           </label>
 
@@ -227,22 +227,22 @@ export default function NuevoReclamoPage() {
               onClick={() => setForm(p => ({ ...p, visibilidad: "publico" }))}
               className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
                 form.visibilidad === "publico"
-                  ? "bg-[var(--color-brand-50)]/60 border-[var(--color-brand-600)] shadow-xs"
-                  : "bg-white border-slate-200 hover:border-slate-300"
+                  ? "bg-primary-subtle/60 border-[var(--color-brand-600)] shadow-xs"
+                  : "bg-surface border-border-subtle hover:border-slate-300"
               }`}
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-brand-800)]">
-                  <Globe size={15} className="text-[var(--color-brand-600)]" />
+                  <Globe size={15} className="text-primary" />
                   <span>Reporte Público</span>
                 </span>
                 {form.visibilidad === "publico" && (
-                  <span className="w-4 h-4 rounded-full bg-[var(--color-brand-600)] text-white flex items-center justify-center text-[10px]">
+                  <span className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">
                     <Check size={10} />
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-slate-600 leading-relaxed">
+              <p className="text-[11px] text-text-secondary leading-relaxed">
                 Visible en el feed de la ciudad para que otros vecinos puedan ver el problema.
               </p>
             </div>
@@ -251,22 +251,22 @@ export default function NuevoReclamoPage() {
               onClick={() => setForm(p => ({ ...p, visibilidad: "privado" }))}
               className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
                 form.visibilidad === "privado"
-                  ? "bg-slate-100 border-slate-800 shadow-xs"
-                  : "bg-white border-slate-200 hover:border-slate-300"
+                  ? "bg-surface-subtle border-slate-800 shadow-xs"
+                  : "bg-surface border-border-subtle hover:border-slate-300"
               }`}
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
-                  <Lock size={15} className="text-slate-700" />
+                <span className="flex items-center gap-1.5 text-xs font-bold text-text-primary">
+                  <Lock size={15} className="text-text-secondary" />
                   <span>Reporte Privado</span>
                 </span>
                 {form.visibilidad === "privado" && (
-                  <span className="w-4 h-4 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">
+                  <span className="w-4 h-4 rounded-full bg-text-primary text-white flex items-center justify-center text-[10px]">
                     <Check size={10} />
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-slate-600 leading-relaxed">
+              <p className="text-[11px] text-text-secondary leading-relaxed">
                 Información sensible. Su ubicación y datos se resguardan y solo los gestiona la institución.
               </p>
             </div>
@@ -275,12 +275,12 @@ export default function NuevoReclamoPage() {
 
         {/* Categoría */}
         <div>
-          <label className="block text-xs font-bold text-slate-900 mb-1.5">
+          <label className="block text-xs font-bold text-text-primary mb-1.5">
             Categoría <span className="text-rose-500">*</span>
           </label>
 
           {loadingCats ? (
-            <p className="text-xs text-slate-500 py-2">Cargando categorías...</p>
+            <p className="text-xs text-text-muted py-2">Cargando categorías...</p>
           ) : (
             <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2.5 ${fieldErrors.categoria ? "p-1 border border-rose-400 rounded-xl bg-rose-50/20" : ""}`}>
               {categorias.map(cat => {
@@ -294,16 +294,16 @@ export default function NuevoReclamoPage() {
                     onClick={() => { setForm(p => ({ ...p, id_categoria: cat.id })); setFieldErrors(p => ({ ...p, categoria: "" })); }}
                     className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                       isSelected
-                        ? "bg-[var(--color-brand-50)] border-[var(--color-brand-600)] text-[var(--color-brand-900)] shadow-xs"
-                        : "bg-white border-slate-200 hover:border-slate-300 text-slate-700"
+                        ? "bg-primary-subtle border-[var(--color-brand-600)] text-[var(--color-brand-900)] shadow-xs"
+                        : "bg-surface border-border-subtle hover:border-slate-300 text-text-secondary"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? "bg-[var(--color-brand-600)] text-white" : "bg-slate-100 text-slate-600"}`}>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? "bg-primary text-white" : "bg-surface-subtle text-text-secondary"}`}>
                         <CategoryIcon size={16} />
                       </div>
                       {isSelected && (
-                        <span className="w-4 h-4 rounded-full bg-[var(--color-brand-600)] text-white flex items-center justify-center text-[10px]">
+                        <span className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">
                           <Check size={10} />
                         </span>
                       )}
@@ -321,14 +321,14 @@ export default function NuevoReclamoPage() {
 
         {/* Ubicación */}
         <div>
-          <label className="block text-xs font-bold text-slate-900 mb-1">
+          <label className="block text-xs font-bold text-text-primary mb-1">
             Ubicación exacta <span className="text-rose-500">*</span>
           </label>
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
-              <MapPin size={15} className="absolute left-3 top-3.5 text-slate-400" />
+              <MapPin size={15} className="absolute left-3 top-3.5 text-text-muted" />
               <input
-                className={`w-full text-xs pl-9 pr-3 py-3 rounded-xl border transition-all text-slate-900 placeholder:text-slate-500 font-medium ${
+                className={`w-full text-xs pl-9 pr-3 py-3 rounded-xl border transition-all text-text-primary placeholder:text-text-muted font-medium ${
                   fieldErrors.direccion ? "border-rose-400 bg-rose-50/30" : "border-slate-300 focus:border-[var(--color-brand-600)]"
                 }`}
                 placeholder="Calle y número o intersección"
@@ -340,7 +340,7 @@ export default function NuevoReclamoPage() {
               type="button"
               onClick={handleGeo}
               disabled={geoLoading}
-              className="p-3 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer shrink-0"
+              className="p-3 rounded-xl bg-surface-subtle text-text-secondary hover:bg-surface-elevated transition-colors cursor-pointer shrink-0"
               title="Usar geolocalización"
             >
               {geoLoading ? <Loader2 size={16} className="animate-spin" /> : <MapPin size={16} />}
@@ -351,31 +351,31 @@ export default function NuevoReclamoPage() {
 
         {/* Evidencia Fotográfica */}
         <div>
-          <label className="block text-xs font-bold text-slate-900 mb-1">
-            Foto de evidencia <span className="text-slate-400 font-normal">(opcional)</span>
+          <label className="block text-xs font-bold text-text-primary mb-1">
+            Foto de evidencia <span className="text-text-muted font-normal">(opcional)</span>
           </label>
 
           {fotos.length === 0 ? (
             <div
               onClick={() => inputRef.current?.click()}
-              className="p-6 rounded-xl border-2 border-dashed border-slate-200 hover:border-[var(--color-brand-400)] bg-slate-50/50 hover:bg-[var(--color-brand-50)]/30 text-center cursor-pointer transition-all"
+              className="p-6 rounded-xl border-2 border-dashed border-border-subtle hover:border-primary bg-surface-subtle/50 hover:bg-primary-subtle/30 text-center cursor-pointer transition-all"
             >
-              <Camera size={26} className="mx-auto mb-1.5 text-slate-400" />
-              <p className="text-xs font-bold text-slate-700">Subir foto de la situación</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">JPG o PNG. Máximo 5MB.</p>
+              <Camera size={26} className="mx-auto mb-1.5 text-text-muted" />
+              <p className="text-xs font-bold text-text-secondary">Subir foto de la situación</p>
+              <p className="text-[11px] text-text-muted mt-0.5">JPG o PNG. Máximo 5MB.</p>
             </div>
           ) : (
-            <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-slate-200">
+            <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-border-subtle">
               <Image src={fotos[0].preview} alt="evidencia" fill unoptimized className="object-cover" />
               {fotos[0].uploading && (
-                <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center text-white">
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white">
                   <Loader2 size={18} className="animate-spin" />
                 </div>
               )}
               <button
                 type="button"
                 onClick={eliminarFoto}
-                className="absolute top-1.5 right-1.5 p-1 rounded-full bg-slate-900/70 text-white hover:bg-slate-900 transition-colors"
+                className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/70 text-white hover:bg-text-primary transition-colors"
                 title="Eliminar foto"
               >
                 <X size={12} />
@@ -403,7 +403,7 @@ export default function NuevoReclamoPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-bold text-white bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-bold text-white bg-primary hover:bg-[var(--color-brand-700)] transition-colors shadow-xs cursor-pointer disabled:opacity-50"
           >
             {submitting ? (
               <><Loader2 size={16} className="animate-spin" /> Publicando reporte...</>

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import HomeSidebar     from "@/components/home/HomeSidebar";
 import HomeNavbar      from "@/components/home/HomeNavbar";
-import TrendingSidebar from "@/components/home/TrendingSidebar";
 import BottomNav       from "@/components/home/BottomNav";
 
 export default function HomeLayout({ children }) {
@@ -19,7 +18,6 @@ export default function HomeLayout({ children }) {
         <HomeNavbar onMenuClick={() => setSidebarOpen(true)} />
         {children}
       </div>
-      <TrendingSidebar />
       <BottomNav role={role} />
     </div>
   );

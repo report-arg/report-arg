@@ -1,6 +1,7 @@
 import { Manrope } from "next/font/google";
 import DynamicHeroProvider from "@/components/providers/DynamicHeroProvider";
 import AuthProvider from "@/components/providers/AuthProvider";
+import ThemeProvider from "@/components/providers/ThemeProvider";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -14,6 +15,9 @@ const manrope = Manrope({
 export const metadata = {
   title: "ReportARG - Participación Ciudadana",
   description: "Plataforma de conexión entre ciudadanos e instituciones",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -23,12 +27,14 @@ export default function RootLayout({ children }) {
         className={`${manrope.className} font-sans antialiased`}
         suppressHydrationWarning
       >
-        <AuthProvider>
-          <DynamicHeroProvider>
-            {children}
-            <Toaster position="top-right" richColors />
-          </DynamicHeroProvider>
-        </AuthProvider>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+          <AuthProvider>
+            <DynamicHeroProvider>
+              {children}
+              <Toaster position="top-right" richColors />
+            </DynamicHeroProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

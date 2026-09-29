@@ -1,18 +1,17 @@
 /* home.css — estilos del panel ciudadano */
 
 :root {
-  --home-primary:       #005CE6;
-  --home-primary-light: #F0F7FF;
+  --home-primary:       var(--primary);
+  --home-primary-light: var(--primary-subtle);
   --home-danger:        #DC2626;
   --home-success:       #059669;
   --home-warning:       #D97706;
-  --home-border:        #E2E8F0;
-  --home-bg:            #F8FAFC;
-  --home-card:          #ffffff;
-  --home-text:          #0F172A;
-  --home-muted:         #64748B;
+  --home-border:        var(--border-subtle);
+  --home-bg:            var(--background);
+  --home-card:          var(--surface);
+  --home-text:          var(--text-primary);
+  --home-muted:         var(--text-muted);
   --home-sidebar-w:     240px;
-  --home-right-w:       280px;
 }
 
 /* layout */
@@ -22,6 +21,10 @@
   background: var(--home-bg);
   font-family: var(--font-manrope), "Manrope", system-ui, sans-serif;
 }
+
+/* Utilidad para scroll sin barra */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* sidebar izquierdo */
 .home-sidebar-overlay {
@@ -38,8 +41,8 @@
 
 .home-sidebar {
   width: var(--home-sidebar-w);
-  background: var(--home-card);
-  border-right: 1px solid var(--home-border);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -53,7 +56,7 @@
 
 .home-sidebar-logo {
   padding: 20px 20px 16px;
-  border-bottom: 1px solid var(--home-border);
+  border-bottom: 1px solid var(--sidebar-border);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -78,19 +81,22 @@
 
 .home-sidebar-nav {
   flex: 1;
-  padding: 12px 0;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .home-nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 20px;
+  gap: 12px;
+  padding: 10px 14px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--home-text);
+  color: var(--sidebar-text-muted);
   text-decoration: none;
-  border-radius: 0;
+  border-radius: 8px;
   transition: background 0.15s, color 0.15s;
   cursor: pointer;
   background: none;
@@ -100,13 +106,13 @@
 }
 
 .home-nav-item:hover {
-  background: var(--home-primary-light);
-  color: var(--home-primary);
+  background: var(--sidebar-hover);
+  color: var(--sidebar-text);
 }
 
 .home-nav-item.active {
-  background: var(--home-primary-light);
-  color: var(--home-primary);
+  background: var(--sidebar-active);
+  color: var(--sidebar-active-text);
   font-weight: 700;
 }
 
@@ -117,15 +123,17 @@
 }
 
 .home-sidebar-footer {
-  padding: 12px 0;
-  border-top: 1px solid var(--home-border);
+  padding: 12px;
+  border-top: 1px solid var(--sidebar-border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 /* área central */
 .home-main {
   flex: 1;
   margin-left: var(--home-sidebar-w);
-  margin-right: var(--home-right-w);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -153,7 +161,7 @@
   justify-content: space-between;
   position: sticky;
   top: 0;
-  z-index: 90;
+  z-index: 9999;
   gap: 12px;
 }
 
@@ -165,9 +173,9 @@
 
 .home-navbar-search input {
   width: 100%;
-  padding: 8px 12px 8px 36px;
+  padding: 6px 12px 6px 32px;
   border: 1px solid var(--home-border);
-  border-radius: 20px;
+  border-radius: 8px;
   font-size: 13px;
   background: var(--home-bg);
   color: var(--home-text);
@@ -177,6 +185,7 @@
 
 .home-navbar-search input:focus {
   border-color: var(--home-primary);
+  background: var(--home-card);
 }
 
 .home-navbar-search-icon {
@@ -187,23 +196,96 @@
   color: var(--home-muted);
 }
 
-.home-navbar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* Dropdown perfil */
+.home-profile-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 220px;
+  background: var(--home-card);
+  border: 1px solid var(--home-border);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  z-index: 999;
+  overflow: hidden;
 }
 
+.home-profile-dropdown-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--home-border);
+  background: var(--home-bg);
+}
+
+.home-profile-dropdown-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--home-text);
+}
+
+.home-profile-dropdown-email {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--home-muted);
+}
+
+.home-profile-dropdown-body {
+  padding: 6px 0;
+}
+
+.home-profile-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--home-text);
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.home-profile-dropdown-item:hover {
+  background: var(--home-primary-light);
+}
+
+.home-profile-dropdown-item.danger {
+  color: var(--home-danger);
+}
+
+.home-profile-dropdown-item.danger:hover {
+  background: #fef2f2;
+}
+
+.home-profile-dropdown-divider {
+  height: 1px;
+  background: var(--home-border);
+  margin: 4px 0;
+}
+
+/* Localidad Navbar */
 .home-location-badge {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: var(--home-primary-light);
-  color: var(--home-primary);
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  color: var(--home-muted);
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 500;
   white-space: nowrap;
+}
+
+.home-location-badge .pin-icon {
+  color: var(--home-primary);
+}
+
+.home-navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .home-icon-btn {

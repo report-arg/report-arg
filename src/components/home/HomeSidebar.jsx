@@ -17,7 +17,6 @@ const BASE_LINKS = [
   { href: "/home/explorar",      label: "Explorar",             icon: Search   },
   { href: "/home/reclamos",      label: "Mis Reclamos",         icon: FileText },
   { href: "/home/mapa",          label: "Mapa",                 icon: Map      },
-  { href: "/home/actividad",     label: "Actividad en mi ciudad", icon: Activity },
   { href: "/home/notificaciones",label: "Notificaciones",       icon: Bell     },
 ];
 
@@ -57,8 +56,10 @@ export default function HomeSidebar({ open = false, onClose = () => {}, role = "
       <aside className={`home-sidebar ${open ? "open" : ""}`}>
         <div className="home-sidebar-logo">
           <Link href="/home" onClick={onClose} style={{ textDecoration: "none" }}>
-            <ReportArgLogo variant="horizontal" size={28} />
-            <p className="home-sidebar-logo-sub" style={{ marginTop: 4 }}>{subtitle}</p>
+            <ReportArgLogo variant="horizontal" size={28} darkMode={true} />
+            {role !== "ciudadano" && (
+              <p className="home-sidebar-logo-sub" style={{ marginTop: 4 }}>{subtitle}</p>
+            )}
           </Link>
           <button className="home-sidebar-close-btn" onClick={onClose} aria-label="Cerrar menú">
             <X size={20} />
