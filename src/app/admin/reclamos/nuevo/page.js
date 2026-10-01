@@ -13,7 +13,7 @@ import Sidebar from "@/components/admin/Sidebar";
 import Navbar from "@/components/admin/Navbar";
 import Breadcrumb from "@/components/admin/Breadcrumb";
 import { uploadImage } from "@/services/uploadService";
-import { getCategoryIcon, REAL_CATEGORIES, ReportProblemIcon } from "@/components/brand/icons";
+import { getCategoryIcon, ReportProblemIcon } from "@/components/brand/icons";
 import { toast } from "sonner";
 import useCategorias from "@/hooks/useCategorias";
 
@@ -29,7 +29,7 @@ export default function NuevoReclamoPage() {
     id_categoria: null,
     direccion: "",
     visibilidad: "publico",
-    id_ciudad: "1" // Default city for admin tests
+    id_ciudad: ""
   });
   const [coords, setCoords] = useState({ latitud: null, longitud: null });
   const [fotos, setFotos] = useState([]);
@@ -39,7 +39,14 @@ export default function NuevoReclamoPage() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Categorias loaded by hook
+  const [ciudades, setCiudades] = useState([]);
+  const [loadingCiudades, setLoadingCiudades] = useState(true);
+  useEffect(() => {
+    apiClient.get('/admin/reclamos/ciudades-activas')
+      .then(res => { if (!res.data.ok) throw new Error(); setCiudades(res.data.data); })
+      .catch(() => setError("No se pudieron cargar las ciudades activas. Volvé a intentar."))
+      .finally(() => setLoadingCiudades(false));
+  }, []);
 
   async function subirFotos(files) {
     if (fotos.length >= 1) {
@@ -101,6 +108,7 @@ export default function NuevoReclamoPage() {
 
   function validar() {
     const errs = {};
+    if (!form.id_ciudad) errs.ciudad = "Seleccioná una ciudad activa.";
     if (!form.titulo.trim()) errs.titulo = "El título es obligatorio.";
     else if (form.titulo.trim().length < 5) errs.titulo = "El título debe tener al menos 5 caracteres.";
 
@@ -115,6 +123,7 @@ export default function NuevoReclamoPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (submitting || fotos.some(f => f.uploading)) return;
     setError("");
 
     const errs = validar();
@@ -176,6 +185,14 @@ export default function NuevoReclamoPage() {
       {/* Formulario principal */}
       <form onSubmit={handleSubmit} noValidate className="bg-surface rounded-2xl border border-border-subtle p-5 shadow-xs space-y-5">
 
+        <div>
+          <label htmlFor="ciudad-reclamo" className="block text-sm font-semibold text-text-primary mb-2">Ciudad activa</label>
+          <select id="ciudad-reclamo" value={form.id_ciudad} disabled={loadingCiudades} onChange={e => { setForm(p => ({ ...p, id_ciudad: e.target.value })); setCoords({ latitud: null, longitud: null }); }} className="w-full p-3 rounded-xl border border-border-subtle bg-surface text-text-primary">
+            <option value="">{loadingCiudades ? "Cargando ciudades..." : "Seleccioná una ciudad"}</option>
+            {ciudades.map(c => <option key={c.id} value={c.id}>{c.nombre}, {c.provincia}</option>)}
+          </select>
+          {fieldErrors.ciudad && <p role="alert" className="text-sm text-text-primary mt-1">{fieldErrors.ciudad}</p>}
+        </div>
         {/* Título */}
         <div>
           <label className="block text-xs font-bold text-text-primary mb-1">
@@ -396,13 +413,13 @@ export default function NuevoReclamoPage() {
         <div className="pt-2">
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || loadingCiudades || fotos.some(f => f.uploading)}
             className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-bold text-white bg-primary hover:bg-[var(--color-brand-700)] transition-colors shadow-xs cursor-pointer disabled:opacity-50"
           >
             {submitting ? (
               <><Loader2 size={16} className="animate-spin" /> Publicando reporte...</>
             ) : (
-              <><ReportProblemIcon size={16} /> Publicar reporte ciudadano</>
+              <><ReportProblemIcon size={16} /> Publicar reclamo administrativo</>
             )}
           </button>
         </div>

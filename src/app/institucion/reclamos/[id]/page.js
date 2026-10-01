@@ -8,6 +8,7 @@ import {
   AlertTriangle, UserCheck, Check, Loader2, XCircle, Users, RefreshCw
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
+import ClaimTracking from "@/components/reclamos/ClaimTracking";
 import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
 import ClaimVisibilityBadge from "@/components/reclamos/ClaimVisibilityBadge";
 import ClaimProgress from "@/components/reclamos/ClaimProgress";
@@ -152,12 +153,6 @@ export default function InstitucionReclamoDetallePage() {
   const CategoryIcon = getCategoryIcon(reclamo.categoriaNombre, reclamo.categoriaNombre);
   const afectados = reclamo.afectadosCount || 0;
   
-  // Calcular si está demorado (>5 días en estado Pendiente)
-  const fechaUltimo = new Date(reclamo.fecha_ultimo_cambio_estado || reclamo.fecha_creacion);
-  const diffTime = Math.abs(new Date() - fechaUltimo);
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  const esDemorado = reclamo.estado === 'Pendiente' && diffDays >= 5;
-
   return (
     <div className="w-full">
       <button
@@ -167,16 +162,6 @@ export default function InstitucionReclamoDetallePage() {
         <ArrowLeft size={15} /> Volver a la bandeja
       </button>
 
-      {esDemorado && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl flex items-start gap-2">
-          <AlertTriangle size={18} className="mt-0.5 text-red-600 shrink-0" />
-          <div className="text-sm">
-            <strong className="block mb-0.5">Este reclamo está demorado</strong>
-            Ha estado en estado Pendiente por más de 5 días. Se recomienda avanzar a En revisión para notificar al ciudadano que la institución está al tanto.
-          </div>
-        </div>
-      )}
-
       {/* Contenedor Principal dividido en dos columnas */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
@@ -185,6 +170,7 @@ export default function InstitucionReclamoDetallePage() {
           <div className="bg-surface rounded-2xl border border-border-subtle p-5 shadow-xs">
             <div className="flex flex-wrap items-center gap-2 mb-3 pb-3 border-b border-border-subtle">
               <ClaimStatusBadge estado={reclamo.estado} />
+              <ClaimTracking reclamo={reclamo} advertir />
               <ClaimVisibilityBadge visibilidad={reclamo.visibilidad} />
             </div>
 
@@ -302,12 +288,12 @@ export default function InstitucionReclamoDetallePage() {
               <div className="space-y-3">
                 {reclamo.estado === 'Pendiente' && (
                   <button onClick={() => handleAvanzarEstado('En revisión')} disabled={saving} className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors">
-                    Marcar como "En revisión"
+                    Marcar como &quot;En revisión&quot;
                   </button>
                 )}
                 {reclamo.estado === 'En revisión' && (
                   <button onClick={() => handleAvanzarEstado('En proceso')} disabled={saving} className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors">
-                    Comenzar a trabajar ("En proceso")
+                    Comenzar a trabajar (&quot;En proceso&quot;)
                   </button>
                 )}
                 {reclamo.estado === 'En proceso' && (

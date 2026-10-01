@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { getEstadoConfig } from "@/utils/claimStatus";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -13,7 +14,13 @@ L.Icon.Default.mergeOptions({
 });
 
 const ESTADO_COLOR = {
-  recibido:   "#2563eb",
+  "Pendiente":   "#64748b",
+  "En revisión": "#6366f1",
+  "En proceso":  "#d97706",
+  "Resuelto":    "#16a34a",
+  "Cancelado":   "#dc2626",
+  // Compatibilidad legacy
+  recibido:   "#64748b",
   en_proceso: "#d97706",
   resuelto:   "#16a34a",
   rechazado:  "#dc2626",
@@ -46,14 +53,7 @@ function AutoCenter({ reclamos, defaultCenter }) {
   return null;
 }
 
-const ESTADO_LABEL = {
-  recibido:   "Recibido",
-  en_proceso: "En proceso",
-  resuelto:   "Resuelto",
-  rechazado:  "Rechazado",
-};
-
-export default function MapaReclamos({ reclamos = [], height = "100%", defaultCenter = [-34.6037, -58.3816] }) {
+export default function MapaReclamos({ reclamos = [], height = "100%", defaultCenter = [-34.6037, -58.3816], onMarkerClick }) {
   return (
     <MapContainer
       center={defaultCenter}
@@ -66,29 +66,40 @@ export default function MapaReclamos({ reclamos = [], height = "100%", defaultCe
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <AutoCenter reclamos={reclamos} defaultCenter={defaultCenter} />
-      {reclamos.map(r => (
-        <Marker key={r.id} position={[r.latitud, r.longitud]} icon={colorIcon(r.estado)}>
-          <Popup>
-            <div style={{ minWidth: 160 }}>
-              <p style={{ margin: "0 0 4px", fontWeight: 700, fontSize: 13 }}>{r.titulo}</p>
-              {r.categoriaNombre && (
-                <p style={{ margin: "0 0 4px", fontSize: 11, color: "#666" }}>{r.categoriaNombre}</p>
-              )}
-              {r.direccion && (
-                <p style={{ margin: "0 0 4px", fontSize: 11, color: "#666" }}>{r.direccion}</p>
-              )}
-              <span style={{
-                display: "inline-block", fontSize: 10, fontWeight: 700,
-                padding: "2px 8px", borderRadius: 20,
-                background: ESTADO_COLOR[r.estado] + "22",
-                color: ESTADO_COLOR[r.estado],
-              }}>
-                {ESTADO_LABEL[r.estado]}
-              </span>
-            </div>
-          </Popup>
-        </Marker>
-      ))}
+      {reclamos.map(r => {
+        const config = getEstadoConfig(r.estado);
+        return (
+          <Marker
+            key={r.id}
+            position={[r.latitud, r.longitud]}
+            icon={colorIcon(r.estado)}
+            eventHandlers={{
+              click: () => onMarkerClick?.(r),
+            }}
+          >
+            <Popup>
+              <div style={{ minWidth: 160 }}>
+                <p style={{ margin: "0 0 4px", fontWeight: 700, fontSize: 13 }}>{r.titulo}</p>
+                {r.categoriaNombre && (
+                  <p style={{ margin: "0 0 4px", fontSize: 11, color: "#666" }}>{r.categoriaNombre}</p>
+                )}
+                {r.direccion && (
+                  <p style={{ margin: "0 0 4px", fontSize: 11, color: "#666" }}>{r.direccion}</p>
+                )}
+                <span style={{
+                  display: "inline-block", fontSize: 10, fontWeight: 700,
+                  padding: "2px 8px", borderRadius: 20,
+                  background: config.bg,
+                  color: config.text,
+                  border: `1px solid ${config.border}`,
+                }}>
+                  {config.label}
+                </span>
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
     </MapContainer>
   );
 }

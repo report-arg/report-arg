@@ -8,6 +8,9 @@ import apiClient from "@/services/apiClient";
 import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
 import ClaimVisibilityBadge from "@/components/reclamos/ClaimVisibilityBadge";
 import ClaimProgress from "@/components/reclamos/ClaimProgress";
+import ClaimFilters from "@/components/reclamos/ClaimFilters";
+import ClaimTracking from "@/components/reclamos/ClaimTracking";
+import useCategorias from "@/hooks/useCategorias";
 import EmptyState from "@/components/ui/EmptyState";
 import { getCategoryIcon, ReportProblemIcon } from "@/components/brand/icons";
 import { tiempoRelativo, fechaExacta } from "@/utils/dateFormatters";
@@ -19,14 +22,25 @@ export default function MisReclamosPage() {
   const [reclamos, setReclamos] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [estado, setEstado] = useState("Todos");
+  const [categoria, setCategoria] = useState("Todas");
+  const [error, setError] = useState("");
+  const { categorias } = useCategorias("reclamo");
+
   useEffect(() => {
     if (status === "loading" || !session?.user?.id) return;
-    apiClient.get(`/reclamos/mis-reclamos`)
-      .then(r => r.data)
-      .then(d => { if (d.ok) setReclamos(d.data || []); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [session, status]);
+    let vigente = true;
+    setLoading(true);
+    setError("");
+    const params = {};
+    if (estado !== "Todos") params.estado = estado;
+    if (categoria !== "Todas") params.categoria = categoria;
+    apiClient.get('/reclamos/mis-reclamos', { params })
+      .then(r => { if (!r.data.ok) throw new Error(r.data.mensaje); if (vigente) setReclamos(r.data.data || []); })
+      .catch(err => { if (vigente) setError(err.response?.data?.mensaje || "No se pudieron cargar tus reclamos. Intentá nuevamente."); })
+      .finally(() => { if (vigente) setLoading(false); });
+    return () => { vigente = false; };
+  }, [session, status, estado, categoria]);
 
   return (
     <div className="w-full">
@@ -51,6 +65,8 @@ export default function MisReclamosPage() {
         </button>
       </div>
 
+      <ClaimFilters estado={estado} categoria={categoria} categorias={categorias} onEstado={setEstado} onCategoria={setCategoria} onClear={() => { setEstado("Todos"); setCategoria("Todas"); }} />
+      {error && <p role="alert" className="mb-4 text-sm text-text-primary">{error}</p>}
       {loading && (
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
@@ -63,7 +79,7 @@ export default function MisReclamosPage() {
         </div>
       )}
 
-      {!loading && reclamos.length === 0 && (
+      {!loading && !error && reclamos.length === 0 && (
         <EmptyState
           title="Todavía no registradas ningún reporte"
           description="Reportá los problemas que veas en tu ciudad para informar a las autoridades y darles seguimiento."
@@ -72,7 +88,7 @@ export default function MisReclamosPage() {
         />
       )}
 
-      {!loading && (
+      {!loading && !error && (
         <div className="space-y-3.5">
           {reclamos.map(r => {
             const CategoryIcon = getCategoryIcon(r.categoriaCodigo || r.categoriaNombre, r.categoriaNombre);
@@ -139,6 +155,7 @@ export default function MisReclamosPage() {
                 {/* Barra de progreso visual de estado del reclamo */}
                 <div className="mt-3">
                   <ClaimProgress estado={r.estado} />
+                  <div className="mt-2"><ClaimTracking reclamo={r} /></div>
                 </div>
               </div>
             );

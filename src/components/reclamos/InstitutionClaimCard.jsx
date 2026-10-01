@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { MapPin, Calendar, Users, AlertTriangle, Eye } from "lucide-react";
+import { MapPin, Users, Eye } from "lucide-react";
+import ClaimTracking from "@/components/reclamos/ClaimTracking";
 import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
 import { getCategoryIcon } from "@/components/brand/icons";
 import { tiempoRelativo, fechaExacta } from "@/utils/dateFormatters";
@@ -13,16 +14,6 @@ export default function InstitutionClaimCard({ item }) {
 
   const afectados = item.afectadosCount || 0;
   
-  // Calcular si está demorado (>5 días en estado Pendiente)
-  const esDemorado = () => {
-    if (item.estado !== "Pendiente") return false;
-    const fecha = new Date(item.fecha_ultimo_cambio_estado || item.fecha_creacion);
-    const diffTime = Math.abs(new Date() - fecha);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays >= 5;
-  };
-  const demorado = esDemorado();
-
   return (
     <div 
       className="bg-surface rounded-xl border border-border-subtle p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col relative"
@@ -33,17 +24,14 @@ export default function InstitutionClaimCard({ item }) {
         <div className="flex items-center gap-2 flex-wrap">
           <ClaimStatusBadge estado={item.estado} />
           {item.visibilidad === 'privado' && <ClaimVisibilityBadge visibilidad="privado" />}
-          {demorado && (
-            <span className="inline-flex items-center gap-1 bg-red-50 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold border border-red-200">
-              <AlertTriangle size={12} /> DEMORADO
-            </span>
-          )}
+
         </div>
         <span className="text-[10px] text-text-muted font-medium" title={fechaExacta(item.fecha_ultimo_cambio_estado || item.fecha_creacion)}>
           {tiempoRelativo(item.fecha_ultimo_cambio_estado || item.fecha_creacion)}
         </span>
       </div>
 
+      <div className="mb-3"><ClaimTracking reclamo={item} advertir /></div>
       {/* Cuerpo */}
       <h3 className="text-sm font-bold text-text-primary mb-1 line-clamp-2">
         {item.titulo}

@@ -6,6 +6,8 @@ import { useSession } from "next-auth/react";
 import apiClient from "@/services/apiClient";
 import Link from "next/link";
 import { Clock, AlertTriangle, CheckCircle, Search, FileText } from "lucide-react";
+import ClaimTracking from "@/components/reclamos/ClaimTracking";
+import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
 import { tiempoRelativo } from "@/utils/dateFormatters";
 
 export default function InstitucionHome() {
@@ -18,7 +20,7 @@ export default function InstitucionHome() {
   useEffect(() => {
     async function fetchBandeja() {
       try {
-        const res = await apiClient.get("/institucion/reclamos/bandeja");
+        const res = await apiClient.get("/institucion/reclamos/bandeja?orderBy=atencion");
         if (res.data.ok) {
           setReclamos(res.data.data);
         }
@@ -44,30 +46,10 @@ export default function InstitucionHome() {
   const enRevision = reclamos.filter(r => r.estado === "En revisión");
   const enProceso = reclamos.filter(r => r.estado === "En proceso");
   
-  // Priorización (Demorados, Pendientes antiguos, etc)
-  const hoy = new Date();
-  
-  // Un reclamo pendiente que lleva más de 5 días está demorado
-  const reclamosAtencion = pendientes
-    .map(r => {
-      const msDiff = hoy.getTime() - new Date(r.fecha_creacion).getTime();
-      const dias = Math.floor(msDiff / (1000 * 60 * 60 * 24));
-      return { ...r, diasAntiguedad: dias, esDemorado: dias > 5 };
-    })
-    .sort((a, b) => {
-      // Priorizar demorados
-      if (a.esDemorado && !b.esDemorado) return -1;
-      if (!a.esDemorado && b.esDemorado) return 1;
-      
-      // Priorizar por mayor cantidad de afectados
-      if (b.afectadosCount !== a.afectadosCount) {
-        return b.afectadosCount - a.afectadosCount;
-      }
-      
-      // Priorizar por antigüedad
-      return b.diasAntiguedad - a.diasAntiguedad;
-    })
-    .slice(0, 5); // Tomar los 5 más urgentes
+  // Reclamos activos que requieren atención de la institución (no resueltos ni cancelados)
+  // Ya vienen ordenados por prioridad de atención (demorados, afectados, tiempo sin resolver)
+  const activos = reclamos.filter(r => r.estado !== "Resuelto" && r.estado !== "Cancelado");
+  const reclamosAtencion = activos.slice(0, 5);
 
   return (
     <div className="w-full">
@@ -97,15 +79,15 @@ export default function InstitucionHome() {
 
       {/* Resumen compacto horizontal */}
       <div className="flex flex-wrap items-center gap-3 sm:gap-6 mb-10 pb-4 border-b border-border-subtle">
-        <Link href="/institucion/reclamos?estado=pendiente" className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-rose-600 transition-colors cursor-pointer">
+        <Link href="/institucion/reclamos?estado=Pendiente" className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-rose-600 transition-colors cursor-pointer">
           <AlertTriangle size={16} className="text-rose-500" />
           <span>{pendientes.length} pendientes</span>
         </Link>
-        <Link href="/institucion/reclamos?estado=en_revision" className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-amber-600 transition-colors cursor-pointer">
+        <Link href="/institucion/reclamos?estado=En%20revisi%C3%B3n" className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-amber-600 transition-colors cursor-pointer">
           <Search size={16} className="text-amber-500" />
           <span>{enRevision.length} en revisión</span>
         </Link>
-        <Link href="/institucion/reclamos?estado=en_proceso" className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-blue-600 transition-colors cursor-pointer">
+        <Link href="/institucion/reclamos?estado=En%20proceso" className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-blue-600 transition-colors cursor-pointer">
           <Clock size={16} className="text-blue-500" />
           <span>{enProceso.length} en proceso</span>
         </Link>
@@ -134,7 +116,7 @@ export default function InstitucionHome() {
           <div className="py-12 border-2 border-dashed border-border-subtle rounded-xl flex flex-col items-center justify-center text-center">
             <h3 className="text-sm font-bold text-text-primary mb-1">Sin reclamos que requieran atención</h3>
             <p className="text-sm text-text-secondary">
-              No hay reclamos pendientes o demorados en este momento.
+              No hay reclamos activos en este momento.
             </p>
           </div>
         ) : (
@@ -148,14 +130,8 @@ export default function InstitucionHome() {
                       <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted bg-surface-subtle px-2 py-1 rounded-md">
                         {reclamo.categoriaNombre}
                       </span>
-                      {reclamo.esDemorado && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 px-2 py-1 rounded-md border border-rose-100 flex items-center gap-1">
-                          <AlertTriangle size={10} /> Demorado
-                        </span>
-                      )}
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-1 rounded-md">
-                        Pendiente
-                      </span>
+                      <ClaimTracking reclamo={reclamo} advertir />
+                      <ClaimStatusBadge estado={reclamo.estado} />
                     </div>
                     
                     <h3 className="text-sm sm:text-base font-bold text-text-primary truncate mb-1">

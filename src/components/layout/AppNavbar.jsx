@@ -7,6 +7,7 @@ import { Bell, MapPin, ChevronDown, Settings, LogOut, Menu, Sun, Moon } from "lu
 import { useTheme } from "next-themes";
 import apiClient from "@/services/apiClient";
 import Image from "next/image";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 export default function AppNavbar({
   onMenuClick = () => {},
@@ -49,9 +50,11 @@ export default function AppNavbar({
   const iniciales = nombreMostrado
     .split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
 
-  const ciudad = perfil?.ciudad_activa || perfil?.ciudad_declarada || "Viale";
-  const provincia = perfil?.provincia_activa || perfil?.provincia_declarada || "Entre Ríos";
-  const ubicacionTexto = `${ciudad}, ${provincia}`;
+  const ciudad = perfil?.ciudad_activa || perfil?.ciudad_declarada || null;
+  const provincia = perfil?.provincia_activa || perfil?.provincia_declarada || null;
+  const ubicacionTexto = ciudad
+    ? `${ciudad}${provincia ? `, ${provincia}` : ""}`
+    : (provincia || null);
 
   return (
     <header className="home-navbar">
@@ -66,22 +69,16 @@ export default function AppNavbar({
 
       <div className="home-navbar-right">
         {/* Contexto Territorial Dinámico */}
-        {showLocation && (
+        {showLocation && ubicacionTexto && (
           <div className="home-location-badge hidden sm:flex" title="Ubicación">
             <MapPin size={14} className="pin-icon" />
             <span>{ubicacionTexto}</span>
           </div>
         )}
 
-        {/* Notificaciones */}
+        {/* Notificaciones funcionales con badge y dropdown (HU-22) */}
         {notificationsLink && (
-          <button
-            className="home-icon-btn"
-            title="Notificaciones"
-            onClick={() => router.push(notificationsLink)}
-          >
-            <Bell size={18} />
-          </button>
+          <NotificationBell notificationsLink={notificationsLink} />
         )}
 
         {/* Dropdown de perfil */}

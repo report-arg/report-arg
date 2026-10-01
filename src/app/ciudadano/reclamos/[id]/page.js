@@ -9,6 +9,7 @@ import {
   AlertTriangle, UserCheck, Edit3, XCircle, Check, Loader2, RefreshCw, ThumbsUp
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
+import ClaimTracking from "@/components/reclamos/ClaimTracking";
 import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
 import ClaimVisibilityBadge from "@/components/reclamos/ClaimVisibilityBadge";
 import ClaimProgress from "@/components/reclamos/ClaimProgress";
@@ -219,6 +220,7 @@ export default function ReclamoDetallePage() {
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pb-3 border-b border-border-subtle">
           <div className="flex flex-wrap items-center gap-2">
             <ClaimStatusBadge estado={reclamo.estado} />
+              <ClaimTracking reclamo={reclamo}  />
             <ClaimVisibilityBadge visibilidad={reclamo.visibilidad} />
 
             {reclamo.editado === 1 && (
@@ -300,7 +302,7 @@ export default function ReclamoDetallePage() {
               Institución Responsable
             </p>
             <p className="text-xs font-bold text-text-primary">
-              {reclamo.institucionNombre || "Institución Principal de la Ciudad"}
+              {reclamo.institucionNombre || "Pendiente de asignación"}
             </p>
           </div>
         </div>

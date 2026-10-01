@@ -7,22 +7,11 @@ import Breadcrumb from "@/components/admin/Breadcrumb";
 import { MapPin, Clock, Tag, ChevronLeft, ChevronRight, User } from "lucide-react";
 import apiClient from "@/services/apiClient";
 
-const ESTADOS = [
-  { key: "", label: "Todos" },
-  { key: "Pendiente", label: "Pendiente" },
-  { key: "En revisión", label: "En revisión" },
-  { key: "En proceso", label: "En proceso" },
-  { key: "Resuelto", label: "Resuelto" },
-  { key: "Cancelado", label: "Cancelado" },
-];
-
-const ESTADO_LABELS = {
-  "Pendiente": "Pendiente",
-  "En revisión": "En revisión",
-  "En proceso": "En proceso",
-  "Resuelto": "Resuelto",
-  "Cancelado": "Cancelado",
-};
+import { CLAIM_STATUSES } from "@/utils/claimStatus";
+import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
+import ClaimTracking from "@/components/reclamos/ClaimTracking";
+const ESTADOS = [{ key: "", label: "Todos" }, ...CLAIM_STATUSES.map(key => ({ key, label: key }))];
+const ESTADO_LABELS = Object.fromEntries(CLAIM_STATUSES.map(key => [key, key]));
 
 function estadoClass(estado) {
   if (!estado) return "";
@@ -77,6 +66,7 @@ export default function AdminReclamosPage() {
       const data = res.data;
       if (data.ok) {
         setDetalle(data.data);
+        setInstitucionDestino("");
         cargarInstituciones();
       }
     } catch { }
@@ -100,7 +90,8 @@ export default function AdminReclamosPage() {
     try {
       const res = await apiClient.patch(`/admin/reclamos/${id}/institucion`, { id_institucion: Number(institucionDestino) });
       if (res.data.ok) {
-        setDetalle(prev => ({ ...prev, id_institucion: Number(institucionDestino) }));
+        await cargarDetalle(id);
+        await fetchReclamos();
         setInstitucionDestino("");
         alert("Reclamo reasignado exitosamente");
       }
@@ -109,19 +100,6 @@ export default function AdminReclamosPage() {
     } finally {
       setUpdatingId(null);
     }
-  }
-
-  async function cambiarEstado(id, estado) {
-    setUpdatingId(id);
-    try {
-      const res = await apiClient.patch(`/admin/reclamos/${id}/estado`, { estado });
-      const data = res.data;
-      if (data.ok) {
-        setReclamos(prev => prev.map(r => r.id === id ? { ...r, estado } : r));
-        if (detalle?.id === id) setDetalle(prev => ({ ...prev, estado }));
-      }
-    } catch { }
-    finally { setUpdatingId(null); }
   }
 
   function filtrar(estado) {
@@ -323,7 +301,7 @@ export default function AdminReclamosPage() {
                     REASIGNAR INSTITUCIÓN (ADMIN)
                   </p>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <select 
+                    <select aria-label="Institución destino" disabled={loadingInstituciones || updatingId !== null}
                       value={institucionDestino} 
                       onChange={e => setInstitucionDestino(e.target.value)}
                       style={{ flex: 1, padding: "8px", borderRadius: "6px", border: "1px solid var(--color-border)", fontSize: 13 }}
@@ -346,26 +324,12 @@ export default function AdminReclamosPage() {
                   </div>
                 </div>
 
-                <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 14 }}>
-                  <p style={{ margin: "0 0 10px", fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 0.5 }}>
-                    CAMBIAR ESTADO
-                  </p>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    {ESTADOS.filter(e => e.key).map(est => {
-                      const active = detalle.estado === est.key;
-                      return (
-                        <button
-                          key={est.key}
-                          disabled={active || updatingId === detalle.id}
-                          onClick={() => cambiarEstado(detalle.id, est.key)}
-                          className={`estado-btn ${estadoClass(est.key)}${active ? " active" : ""}`}
-                          style={{ opacity: updatingId === detalle.id && !active ? 0.6 : 1 }}
-                        >
-                          {active ? `✓ ${ESTADO_LABELS[est.key]}` : ESTADO_LABELS[est.key]}
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className="border-t border-border-subtle pt-3">
+                  <ClaimStatusBadge estado={detalle.estado} />
+                  <div className="mt-2"><ClaimTracking reclamo={detalle} /></div>
+                  <p className="text-xs text-text-secondary mt-2">Responsable: {detalle.institucionNombre || "Sin asignar"}</p>
+                  <h4 className="font-semibold mt-3">Historial</h4>
+                  <ol className="space-y-2 mt-2 text-xs text-text-secondary">{detalle.historial?.map(h => <li key={h.id}><p>{h.detalle}</p><p>{h.autorNombre} · {new Date(h.fecha_creacion).toLocaleString("es-AR")}</p></li>)}</ol>
                 </div>
               </div>
             )}

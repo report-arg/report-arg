@@ -6,24 +6,17 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, MapPin, Loader2, X } from "lucide-react";
 import apiClient from "@/services/apiClient";
 
+import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
+import { CLAIM_STATUSES } from "@/utils/claimStatus";
+
 const MapaReclamos = dynamic(
   () => import("./MapaReclamos"),
   { ssr: false, loading: () => <div className="mapa-loading"><Loader2 size={24} className="spin" /> Cargando mapa…</div> }
 );
 
-const ESTADO_LABEL = {
-  recibido: "Recibido",
-  en_proceso: "En proceso",
-  resuelto: "Resuelto",
-  rechazado: "Rechazado",
-};
-
 const FILTROS = [
   { key: "", label: "Todos" },
-  { key: "recibido", label: "Recibido" },
-  { key: "en_proceso", label: "En proceso" },
-  { key: "resuelto", label: "Resuelto" },
-  { key: "rechazado", label: "Rechazado" },
+  ...CLAIM_STATUSES.map(estado => ({ key: estado, label: estado }))
 ];
 
 export default function CityMapView() {
@@ -126,10 +119,14 @@ export default function CityMapView() {
               </div>
             )}
             
-            <div className="mt-auto pt-4 border-t border-border-subtle">
-              <span className={`inline-flex px-2.5 py-1 text-[11px] font-bold rounded-lg bg-[var(--status-${seleccionado.estado.replace("_", "-")}-bg)] text-[var(--status-${seleccionado.estado.replace("_", "-")}-text)]`}>
-                {ESTADO_LABEL[seleccionado.estado]}
-              </span>
+            <div className="mt-auto pt-4 border-t border-border-subtle flex items-center justify-between">
+              <ClaimStatusBadge estado={seleccionado.estado} />
+              <button
+                onClick={() => router.push(`/ciudadano/reclamos/${seleccionado.id}`)}
+                className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+              >
+                Ver detalle &rarr;
+              </button>
             </div>
           </div>
         )}

@@ -3,12 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import apiClient from "@/services/apiClient";
 
-const estadoConfig = {
-  recibido:   { label: "Abierto",    color: "#E6F1FB", textColor: "#0C447C" },
-  en_proceso: { label: "En proceso", color: "#FAEEDA", textColor: "#633806" },
-  resuelto:   { label: "Resuelto",   color: "#EAF3DE", textColor: "#27500A" },
-  rechazado:  { label: "Rechazado",  color: "#F1EFE8", textColor: "#444441" },
-};
+import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
 
 function tiempoRelativo(fecha) {
   const diff = Date.now() - new Date(fecha).getTime();
@@ -25,7 +20,7 @@ export default function DashboardStats() {
   const chartInstance = useRef(null);
 
   const [statsUsuarios, setStatsUsuarios] = useState({ total: 0, activos: 0, inactivos: 0, admins: 0 });
-  const [statsReclamos, setStatsReclamos] = useState({ total: 0, recibidos: 0, enProceso: 0, resueltos: 0 });
+  const [statsReclamos, setStatsReclamos] = useState({ total: 0, pendientes: 0, enRevision: 0, enProceso: 0, resueltos: 0, cancelados: 0 });
   const [ultimos,       setUltimos]       = useState([]);
   const [porCategoria,  setPorCategoria]  = useState([]);
   const [actividad,     setActividad]     = useState([]);
@@ -98,12 +93,14 @@ export default function DashboardStats() {
   }, [actividad]);
 
   const statsCards = [
-    { label: "TOTAL REPORTES",   value: statsReclamos.total.toLocaleString(),    sub: "",          subColor: "var(--color-success)" },
-    { label: "RECIBIDOS",        value: statsReclamos.recibidos.toLocaleString(), sub: "En espera", subColor: "var(--color-primary)" },
-    { label: "EN PROCESO",       value: statsReclamos.enProceso.toLocaleString(), sub: "Asignados", subColor: "var(--color-warning)" },
-    { label: "RESUELTOS",        value: statsReclamos.resueltos.toLocaleString(), sub: "",          subColor: "var(--color-success)" },
-    { label: "USUARIOS ACTIVOS", value: statsUsuarios.activos.toLocaleString(),   sub: "",          subColor: "var(--color-primary)" },
-    { label: "ADMINISTRADORES",  value: statsUsuarios.admins.toLocaleString(),    sub: "",          subColor: "var(--color-warning)" },
+    { label: "TOTAL REPORTES",   value: (statsReclamos.total || 0).toLocaleString(),    sub: "",            subColor: "var(--color-primary)" },
+    { label: "PENDIENTES",       value: (statsReclamos.pendientes || 0).toLocaleString(), sub: "En espera",   subColor: "var(--color-primary)" },
+    { label: "EN REVISIÓN",      value: (statsReclamos.enRevision || 0).toLocaleString(), sub: "Evaluando",   subColor: "var(--color-primary)" },
+    { label: "EN PROCESO",       value: (statsReclamos.enProceso || 0).toLocaleString(), sub: "Asignados",   subColor: "var(--color-warning)" },
+    { label: "RESUELTOS",        value: (statsReclamos.resueltos || 0).toLocaleString(), sub: "Completados", subColor: "var(--color-success)" },
+    { label: "CANCELADOS",       value: (statsReclamos.cancelados || 0).toLocaleString(), sub: "Anulados",    subColor: "var(--color-danger)" },
+    { label: "USUARIOS ACTIVOS", value: (statsUsuarios.activos || 0).toLocaleString(),   sub: "",            subColor: "var(--color-primary)" },
+    { label: "ADMINISTRADORES",  value: (statsUsuarios.admins || 0).toLocaleString(),    sub: "",            subColor: "var(--color-warning)" },
   ];
 
   return (
@@ -165,7 +162,6 @@ export default function DashboardStats() {
           <p style={{ fontSize: 13, color: "#aaa" }}>Sin reportes recientes.</p>
         )}
         {ultimos.map((r, i) => {
-          const cfg = estadoConfig[r.estado] || estadoConfig.recibido;
           return (
             <div key={r.id} style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -179,10 +175,7 @@ export default function DashboardStats() {
                   {tiempoRelativo(r.fecha_creacion)} · {r.direccion || r.categoria || ""}
                 </p>
               </div>
-              <span style={{
-                fontSize: 11, padding: "3px 10px", borderRadius: 20, fontWeight: 600,
-                background: cfg.color, color: cfg.textColor, whiteSpace: "nowrap",
-              }}>{cfg.label}</span>
+              <ClaimStatusBadge estado={r.estado} />
             </div>
           );
         })}

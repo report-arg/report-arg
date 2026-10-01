@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import apiClient from "@/services/apiClient";
 
-const rolColor = { admin: "role-admin", moderador: "role-moderator", ciudadano: "role-user" };
+const rolColor = { admin: "role-admin", moderador: "role-moderator", institucion: "role-moderator", ciudadano: "role-user" };
 const estadoColor = { activo: "status-active", inactivo: "status-inactive" };
 
-function Avatar({ nombre, foto }) {
-  if (foto) return <img src={foto} alt={nombre} className="avatar" style={{ objectFit: "cover" }} />;
-  const iniciales = (nombre || "?").split(" ").map(n => n[0]).slice(0, 2).join("");
+function Avatar({ nombre, foto, email }) {
+  if (foto) return <img src={foto} alt={nombre || email || "Avatar"} className="avatar" style={{ objectFit: "cover" }} />;
+  const label = nombre || email?.split('@')[0] || "?";
+  const iniciales = label.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
   return <div className="avatar">{iniciales}</div>;
 }
 
@@ -168,9 +169,9 @@ export default function UserTable() {
                 <tr key={u.id} className={i % 2 === 0 ? "row" : "row alt"}>
                   <td>
                     <div className="user">
-                      <Avatar nombre={u.nombre} foto={u.foto} />
+                      <Avatar nombre={u.nombre} foto={u.foto} email={u.email} />
                       <div>
-                        <p className="name">{u.nombre}</p>
+                        <p className="name">{u.nombre || u.email?.split('@')[0] || "Usuario"}</p>
                         <p className="email">{u.email}</p>
                       </div>
                     </div>
@@ -212,9 +213,9 @@ export default function UserTable() {
             <div key={u.id} className="card-user">
               <div className="row-top">
                 <div className="user">
-                  <Avatar nombre={u.nombre} foto={u.foto} />
+                  <Avatar nombre={u.nombre} foto={u.foto} email={u.email} />
                   <div>
-                    <p className="name">{u.nombre}</p>
+                    <p className="name">{u.nombre || u.email?.split('@')[0] || "Usuario"}</p>
                     <p className="email">{u.email}</p>
                   </div>
                 </div>

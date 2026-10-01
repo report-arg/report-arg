@@ -5,13 +5,14 @@ import { useSearchParams } from "next/navigation";
 import apiClient from "@/services/apiClient";
 import EmptyState from "@/components/ui/EmptyState";
 import InstitutionClaimCard from "@/components/reclamos/InstitutionClaimCard";
-import { Loader2, Filter, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2, Filter } from "lucide-react";
+import ClaimFilters from "@/components/reclamos/ClaimFilters";
+import { CLAIM_STATUSES } from "@/utils/claimStatus";
 import useCategorias from "@/hooks/useCategorias";
 
 function BandejaReclamos() {
   const searchParams = useSearchParams();
-  const queryEstado = searchParams.get("estado") || "Todos";
+  const queryEstado = CLAIM_STATUSES.includes(searchParams.get("estado")) ? searchParams.get("estado") : "Todos";
 
   const [reclamos, setReclamos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,33 +23,23 @@ function BandejaReclamos() {
   const [categoria, setCategoria] = useState("Todas");
   const [orden, setOrden] = useState("recientes");
 
-  const estadosPermitidos = ["Todos", "Pendiente", "En revisión", "En proceso", "Resuelto", "Cancelado"];
+  const estadosPermitidos = ["Todos", ...CLAIM_STATUSES];
+  const [error, setError] = useState("");
 
   // Categorias loaded by hook
 
-  const fetchBandeja = () => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (estado !== "Todos") params.append("estado", estado);
-    if (categoria !== "Todas") params.append("categoria", categoria);
-    params.append("orderBy", orden);
-
-    apiClient.get(`/institucion/reclamos/bandeja?${params.toString()}`)
-      .then(res => {
-        if(res.data?.ok) {
-          setReclamos(res.data.data);
-        } else {
-          toast.error("Error al cargar la bandeja");
-        }
-      })
-      .catch(err => {
-        toast.error("Error al conectar con el servidor");
-      })
-      .finally(() => setLoading(false));
-  };
-
   useEffect(() => {
-    fetchBandeja();
+    let vigente = true;
+    setLoading(true);
+    setError("");
+    const params = { orderBy: orden };
+    if (estado !== "Todos") params.estado = estado;
+    if (categoria !== "Todas") params.categoria = categoria;
+    apiClient.get('/institucion/reclamos/bandeja', { params })
+      .then(res => { if (!res.data.ok) throw new Error(res.data.mensaje); if (vigente) setReclamos(res.data.data); })
+      .catch(err => { if (vigente) setError(err.response?.data?.mensaje || "No se pudo cargar la bandeja. Intentá nuevamente."); })
+      .finally(() => { if (vigente) setLoading(false); });
+    return () => { vigente = false; };
   }, [estado, categoria, orden]);
 
   // Actualizar estado si cambia el query parameter
@@ -70,64 +61,14 @@ function BandejaReclamos() {
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="bg-surface rounded-xl border border-border-subtle p-4 mb-6 shadow-sm flex flex-col md:flex-row gap-4 items-end">
-        <div className="w-full md:w-auto">
-          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1">Estado</label>
-          <select 
-            value={estado} 
-            onChange={e => setEstado(e.target.value)}
-            className="w-full text-xs p-2 rounded-lg border border-border-subtle bg-surface focus:outline-hidden focus:border-primary"
-          >
-            {estadosPermitidos.map(e => (
-              <option key={e} value={e}>{e}</option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="w-full md:w-auto">
-          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1">Categoría</label>
-          <select 
-            value={categoria} 
-            onChange={e => setCategoria(e.target.value)}
-            className="w-full text-xs p-2 rounded-lg border border-border-subtle bg-surface focus:outline-hidden focus:border-primary"
-          >
-            <option value="Todas">Todas</option>
-            {categorias.map(c => (
-              <option key={c.id || c.id_categoria} value={c.id || c.id_categoria}>{c.nombre}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="w-full md:w-auto">
-          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1">Ordenar por</label>
-          <select 
-            value={orden} 
-            onChange={e => setOrden(e.target.value)}
-            className="w-full text-xs p-2 rounded-lg border border-border-subtle bg-surface focus:outline-hidden focus:border-primary"
-          >
-            <option value="recientes">Más recientes</option>
-            <option value="antiguos">Más antiguos</option>
-            <option value="impacto">Mayor impacto (afectados)</option>
-          </select>
-        </div>
-
-        {(estado !== "Todos" || categoria !== "Todas" || orden !== "recientes") && (
-          <button 
-            onClick={() => { setEstado("Todos"); setCategoria("Todas"); setOrden("recientes"); }}
-            className="text-xs font-semibold text-text-secondary hover:text-text-primary px-3 py-2 bg-surface-subtle hover:bg-border-subtle rounded-lg transition-colors w-full md:w-auto mt-2 md:mt-0"
-          >
-            Limpiar filtros
-          </button>
-        )}
-      </div>
+      <ClaimFilters estado={estado} categoria={categoria} categorias={categorias} onEstado={setEstado} onCategoria={setCategoria} orden={orden} onOrden={setOrden} onClear={() => { setEstado("Todos"); setCategoria("Todas"); setOrden("recientes"); }} />
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 text-text-muted">
           <Loader2 className="animate-spin mb-2" size={32} />
           <p className="text-sm">Cargando bandeja...</p>
         </div>
-      ) : reclamos.length === 0 ? (
+      ) : error ? <p role="alert" className="text-sm text-text-primary">{error}</p> : reclamos.length === 0 ? (
         <EmptyState 
           icon={Filter} 
           title="Sin resultados" 
