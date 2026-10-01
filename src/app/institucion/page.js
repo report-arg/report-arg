@@ -18,7 +18,7 @@ export default function InstitucionHome() {
   useEffect(() => {
     async function fetchBandeja() {
       try {
-        const res = await apiClient.get("/institucion/reclamos");
+        const res = await apiClient.get("/institucion/reclamos/bandeja");
         if (res.data.ok) {
           setReclamos(res.data.data);
         }
@@ -70,7 +70,7 @@ export default function InstitucionHome() {
     .slice(0, 5); // Tomar los 5 más urgentes
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-8 sm:px-6">
+    <div className="w-full">
       <div className="mb-10 flex flex-col md:flex-row gap-6 md:items-start justify-between">
         <div className="flex-1">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">

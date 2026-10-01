@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import { uploadImage } from "@/services/uploadService";
+import useCategorias from "@/hooks/useCategorias";
 
 const CATEGORIA_ICON_MAP = [
   { keys: ["luz", "electric", "corte"], Icon: Zap },
@@ -37,7 +38,7 @@ export default function NuevoComunicadoPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [categorias, setCategorias] = useState([]);
+  const { categorias, loading: loadingCats, error: errorCats } = useCategorias("comunicado");
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [categoriaId, setCategoriaId] = useState(null);
@@ -46,20 +47,7 @@ export default function NuevoComunicadoPage() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
   const [exito, setExito] = useState(false);
-  const [errorCats, setErrorCats] = useState(false);
-
-  useEffect(() => {
-    apiClient.get(`/comunicados/categorias`)
-      .then(r => r.data)
-      .then(d => {
-        if (d.ok && d.data.length > 0) {
-          setCategorias(d.data);
-        } else {
-          setErrorCats(true);
-        }
-      })
-      .catch(() => setErrorCats(true));
-  }, []);
+  // Categorias loaded by hook
 
   if (status === "loading") return null;
 

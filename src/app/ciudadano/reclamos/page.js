@@ -29,7 +29,7 @@ export default function MisReclamosPage() {
   }, [session, status]);
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 py-6">
+    <div className="w-full">
 
       {/* Header Mis Reclamos */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-border-subtle">

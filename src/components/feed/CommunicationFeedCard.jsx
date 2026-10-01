@@ -30,7 +30,7 @@ async function compartirComunicado({ titulo, descripcion, id }) {
   }
 }
 
-export default function CommunicationFeedCard({ item, onEliminado }) {
+export default function CommunicationFeedCard({ item, onEliminado, priorityImage }) {
   const { data: session } = useSession();
   const [eliminando, setEliminando] = useState(false);
 
@@ -113,6 +113,7 @@ export default function CommunicationFeedCard({ item, onEliminado }) {
       bodyDescription={item.descripcion}
       badges={Badges}
       imageSrc={item.imagen}
+      priorityImage={priorityImage}
       footer={Footer}
     />
   );

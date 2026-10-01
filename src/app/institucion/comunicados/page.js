@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { PlusCircle, CheckCircle, Clock, Eye, EyeOff } from "lucide-react";
 import apiClient from "@/services/apiClient";
+import useCategorias from "@/hooks/useCategorias";
 
 const ESTADO_CONFIG = {
   // 'recibido' = comunicado publicado
@@ -33,7 +34,7 @@ export default function ComunicadosInstitucionPage() {
   const router = useRouter();
 
   const [comunicados, setComunicados] = useState([]);
-  const [categorias, setCategorias] = useState([]);
+  const { categorias } = useCategorias("comunicado");
   const [loading, setLoading] = useState(true);
   const [filtroTab, setFiltroTab] = useState("todos");
 
@@ -41,15 +42,12 @@ export default function ComunicadosInstitucionPage() {
     if (status === "loading") return;
     if (!session?.user?.id) return;
 
-    Promise.all([
-      apiClient.get(`/comunicados/mis-comunicados?usuario=${session.user.id}`)
-        .then(r => r.data),
-      apiClient.get(`/comunicados/categorias`)
-        .then(r => r.data),
-    ]).then(([comData, catData]) => {
-      if (comData.ok) setComunicados(comData.data);
-      if (catData.ok) setCategorias(catData.data);
-    }).catch(() => { })
+    apiClient.get(`/comunicados/mis-comunicados?usuario=${session.user.id}`)
+      .then(r => r.data)
+      .then(comData => {
+        if (comData.ok) setComunicados(comData.data);
+      })
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, [session?.user?.id, status]);
 

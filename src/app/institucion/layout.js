@@ -12,8 +12,8 @@ const INSTITUCION_NAVIGATION = [
   { href: "/institucion",              label: "Inicio",         icon: Home },
   { href: "/institucion/explorar",     label: "Explorar",       icon: Search },
   { href: "/institucion/reclamos",     label: "Reclamos",       icon: FileText },
-  { href: "/institucion/mapa",         label: "Mapa",           icon: Map },
   { href: "/institucion/comunicados",  label: "Comunicados",    icon: Megaphone },
+  { href: "/institucion/mapa",         label: "Mapa",           icon: Map },
   { href: "/institucion/notificaciones",label: "Notificaciones",icon: Bell },
 ];
 
@@ -48,8 +48,8 @@ export default function InstitucionLayout({ children }) {
         { href: "/institucion",              label: "Inicio",         icon: Home },
         { href: "/institucion/explorar",     label: "Explorar",       icon: Search },
         { href: "/institucion/reclamos",     label: "Reclamos",       icon: FileText },
-        { href: "/institucion/mapa",         label: "Mapa",           icon: Map },
         { href: "/institucion/comunicados",  label: "Comunicados",    icon: Megaphone },
+        { href: "/institucion/mapa",         label: "Mapa",           icon: Map },
         { href: "/institucion/notificaciones",label: "Alertas",       icon: Bell },
       ]}
     />

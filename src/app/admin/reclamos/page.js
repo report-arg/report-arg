@@ -9,21 +9,24 @@ import apiClient from "@/services/apiClient";
 
 const ESTADOS = [
   { key: "", label: "Todos" },
-  { key: "recibido", label: "Recibido" },
-  { key: "en_proceso", label: "En proceso" },
-  { key: "resuelto", label: "Resuelto" },
-  { key: "rechazado", label: "Rechazado" },
+  { key: "Pendiente", label: "Pendiente" },
+  { key: "En revisión", label: "En revisión" },
+  { key: "En proceso", label: "En proceso" },
+  { key: "Resuelto", label: "Resuelto" },
+  { key: "Cancelado", label: "Cancelado" },
 ];
 
 const ESTADO_LABELS = {
-  recibido: "Recibido",
-  en_proceso: "En proceso",
-  resuelto: "Resuelto",
-  rechazado: "Rechazado",
+  "Pendiente": "Pendiente",
+  "En revisión": "En revisión",
+  "En proceso": "En proceso",
+  "Resuelto": "Resuelto",
+  "Cancelado": "Cancelado",
 };
 
 function estadoClass(estado) {
-  return `estado-${estado.replace("_", "-")}`;
+  if (!estado) return "";
+  return `estado-${estado.toLowerCase().replace(" ", "-").replace("ó", "o")}`;
 }
 
 function tiempoRelativo(fecha) {
@@ -46,6 +49,9 @@ export default function AdminReclamosPage() {
   const [filtroEstado, setFiltroEstado] = useState("");
   const [detalle, setDetalle] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
+  const [instituciones, setInstituciones] = useState([]);
+  const [institucionDestino, setInstitucionDestino] = useState("");
+  const [loadingInstituciones, setLoadingInstituciones] = useState(false);
 
   const fetchReclamos = useCallback(async () => {
     setLoading(true);
@@ -69,8 +75,40 @@ export default function AdminReclamosPage() {
     try {
       const res = await apiClient.get(`/admin/reclamos/${id}`);
       const data = res.data;
-      if (data.ok) setDetalle(data.data);
+      if (data.ok) {
+        setDetalle(data.data);
+        cargarInstituciones();
+      }
     } catch { }
+  }
+
+  async function cargarInstituciones() {
+    if (instituciones.length > 0) return;
+    setLoadingInstituciones(true);
+    try {
+      const res = await apiClient.get('/admin/instituciones?estado=verificada');
+      if (res.data.ok) {
+        setInstituciones(res.data.data);
+      }
+    } catch { }
+    finally { setLoadingInstituciones(false); }
+  }
+
+  async function reasignarReclamo(id) {
+    if (!institucionDestino) return;
+    setUpdatingId(`reasignar-${id}`);
+    try {
+      const res = await apiClient.patch(`/admin/reclamos/${id}/institucion`, { id_institucion: Number(institucionDestino) });
+      if (res.data.ok) {
+        setDetalle(prev => ({ ...prev, id_institucion: Number(institucionDestino) }));
+        setInstitucionDestino("");
+        alert("Reclamo reasignado exitosamente");
+      }
+    } catch (err) {
+      alert(err.response?.data?.mensaje || "Error al reasignar reclamo");
+    } finally {
+      setUpdatingId(null);
+    }
   }
 
   async function cambiarEstado(id, estado) {
@@ -108,12 +146,19 @@ export default function AdminReclamosPage() {
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-            {ESTADOS.map(e => (
-              <button key={e.key} onClick={() => filtrar(e.key)} className={`ar-filter-btn${filtroEstado === e.key ? " active" : ""}`}>
-                {e.label}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16, justifyContent: "space-between" }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {ESTADOS.map(e => (
+                <button key={e.key} onClick={() => filtrar(e.key)} className={`ar-filter-btn${filtroEstado === e.key ? " active" : ""}`}>
+                  {e.label}
+                </button>
+              ))}
+            </div>
+            <div>
+              <button onClick={() => window.location.href = "/admin/reclamos/nuevo"} className="ar-filter-btn active" style={{ background: "var(--color-primary)", color: "white", border: "none" }}>
+                + Nuevo Reclamo
               </button>
-            ))}
+            </div>
           </div>
 
           <div className={`ar-grid${detalle ? " with-detail" : ""}`}>
@@ -273,22 +318,50 @@ export default function AdminReclamosPage() {
                   )}
                 </div>
 
+                <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 14, paddingBottom: 14 }}>
+                  <p style={{ margin: "0 0 10px", fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 0.5 }}>
+                    REASIGNAR INSTITUCIÓN (ADMIN)
+                  </p>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <select 
+                      value={institucionDestino} 
+                      onChange={e => setInstitucionDestino(e.target.value)}
+                      style={{ flex: 1, padding: "8px", borderRadius: "6px", border: "1px solid var(--color-border)", fontSize: 13 }}
+                    >
+                      <option value="">Seleccionar nueva institución...</option>
+                      {instituciones
+                        .filter(inst => Number(inst.id_ciudad) === Number(detalle.id_ciudad) && Number(inst.id) !== Number(detalle.id_institucion))
+                        .map(inst => (
+                        <option key={inst.id} value={inst.id}>{inst.nombre}</option>
+                      ))}
+                    </select>
+                    <button 
+                      disabled={!institucionDestino || updatingId === `reasignar-${detalle.id}`}
+                      onClick={() => reasignarReclamo(detalle.id)}
+                      className="ar-filter-btn"
+                      style={{ background: institucionDestino ? "var(--color-primary)" : "#eee", color: institucionDestino ? "white" : "#999", border: "none" }}
+                    >
+                      {updatingId === `reasignar-${detalle.id}` ? "..." : "Reasignar"}
+                    </button>
+                  </div>
+                </div>
+
                 <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 14 }}>
                   <p style={{ margin: "0 0 10px", fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 0.5 }}>
                     CAMBIAR ESTADO
                   </p>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    {["recibido", "en_proceso", "resuelto", "rechazado"].map(est => {
-                      const active = detalle.estado === est;
+                    {ESTADOS.filter(e => e.key).map(est => {
+                      const active = detalle.estado === est.key;
                       return (
                         <button
-                          key={est}
+                          key={est.key}
                           disabled={active || updatingId === detalle.id}
-                          onClick={() => cambiarEstado(detalle.id, est)}
-                          className={`estado-btn ${estadoClass(est)}${active ? " active" : ""}`}
+                          onClick={() => cambiarEstado(detalle.id, est.key)}
+                          className={`estado-btn ${estadoClass(est.key)}${active ? " active" : ""}`}
                           style={{ opacity: updatingId === detalle.id && !active ? 0.6 : 1 }}
                         >
-                          {active ? `✓ ${ESTADO_LABELS[est]}` : ESTADO_LABELS[est]}
+                          {active ? `✓ ${ESTADO_LABELS[est.key]}` : ESTADO_LABELS[est.key]}
                         </button>
                       );
                     })}

@@ -8,6 +8,10 @@ import { getCategoryIcon } from "@/components/brand/icons";
 import { tiempoRelativo, fechaExacta } from "@/utils/dateFormatters";
 import BaseFeedCard from "./BaseFeedCard";
 
+import { useSession } from "next-auth/react";
+import apiClient from "@/services/apiClient";
+import { toast } from "sonner";
+
 function iniciales(nombre) {
   if (!nombre) return "C";
   return nombre.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
@@ -30,13 +34,61 @@ async function compartirReclamo({ titulo, descripcion, id }) {
   }
 }
 
-export default function ClaimFeedCard({ item }) {
+export default function ClaimFeedCard({ item, priorityImage }) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const esAutor = session?.user?.id && Number(session.user.id) === Number(item.id_usuario);
+
   const tiempo = tiempoRelativo(item.fecha_creacion);
   const fechaLarga = fechaExacta(item.fecha_creacion);
-
   const CategoryIcon = getCategoryIcon(item.categoriaCodigo || item.categoriaNombre, item.categoriaNombre);
-  const afectados = item.afectadosCount || item.cantidad_afectados || 0;
+
+  const [isAfectado, setIsAfectado] = React.useState(item.isAfectado || false);
+  const [afectados, setAfectados] = React.useState(item.afectadosCount || item.cantidad_afectados || 0);
+  const [loadingAfectado, setLoadingAfectado] = React.useState(false);
+
+  async function handleToggleAfectado(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (loadingAfectado) return;
+    setLoadingAfectado(true);
+    
+    const previousIsAfectado = isAfectado;
+    const previousAfectados = afectados;
+    
+    // Optimistic UI update
+    const newValue = !isAfectado;
+    setIsAfectado(newValue);
+    setAfectados(prev => prev + (newValue ? 1 : -1));
+    
+    try {
+      const res = await apiClient.post(`/reclamos/${item.id}/afectado`);
+      const data = res.data;
+      
+      if (data.ok) {
+        // En caso de desincronización, usamos el valor real del backend
+        if (data.afectado !== newValue) {
+          setIsAfectado(data.afectado);
+          setAfectados(previousAfectados + (data.afectado ? 1 : -1));
+        }
+        toast.success(data.mensaje);
+      } else {
+        // Revertir
+        setIsAfectado(previousIsAfectado);
+        setAfectados(previousAfectados);
+        toast.error(data.mensaje || "Error al actualizar");
+      }
+    } catch (error) {
+      // Revertir
+      setIsAfectado(previousIsAfectado);
+      setAfectados(previousAfectados);
+      console.error("Error en toggle afectado:", error);
+      toast.error(error.response?.data?.mensaje || "Ocurrió un error");
+    } finally {
+      setLoadingAfectado(false);
+    }
+  }
 
   const Subtitle = (
     <>
@@ -71,31 +123,52 @@ export default function ClaimFeedCard({ item }) {
     </>
   );
 
-  const ExtraContent = afectados > 0 && (
-    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 text-amber-800 text-[10px] font-medium border border-amber-200/60 mb-1.5">
-      <Users size={10} className="text-amber-600" />
-      <span>A {afectados} vecino{afectados !== 1 ? "s" : ""} también le{afectados !== 1 ? "s" : ""} afecta esto</span>
+  const ExtraContent = (
+    <div className="flex flex-col gap-2 mb-1.5">
+      {afectados > 0 && (
+        <div className="inline-flex items-center self-start gap-1 px-2 py-0.5 rounded bg-amber-50 text-amber-800 text-[10px] font-medium border border-amber-200/60">
+          <Users size={10} className="text-amber-600" />
+          <span>A {afectados} vecino{afectados !== 1 ? "s" : ""} también le{afectados !== 1 ? "s" : ""} afecta esto</span>
+        </div>
+      )}
     </div>
   );
 
   const Footer = (
-    <>
-      <button
-        onClick={() => router.push(`/ciudadano/reclamos/${item.id}`)}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary hover:bg-primary-subtle transition-colors cursor-pointer"
-      >
-        <Eye size={14} />
-        <span>Ver seguimiento</span>
-      </button>
+    <div className="flex items-center justify-between w-full">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => router.push(`/ciudadano/reclamos/${item.id}`)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary hover:bg-primary-subtle transition-colors cursor-pointer"
+        >
+          <Eye size={14} />
+          <span className="hidden sm:inline">Seguimiento</span>
+        </button>
 
-      <button
-        onClick={() => compartirReclamo({ titulo: item.titulo, descripcion: item.descripcion, id: item.id })}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-border-subtle transition-colors cursor-pointer"
-      >
-        <Share2 size={14} />
-        <span>Compartir</span>
-      </button>
-    </>
+        <button
+          onClick={(e) => { e.stopPropagation(); compartirReclamo({ titulo: item.titulo, descripcion: item.descripcion, id: item.id }); }}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-border-subtle transition-colors cursor-pointer"
+        >
+          <Share2 size={14} />
+          <span className="hidden sm:inline">Compartir</span>
+        </button>
+      </div>
+
+      {(!esAutor && item.visibilidad !== 'privado') && (
+        <button
+          onClick={handleToggleAfectado}
+          disabled={loadingAfectado}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+            isAfectado 
+              ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20 hover:bg-[var(--color-brand-600)]' 
+              : 'bg-surface border-border-subtle text-text-secondary hover:bg-surface-subtle hover:border-border'
+          }`}
+        >
+          <Users size={14} className={isAfectado ? 'text-white' : 'text-text-muted'} />
+          <span>{isAfectado ? 'Afectado' : 'A mí también'}</span>
+        </button>
+      )}
+    </div>
   );
 
   return (
@@ -110,6 +183,7 @@ export default function ClaimFeedCard({ item }) {
       bodyDescription={item.descripcion}
       badges={Badges}
       imageSrc={item.imagen}
+      priorityImage={priorityImage}
       extraContent={ExtraContent}
       footer={Footer}
     />

@@ -5,8 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import {
-  ArrowLeft, MapPin, Building2, Calendar, History,
-  AlertTriangle, UserCheck, Edit3, XCircle, Check, Loader2, RefreshCw
+  ArrowLeft, MapPin, Building2, Calendar, History, MessageSquare,
+  AlertTriangle, UserCheck, Edit3, XCircle, Check, Loader2, RefreshCw, ThumbsUp
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
@@ -23,6 +23,7 @@ export default function ReclamoDetallePage() {
 
   const [reclamo, setReclamo] = useState(null);
   const [historial, setHistorial] = useState([]);
+  const [actualizaciones, setActualizaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [errorStatus, setErrorStatus] = useState(null);
@@ -46,6 +47,7 @@ export default function ReclamoDetallePage() {
         if (d.ok) {
           setReclamo(d.data);
           setHistorial(d.data.historial || []);
+          setActualizaciones(d.data.actualizaciones || []);
           setEditForm({
             titulo: d.data.titulo || "",
             descripcion: d.data.descripcion || "",
@@ -70,6 +72,28 @@ export default function ReclamoDetallePage() {
 
   const esAutor = session?.user?.id && Number(session.user.id) === Number(reclamo?.id_usuario);
   const esPendiente = reclamo?.estado === "Pendiente";
+
+  async function handleToggleAfectado() {
+    if (!reclamo || esAutor) return;
+    setSaving(true);
+    try {
+      const res = await apiClient.post(`/reclamos/${params.id}/afectado`);
+      if (res.data?.ok) {
+        toast.success(res.data.mensaje);
+        setReclamo(prev => ({
+          ...prev,
+          isAfectado: res.data.afectado,
+          afectadosCount: prev.afectadosCount + (res.data.afectado ? 1 : -1)
+        }));
+      } else {
+        toast.error(res.data?.mensaje || "Error al actualizar");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.mensaje || "Ocurrió un error");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function handleGuardarEdicion(e) {
     e.preventDefault();
@@ -178,7 +202,7 @@ export default function ReclamoDetallePage() {
   const CategoryIcon = getCategoryIcon(reclamo.categoriaCodigo || reclamo.categoriaNombre, reclamo.categoriaNombre);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="w-full">
 
       {/* Botón Volver */}
       <button
@@ -297,6 +321,28 @@ export default function ReclamoDetallePage() {
           </p>
         </div>
 
+        {/* Participación ciudadana (A mi también me pasa) */}
+        {reclamo.visibilidad === 'publico' && !esAutor && (
+          <div className="mb-5 pt-5 border-t border-border-subtle flex items-center justify-between gap-4 bg-surface rounded-xl p-4 shadow-sm border">
+            <div>
+              <p className="text-sm font-bold text-text-primary mb-0.5">¿A vos también te pasa?</p>
+              <p className="text-xs text-text-secondary">Sumá tu apoyo para darle más prioridad a este reclamo. Actualmente hay <span className="font-bold">{reclamo.afectadosCount}</span> afectado{reclamo.afectadosCount !== 1 && 's'}.</p>
+            </div>
+            <button
+              onClick={handleToggleAfectado}
+              disabled={saving}
+              className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                reclamo.isAfectado 
+                  ? 'bg-primary text-white hover:bg-[var(--color-brand-600)] shadow-md shadow-primary/20' 
+                  : 'bg-surface-elevated text-text-primary border border-border hover:bg-surface-hover hover:border-primary/30'
+              }`}
+            >
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <ThumbsUp size={16} className={reclamo.isAfectado ? 'text-white' : 'text-primary'} />}
+              {reclamo.isAfectado ? 'Ya marqué mi apoyo' : 'A mí también me pasa'}
+            </button>
+          </div>
+        )}
+
         {/* Imagen si existe */}
         {reclamo.imagen && (
           <div className="mb-5">
@@ -331,6 +377,32 @@ export default function ReclamoDetallePage() {
               Mensaje de Resolución Institucional:
             </p>
             <p className="text-xs text-emerald-800 leading-relaxed">{reclamo.mensaje_resolucion}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Actualizaciones */}
+      <div className="bg-surface rounded-2xl border border-border-subtle p-5 shadow-xs mb-6">
+        <h3 className="text-sm font-bold text-text-primary mb-4 flex items-center gap-2">
+          <MessageSquare size={16} className="text-primary" />
+          <span>Actualizaciones del Reclamo</span>
+        </h3>
+
+        {actualizaciones.length === 0 ? (
+          <p className="text-xs text-text-muted">No hay actualizaciones en este reclamo.</p>
+        ) : (
+          <div className="space-y-4">
+            {actualizaciones.map((act) => (
+              <div key={act.id} className={`p-4 rounded-xl border ${act.tipo_autor === 'institucion' ? 'bg-primary-subtle/30 border-primary/20' : 'bg-surface-subtle border-border-subtle'}`}>
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-xs font-bold text-text-primary">
+                    {act.tipo_autor === 'institucion' ? act.institucionNombre : act.autorNombre}
+                  </span>
+                  <span className="text-[10px] text-text-muted">{formatearFecha(act.fecha_creacion)}</span>
+                </div>
+                <p className="text-xs text-text-secondary whitespace-pre-line">{act.texto}</p>
+              </div>
+            ))}
           </div>
         )}
       </div>

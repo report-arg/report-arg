@@ -16,6 +16,7 @@ export default function BaseFeedCard({
   bodyDescription,
   badges,
   imageSrc,
+  priorityImage = false,
   extraContent,
   footer,
   customSurfaceClass = "bg-surface border-border-subtle hover:border-primary shadow-xs hover:shadow-sm"
@@ -103,6 +104,7 @@ export default function BaseFeedCard({
               alt="Adjunto"
               fill
               unoptimized
+              priority={priorityImage}
               className={`object-cover ${onClickBody ? "hover:scale-102 transition-transform duration-200" : ""}`}
             />
           </div>

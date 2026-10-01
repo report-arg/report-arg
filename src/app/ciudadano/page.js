@@ -72,8 +72,7 @@ export default function HomePage() {
     : "tu ciudad";
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-8 sm:px-6">
-
+    <div className="w-full">
       {/* Cabecera limpia y resumen integrado */}
       <div className="mb-10 flex flex-col md:flex-row gap-6 md:items-start justify-between">
         <div className="flex-1">
@@ -194,10 +193,11 @@ export default function HomePage() {
             />
           )}
 
-          {!loading && feed.map(item => (
+          {!loading && feed.map((item, index) => (
             <div key={item.id} className="mb-4">
               <FeedCard
                 item={item}
+                priorityImage={index === 0}
                 onEliminado={(id) => setFeed(prev => prev.filter(x => x.id !== id))}
               />
             </div>

@@ -9,6 +9,9 @@ import {
   Loader2, Globe, Lock
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
+import Sidebar from "@/components/admin/Sidebar";
+import Navbar from "@/components/admin/Navbar";
+import Breadcrumb from "@/components/admin/Breadcrumb";
 import { uploadImage } from "@/services/uploadService";
 import { getCategoryIcon, REAL_CATEGORIES, ReportProblemIcon } from "@/components/brand/icons";
 import { toast } from "sonner";
@@ -25,7 +28,8 @@ export default function NuevoReclamoPage() {
     descripcion: "",
     id_categoria: null,
     direccion: "",
-    visibilidad: "publico"
+    visibilidad: "publico",
+    id_ciudad: "1" // Default city for admin tests
   });
   const [coords, setCoords] = useState({ latitud: null, longitud: null });
   const [fotos, setFotos] = useState([]);
@@ -33,6 +37,7 @@ export default function NuevoReclamoPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Categorias loaded by hook
 
@@ -133,11 +138,12 @@ export default function NuevoReclamoPage() {
         longitud: coords.longitud,
         visibilidad: form.visibilidad,
         imagen_url: urlImagen,
+        id_ciudad: Number(form.id_ciudad)
       });
       const data = res.data;
       if (data.ok) {
-        toast.success("¡Problema reportado exitosamente!");
-        router.push("/ciudadano/reclamos");
+        toast.success("Reclamo de prueba publicado exitosamente");
+        router.push("/admin/reclamos");
       } else {
         setError(data.mensaje || "Error al publicar el reporte.");
       }
@@ -152,26 +158,20 @@ export default function NuevoReclamoPage() {
   if (status === "loading") return null;
 
   return (
-    <div className="w-full">
-      {/* Encabezado */}
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border-subtle/80">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="p-2 rounded-xl bg-surface-subtle text-text-secondary hover:bg-surface-elevated transition-colors cursor-pointer"
-          title="Volver"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold text-text-primary tracking-tight">
-            Reportar un problema
-          </h1>
-          <p className="text-xs text-text-muted mt-0.5">
-            Ingresá los datos del problema detectado para informar a las instituciones
-          </p>
-        </div>
-      </div>
+    <div className="admin-layout">
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="admin-content">
+        <Navbar section="Reportes" onMenuClick={() => setSidebarOpen(true)} />
+        <main className="admin-main">
+          <div style={{ marginBottom: 20 }}>
+            <Breadcrumb items={[{ label: "ADMIN PANEL", href: "/admin" }, { label: "REPORTES", href: "/admin/reclamos" }, { label: "NUEVO" }]} />
+            <h1 style={{ margin: "6px 0 2px", fontSize: 26, fontWeight: "bold", color: "var(--color-primary)" }}>
+              Crear Reclamo (Prueba)
+            </h1>
+            <p style={{ margin: 0, fontSize: 13, color: "#666" }}>
+              Herramienta administrativa para registrar reclamos manualmente
+            </p>
+          </div>
 
       {/* Formulario principal */}
       <form onSubmit={handleSubmit} noValidate className="bg-surface rounded-2xl border border-border-subtle p-5 shadow-xs space-y-5">
@@ -407,6 +407,8 @@ export default function NuevoReclamoPage() {
           </button>
         </div>
       </form>
+        </main>
+      </div>
     </div>
   );
 }

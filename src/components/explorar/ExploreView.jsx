@@ -8,6 +8,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { getCategoryIcon } from "@/components/brand/icons";
 import apiClient from "@/services/apiClient";
 import { toast } from "sonner";
+import useCategorias from "@/hooks/useCategorias";
 
 export default function ExploreView() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function ExploreView() {
   const [busqueda, setBusqueda] = useState(queryInicial);
   const [tipo, setTipo] = useState("todos");
   const [categoriaId, setCategoriaId] = useState(catInicial);
-  const [categorias, setCategorias] = useState([]);
+  const { categorias } = useCategorias("todas");
   const [feed, setFeed] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -38,13 +39,6 @@ export default function ExploreView() {
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [dropdownOpen]);
-
-  useEffect(() => {
-    apiClient.get(`/feed/categorias`)
-      .then(r => r.data)
-      .then(d => { if (d.ok) setCategorias(d.data || []); })
-      .catch(() => {});
-  }, []);
 
   const fetchExplorar = useCallback(async () => {
     setLoading(true);
@@ -89,7 +83,7 @@ export default function ExploreView() {
   const hayFiltros = busqueda.trim() !== "" || tipo !== "todos" || categoriaId !== null;
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-8">
+    <div className="w-full">
       {/* Header Explorar */}
       <div className="mb-6 pb-4 border-b border-border-subtle">
         <h1 className="text-xl md:text-2xl font-bold text-text-primary tracking-tight">
@@ -132,11 +126,10 @@ export default function ExploreView() {
               <button
                 key={t.id}
                 onClick={() => setTipo(t.id)}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  tipo === t.id
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${tipo === t.id
                     ? "bg-surface text-text-primary shadow-xs border border-border-subtle"
                     : "text-text-muted hover:text-text-primary"
-                }`}
+                  }`}
               >
                 {t.label}
               </button>
@@ -157,14 +150,13 @@ export default function ExploreView() {
                 <div className="max-h-80 overflow-y-auto overscroll-contain">
                   <button
                     onClick={() => { setCategoriaId(null); setDropdownOpen(false); }}
-                    className={`w-full flex items-center justify-between px-4 py-3 text-left text-xs transition-colors cursor-pointer ${
-                      categoriaId === null ? "bg-surface-subtle font-bold text-text-primary" : "font-medium text-text-secondary hover:bg-surface-subtle"
-                    }`}
+                    className={`w-full flex items-center justify-between px-4 py-3 text-left text-xs transition-colors cursor-pointer ${categoriaId === null ? "bg-surface-subtle font-bold text-text-primary" : "font-medium text-text-secondary hover:bg-surface-subtle"
+                      }`}
                   >
                     <span>Todas las categorías</span>
                     {categoriaId === null && <Check size={14} className="text-primary" />}
                   </button>
-                  
+
                   {categorias.map(cat => {
                     const CategoryIcon = getCategoryIcon(cat.codigo || cat.nombre, cat.nombre);
                     const isSelected = categoriaId === cat.id;
@@ -172,9 +164,8 @@ export default function ExploreView() {
                       <button
                         key={cat.id}
                         onClick={() => { setCategoriaId(cat.id); setDropdownOpen(false); }}
-                        className={`w-full flex items-center justify-between px-4 py-3 border-t border-border-subtle text-left text-xs transition-colors cursor-pointer group ${
-                          isSelected ? "bg-primary-subtle font-bold text-text-primary" : "font-medium text-text-secondary hover:bg-surface-subtle"
-                        }`}
+                        className={`w-full flex items-center justify-between px-4 py-3 border-t border-border-subtle text-left text-xs transition-colors cursor-pointer group ${isSelected ? "bg-primary-subtle font-bold text-text-primary" : "font-medium text-text-secondary hover:bg-surface-subtle"
+                          }`}
                       >
                         <div className="flex items-center gap-2.5">
                           <CategoryIcon size={14} className={isSelected ? "text-primary" : "text-text-muted group-hover:text-text-secondary"} />
@@ -229,10 +220,11 @@ export default function ExploreView() {
           />
         ) : (
           <div className="space-y-4">
-            {feed.map(item => (
+            {feed.map((item, index) => (
               <FeedCard
                 key={item.id}
                 item={item}
+                priorityImage={index === 0}
                 onEliminado={(id) => setFeed(prev => prev.filter(x => x.id !== id))}
               />
             ))}
