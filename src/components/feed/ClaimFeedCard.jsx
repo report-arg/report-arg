@@ -28,7 +28,7 @@ async function compartirReclamo({ titulo, descripcion, id }) {
 
   try {
     await navigator.clipboard.writeText(url);
-    alert("¡Enlace al reclamo copiado!");
+    toast.success("¡Enlace al reclamo copiado!");
   } catch {
     prompt("Copiá el enlace:", url);
   }
@@ -38,6 +38,8 @@ export default function ClaimFeedCard({ item, priorityImage }) {
   const router = useRouter();
   const { data: session } = useSession();
   const esAutor = session?.user?.id && Number(session.user.id) === Number(item.id_usuario);
+  const esCiudadano = session?.user?.role === "ciudadano";
+  const esTerminal = ["Resuelto", "Cancelado"].includes(item.estado);
 
   const tiempo = tiempoRelativo(item.fecha_creacion);
   const fechaLarga = fechaExacta(item.fecha_creacion);
@@ -154,7 +156,7 @@ export default function ClaimFeedCard({ item, priorityImage }) {
         </button>
       </div>
 
-      {(!esAutor && item.visibilidad !== 'privado') && (
+      {(esCiudadano && !esAutor && item.visibilidad !== 'privado' && !esTerminal) && (
         <button
           onClick={handleToggleAfectado}
           disabled={loadingAfectado}

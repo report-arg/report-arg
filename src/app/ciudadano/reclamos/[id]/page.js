@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import {
   ArrowLeft, MapPin, Building2, Calendar, History, MessageSquare,
-  AlertTriangle, UserCheck, Edit3, XCircle, Check, Loader2, RefreshCw, ThumbsUp
+  AlertTriangle, UserCheck, Edit3, XCircle, Check, Loader2, RefreshCw, ThumbsUp, Users
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import ClaimTracking from "@/components/reclamos/ClaimTracking";
@@ -73,9 +73,11 @@ export default function ReclamoDetallePage() {
 
   const esAutor = session?.user?.id && Number(session.user.id) === Number(reclamo?.id_usuario);
   const esPendiente = reclamo?.estado === "Pendiente";
+  const esCiudadano = session?.user?.role === "ciudadano";
+  const esTerminal = reclamo && ["Resuelto", "Cancelado"].includes(reclamo.estado);
 
   async function handleToggleAfectado() {
-    if (!reclamo || esAutor) return;
+    if (!reclamo || esAutor || !esCiudadano || esTerminal) return;
     setSaving(true);
     try {
       const res = await apiClient.post(`/reclamos/${params.id}/afectado`);
@@ -323,25 +325,38 @@ export default function ReclamoDetallePage() {
           </p>
         </div>
 
-        {/* Participación ciudadana (A mi también me pasa) */}
-        {reclamo.visibilidad === 'publico' && !esAutor && (
-          <div className="mb-5 pt-5 border-t border-border-subtle flex items-center justify-between gap-4 bg-surface rounded-xl p-4 shadow-sm border">
+        {/* Participación ciudadana (A mi también me pasa - HU-16) */}
+        {reclamo.visibilidad === 'publico' && !esAutor && esCiudadano && (
+          <div className="mb-5 pt-5 border-t border-border-subtle flex items-center justify-between gap-4 bg-surface rounded-xl p-4 shadow-xs border">
             <div>
-              <p className="text-sm font-bold text-text-primary mb-0.5">¿A vos también te pasa?</p>
-              <p className="text-xs text-text-secondary">Sumá tu apoyo para darle más prioridad a este reclamo. Actualmente hay <span className="font-bold">{reclamo.afectadosCount}</span> afectado{reclamo.afectadosCount !== 1 && 's'}.</p>
+              <p className="text-sm font-bold text-text-primary mb-0.5">
+                {esTerminal ? "Problemática comunitaria" : "¿A vos también te pasa?"}
+              </p>
+              <p className="text-xs text-text-secondary">
+                {esTerminal
+                  ? `Reclamo finalizado. Registró un total de ${reclamo.afectadosCount} vecino${reclamo.afectadosCount !== 1 ? 's' : ''} afectado${reclamo.afectadosCount !== 1 ? 's' : ''}.`
+                  : `Sumá tu apoyo para darle más prioridad a este reclamo. Actualmente hay ${reclamo.afectadosCount} afectado${reclamo.afectadosCount !== 1 ? 's' : ''}.`}
+              </p>
             </div>
-            <button
-              onClick={handleToggleAfectado}
-              disabled={saving}
-              className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                reclamo.isAfectado 
-                  ? 'bg-primary text-white hover:bg-[var(--color-brand-600)] shadow-md shadow-primary/20' 
-                  : 'bg-surface-elevated text-text-primary border border-border hover:bg-surface-hover hover:border-primary/30'
-              }`}
-            >
-              {saving ? <Loader2 size={16} className="animate-spin" /> : <ThumbsUp size={16} className={reclamo.isAfectado ? 'text-white' : 'text-primary'} />}
-              {reclamo.isAfectado ? 'Ya marqué mi apoyo' : 'A mí también me pasa'}
-            </button>
+            {!esTerminal ? (
+              <button
+                onClick={handleToggleAfectado}
+                disabled={saving}
+                className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  reclamo.isAfectado 
+                    ? 'bg-primary text-white hover:bg-[var(--color-brand-600)] shadow-md shadow-primary/20' 
+                    : 'bg-surface-elevated text-text-primary border border-border hover:bg-surface-hover hover:border-primary/30'
+                }`}
+              >
+                {saving ? <Loader2 size={16} className="animate-spin" /> : <ThumbsUp size={16} className={reclamo.isAfectado ? 'text-white' : 'text-primary'} />}
+                {reclamo.isAfectado ? 'Ya marqué mi apoyo' : 'A mí también me pasa'}
+              </button>
+            ) : (
+              <span className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-subtle text-text-muted text-xs font-semibold border border-border-subtle">
+                <Users size={14} />
+                <span>{reclamo.afectadosCount} afectados</span>
+              </span>
+            )}
           </div>
         )}
 
