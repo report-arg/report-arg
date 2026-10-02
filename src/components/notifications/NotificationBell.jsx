@@ -13,6 +13,7 @@ import {
   Building2,
   ArrowRight,
   Loader2,
+  Users,
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import { tiempoRelativo } from "@/utils/dateFormatters";
@@ -34,10 +35,10 @@ export default function NotificationBell({
 
   // Determinar rol/portal dinámico para rutas de navegación
   const getReclamoPath = (idReclamo) => {
-    if (pathname?.startsWith("/institucion")) {
+    if (session?.user?.role === "institucion" || pathname?.startsWith("/institucion")) {
       return `/institucion/reclamos/${idReclamo}`;
     }
-    if (pathname?.startsWith("/admin")) {
+    if (session?.user?.role === "admin" || pathname?.startsWith("/admin")) {
       return `/admin/reclamos/${idReclamo}`;
     }
     return `/ciudadano/reclamos/${idReclamo}`;
@@ -149,6 +150,12 @@ export default function NotificationBell({
         return <MessageSquare size={16} className="text-blue-500 shrink-0" />;
       case "CLAIM_REASSIGNED":
         return <Building2 size={16} className="text-amber-500 shrink-0" />;
+      case "CLAIM_ASSIGNED":
+        return <Building2 size={16} className="text-indigo-500 shrink-0" />;
+      case "CLAIM_REOPENED":
+        return <Clock size={16} className="text-amber-600 shrink-0" />;
+      case "CLAIM_SUPPORT":
+        return <Users size={16} className="text-amber-500 shrink-0" />;
       case "CLAIM_STATUS_CHANGED":
       default:
         return <Clock size={16} className="text-[var(--home-primary)] shrink-0" />;
@@ -258,7 +265,7 @@ export default function NotificationBell({
                       <span>{n.tiempo || tiempoRelativo(n.fecha_creacion || n.fecha) || "Reciente"}</span>
                       {n.id_reclamo && (
                         <span className="text-[var(--home-primary)] font-semibold inline-flex items-center gap-0.5">
-                          Ver reclamo #{n.id_reclamo}
+                          Ver reclamo
                           <ArrowRight size={10} />
                         </span>
                       )}

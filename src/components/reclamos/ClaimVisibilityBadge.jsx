@@ -1,25 +1,28 @@
 import { ShieldAlert, Eye } from "lucide-react";
+import Badge from "@/components/ui/Badge";
 
-export default function ClaimVisibilityBadge({ visibilidad = "publico", className = "" }) {
+/**
+ * Badge de visibilidad para reclamos (Público / Privado).
+ * Utiliza el componente base Badge para consistencia tipográfica,
+ * de padding y de radios en toda la aplicación.
+ */
+export default function ClaimVisibilityBadge({ visibilidad = "publico", size = "sm", className = "" }) {
   const esPrivado = visibilidad === "privado";
 
   return (
-    <span
+    <Badge
+      variant={esPrivado ? "danger" : "info"}
+      size={size}
       className={className}
-      style={{
-        fontSize: "11px",
-        fontWeight: 600,
-        padding: "2px 8px",
-        borderRadius: "12px",
-        backgroundColor: esPrivado ? "#fee2e2" : "#e0f2fe",
-        color: esPrivado ? "#991b1b" : "#0369a1",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "4px",
-      }}
+      icon={
+        esPrivado ? (
+          <ShieldAlert size={12} className="text-rose-600 dark:text-rose-400 shrink-0" />
+        ) : (
+          <Eye size={12} className="text-sky-600 dark:text-sky-400 shrink-0" />
+        )
+      }
     >
-      {esPrivado ? <ShieldAlert size={10} /> : <Eye size={10} />}
       {esPrivado ? "Privado" : "Público"}
-    </span>
+    </Badge>
   );
 }

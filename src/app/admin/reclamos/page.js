@@ -6,26 +6,18 @@ import Navbar from "@/components/admin/Navbar";
 import Breadcrumb from "@/components/admin/Breadcrumb";
 import { MapPin, Clock, Tag, ChevronLeft, ChevronRight, User } from "lucide-react";
 import apiClient from "@/services/apiClient";
+import { toast } from "sonner";
 
 import { CLAIM_STATUSES } from "@/utils/claimStatus";
 import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
 import ClaimTracking from "@/components/reclamos/ClaimTracking";
+import { tiempoRelativo, formatearFecha } from "@/utils/dateFormatters";
 const ESTADOS = [{ key: "", label: "Todos" }, ...CLAIM_STATUSES.map(key => ({ key, label: key }))];
 const ESTADO_LABELS = Object.fromEntries(CLAIM_STATUSES.map(key => [key, key]));
 
 function estadoClass(estado) {
   if (!estado) return "";
   return `estado-${estado.toLowerCase().replace(" ", "-").replace("ó", "o")}`;
-}
-
-function tiempoRelativo(fecha) {
-  const diff = Date.now() - new Date(fecha).getTime();
-  const min = Math.floor(diff / 60000);
-  const hs = Math.floor(diff / 3600000);
-  const dias = Math.floor(diff / 86400000);
-  if (min < 60) return `Hace ${min} min`;
-  if (hs < 24) return `Hace ${hs}h`;
-  return `Hace ${dias} día${dias > 1 ? "s" : ""}`;
 }
 
 export default function AdminReclamosPage() {
@@ -93,10 +85,10 @@ export default function AdminReclamosPage() {
         await cargarDetalle(id);
         await fetchReclamos();
         setInstitucionDestino("");
-        alert("Reclamo reasignado exitosamente");
+        toast.success("Reclamo reasignado exitosamente");
       }
     } catch (err) {
-      alert(err.response?.data?.mensaje || "Error al reasignar reclamo");
+      toast.error(err.response?.data?.mensaje || "Error al reasignar reclamo");
     } finally {
       setUpdatingId(null);
     }
@@ -287,7 +279,7 @@ export default function AdminReclamosPage() {
                   )}
                   <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12, color: "var(--color-muted)" }}>
                     <Clock size={13} style={{ flexShrink: 0 }} />
-                    <span>{new Date(detalle.fecha_creacion).toLocaleString("es-AR")}</span>
+                    <span>{formatearFecha(detalle.fecha_creacion)}</span>
                   </div>
                   {detalle.autorNombre && (
                     <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12, color: "var(--color-muted)" }}>
@@ -329,7 +321,7 @@ export default function AdminReclamosPage() {
                   <div className="mt-2"><ClaimTracking reclamo={detalle} /></div>
                   <p className="text-xs text-text-secondary mt-2">Responsable: {detalle.institucionNombre || "Sin asignar"}</p>
                   <h4 className="font-semibold mt-3">Historial</h4>
-                  <ol className="space-y-2 mt-2 text-xs text-text-secondary">{detalle.historial?.map(h => <li key={h.id}><p>{h.detalle}</p><p>{h.autorNombre} · {new Date(h.fecha_creacion).toLocaleString("es-AR")}</p></li>)}</ol>
+                  <ol className="space-y-2 mt-2 text-xs text-text-secondary">{detalle.historial?.map(h => <li key={h.id}><p>{h.detalle}</p><p>{h.autorNombre} · {formatearFecha(h.fecha_creacion)}</p></li>)}</ol>
                 </div>
               </div>
             )}

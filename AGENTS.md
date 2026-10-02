@@ -74,3 +74,53 @@ Si una comprobación falla por un problema previo o por falta de configuración 
 - Respetá los temas claro y oscuro cuando el componente participe de ambos.
 - Diferenciá carga, error y ausencia de resultados. Una petición fallida no debe mostrarse como “no hay datos”.
 - No permitas envíos duplicados mientras una operación esté en curso y conservá los datos del formulario cuando una solicitud falle.
+
+## Componentes UI Reutilizables (`src/components/ui/`)
+
+Toda la interfaz debe mantener consistencia visual, accesible y responsive. Antes de crear diálogos o etiquetas inline, usá obligatoriamente los componentes del catálogo base:
+
+1. **`Button` (`src/components/ui/Button.jsx`)**:
+   - **Uso prioritario** para acciones interactivas y botones de navegación.
+   - Respeta `BUTTON_HIERARCHY`:
+     - `variant`: `'primary'`, `'secondary'`, `'outline'`, `'ghost'`, `'danger'`, `'danger-soft'`, `'success'`, `'success-soft'`.
+     - `size`: `'sm'`, `'md'`, `'lg'`, `'icon'`.
+     - `loading`: boolean (muestra spinner animado y deshabilita clics duplicados).
+     - `href`: si se especifica, renderiza un `Link` de Next.js con los mismos estilos de botón.
+     - `leftIcon` y `rightIcon`.
+
+2. **`Input` (`src/components/ui/Input.jsx`)** y **`Textarea` (`src/components/ui/Textarea.jsx`)**:
+   - Campos de formulario con labels accesibles, iconografía izquierda/derecha, estados de error (`aria-invalid`) y textos de ayuda.
+   - `Textarea` incluye opción de `showCount` y `maxLength`.
+
+3. **`ConfirmModal` (`src/components/ui/ConfirmModal.jsx`)**:
+   - **Uso obligatorio** para diálogos de confirmación o acciones críticas (cambios de estado, bajas/eliminaciones, cancelaciones, resoluciones institucionales y formularios modales de confirmación).
+   - **NO crear modales inline** con `fixed inset-0` y divs ad-hoc.
+   - **Props clave**:
+     - `isOpen`: boolean
+     - `onClose`: () => void (se deshabilita automáticamente mientras `loading` está activo)
+     - `onConfirm`: (e) => void | Promise<void>
+     - `title`: string
+     - `description`: string | ReactNode
+     - `variant`: `'primary'` | `'danger'` | `'success'` | `'warning'` (configura la paleta del botón de confirmación e ícono del encabezado)
+     - `confirmText`: string (default `"Confirmar"`)
+     - `cancelText`: string (default `"Cancelar"`)
+     - `loading`: boolean (muestra spinner `<Loader2 className="animate-spin" />` y deshabilita botones)
+     - `loadingText`: string opcional
+     - `confirmDisabled`: boolean (para validación de formulario/campos vacíos)
+     - `children`: ReactNode opcional (para textareas, campos de texto o alertas)
+   - **Accesibilidad y UX**: Cierre con tecla Escape, bloqueo de scroll en el fondo, cierre por click en backdrop y atributos WAI-ARIA (`role="dialog"`, `aria-modal="true"`).
+
+4. **`Modal` (`src/components/ui/Modal.jsx`)**:
+   - Componente contenedor base para diálogos modales generales con soporte de portal a `document.body`, responsive maxWidth (`sm`, `md`, `lg`, `xl`) y encabezado flexible.
+
+5. **`Badge` (`src/components/ui/Badge.jsx`)** y **`StatusBadge` (`src/components/ui/StatusBadge.jsx`)**:
+   - Componentes base universales para etiquetas, roles, categorías y estados (con indicador dot).
+   - Variantes semánticas: `'default'`, `'neutral'`, `'primary'`, `'success'`, `'danger'`, `'warning'`, `'info'`, `'outline'`.
+   - Tamaños: `'sm'`, `'md'`, `'lg'`.
+   - Los componentes de dominio `ClaimStatusBadge` y `ClaimVisibilityBadge` implementan este estándar para los reclamos.
+
+6. **`ImageViewer` (`src/components/ui/ImageViewer.jsx`)**:
+   - Visor lightbox modal para evidencias fotográficas y adjuntos sin recorte de imagen, con zoom natural y control por teclado.
+
+7. **`Select` (`src/components/ui/Select.jsx`)**:
+   - Selector desplegable accesible que sustituye los selectores rígidos nativos por menús flotantes estilizados con bordes redondeados (`rounded-2xl`), soporte para tema claro/oscuro, ícono indicador `ChevronDown` animado, navegación completa por teclado (Escape, Flechas, Enter, Espacio) y cierre por click exterior.

@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
-import { useSession } from "next-auth/react";
-import { CheckCircle, Share2, Trash2 } from "lucide-react";
+import React from "react";
+import { CheckCircle, Share2 } from "lucide-react";
 import { OfficialCommIcon, getCategoryIcon } from "@/components/brand/icons";
 import { fechaExacta } from "@/utils/dateFormatters";
-import apiClient from "@/services/apiClient";
+import { toast } from "sonner";
 import BaseFeedCard from "./BaseFeedCard";
 
 function iniciales(nombre) {
@@ -24,30 +23,15 @@ async function compartirComunicado({ titulo, descripcion, id }) {
 
   try {
     await navigator.clipboard.writeText(url);
-    alert("¡Enlace al comunicado copiado!");
+    toast.success("¡Enlace al comunicado copiado!");
   } catch {
     prompt("Copiá el enlace:", url);
   }
 }
 
-export default function CommunicationFeedCard({ item, onEliminado, priorityImage }) {
-  const { data: session } = useSession();
-  const [eliminando, setEliminando] = useState(false);
-
-  const esPropietario = session?.user?.id && Number(session.user.id) === Number(item.id_usuario);
+export default function CommunicationFeedCard({ item, priorityImage }) {
   const fechaCompleta = fechaExacta(item.fecha_creacion);
   const CategoryIcon = getCategoryIcon(item.categoriaCodigo || item.categoriaNombre, item.categoriaNombre);
-
-  async function eliminarComunicado() {
-    if (!confirm("¿Deseás eliminar este comunicado oficial? Esta acción no se puede deshacer.")) return;
-    setEliminando(true);
-    try {
-      const res = await apiClient.delete(`/comunicados/${item.id}`);
-      if (res.data?.ok) onEliminado?.(item.id);
-    } finally {
-      setEliminando(false);
-    }
-  }
 
   const Subtitle = (
     <span title={fechaCompleta}>{fechaCompleta}</span>
@@ -58,23 +42,10 @@ export default function CommunicationFeedCard({ item, onEliminado, priorityImage
   );
 
   const HeaderActions = (
-    <>
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-official-border text-primary text-[10px] font-bold shadow-xs">
-        <OfficialCommIcon size={10} />
-        <span>Oficial</span>
-      </span>
-
-      {esPropietario && (
-        <button
-          onClick={eliminarComunicado}
-          disabled={eliminando}
-          className="p-1 text-text-muted hover:text-red-600 rounded transition-colors cursor-pointer disabled:opacity-50"
-          title="Eliminar comunicado"
-        >
-          <Trash2 size={13} />
-        </button>
-      )}
-    </>
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-official-border text-primary text-[10px] font-bold shadow-xs">
+      <OfficialCommIcon size={10} />
+      <span>Oficial</span>
+    </span>
   );
 
   const Badges = item.categoriaNombre && (

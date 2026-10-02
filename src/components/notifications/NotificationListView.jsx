@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Bell,
   CheckCheck,
@@ -13,6 +14,7 @@ import {
   ArrowRight,
   Loader2,
   Filter,
+  Users,
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import EmptyState from "@/components/ui/EmptyState";
@@ -26,6 +28,7 @@ export default function NotificationListView({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   const [notificaciones, setNotificaciones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,10 +36,10 @@ export default function NotificationListView({
   const [markingAll, setMarkingAll] = useState(false);
 
   const getReclamoPath = (idReclamo) => {
-    if (pathname?.startsWith("/institucion")) {
+    if (session?.user?.role === "institucion" || pathname?.startsWith("/institucion")) {
       return `/institucion/reclamos/${idReclamo}`;
     }
-    if (pathname?.startsWith("/admin")) {
+    if (session?.user?.role === "admin" || pathname?.startsWith("/admin")) {
       return `/admin/reclamos/${idReclamo}`;
     }
     return `/ciudadano/reclamos/${idReclamo}`;
@@ -106,6 +109,12 @@ export default function NotificationListView({
         return <MessageSquare size={18} className="text-blue-500 shrink-0" />;
       case "CLAIM_REASSIGNED":
         return <Building2 size={18} className="text-amber-500 shrink-0" />;
+      case "CLAIM_ASSIGNED":
+        return <Building2 size={18} className="text-indigo-500 shrink-0" />;
+      case "CLAIM_REOPENED":
+        return <Clock size={18} className="text-amber-600 shrink-0" />;
+      case "CLAIM_SUPPORT":
+        return <Users size={18} className="text-amber-500 shrink-0" />;
       case "CLAIM_STATUS_CHANGED":
       default:
         return <Clock size={18} className="text-[var(--home-primary)] shrink-0" />;
@@ -239,7 +248,7 @@ export default function NotificationListView({
                   {n.id_reclamo && (
                     <div className="mt-3 pt-2 border-t border-[var(--home-border)]/60 flex items-center justify-between">
                       <span className="text-[11px] font-semibold text-[var(--home-primary)] inline-flex items-center gap-1 hover:underline">
-                        Ver detalle del reclamo #{n.id_reclamo}
+                        Ver reclamo
                         <ArrowRight size={12} />
                       </span>
 

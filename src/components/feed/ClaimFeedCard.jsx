@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, Share2, Building2, Eye, Users } from "lucide-react";
+import { MapPin, Share2, Building2, Eye, Users, MessageSquare } from "lucide-react";
 import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
 import { getCategoryIcon } from "@/components/brand/icons";
 import { tiempoRelativo, fechaExacta } from "@/utils/dateFormatters";
@@ -136,6 +136,8 @@ export default function ClaimFeedCard({ item, priorityImage }) {
     </div>
   );
 
+  const actualizacionesCount = Number(item.actualizacionesCount || item.cantidad_actualizaciones || 0);
+
   const Footer = (
     <div className="flex items-center justify-between w-full">
       <div className="flex items-center gap-2">
@@ -146,6 +148,17 @@ export default function ClaimFeedCard({ item, priorityImage }) {
           <Eye size={14} />
           <span className="hidden sm:inline">Seguimiento</span>
         </button>
+
+        {actualizacionesCount > 0 && (
+          <button
+            onClick={() => router.push(`/ciudadano/reclamos/${item.id}#actualizaciones`)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-blue-700 bg-blue-50/90 hover:bg-blue-100 border border-blue-200/90 transition-colors cursor-pointer"
+            title="Ver actualizaciones del reclamo"
+          >
+            <MessageSquare size={13} className="text-blue-600 shrink-0" />
+            <span>Actualizaciones {actualizacionesCount}</span>
+          </button>
+        )}
 
         <button
           onClick={(e) => { e.stopPropagation(); compartirReclamo({ titulo: item.titulo, descripcion: item.descripcion, id: item.id }); }}

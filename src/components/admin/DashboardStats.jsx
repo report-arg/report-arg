@@ -4,16 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import apiClient from "@/services/apiClient";
 
 import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
-
-function tiempoRelativo(fecha) {
-  const diff = Date.now() - new Date(fecha).getTime();
-  const min  = Math.floor(diff / 60000);
-  const hs   = Math.floor(diff / 3600000);
-  const dias = Math.floor(diff / 86400000);
-  if (min < 60) return `Hace ${min} min`;
-  if (hs  < 24) return `Hace ${hs}h`;
-  return `Hace ${dias} día${dias > 1 ? 's' : ''}`;
-}
+import { tiempoRelativo } from "@/utils/dateFormatters";
 
 export default function DashboardStats() {
   const chartRef      = useRef(null);

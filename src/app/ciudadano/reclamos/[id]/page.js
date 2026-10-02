@@ -1,21 +1,147 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import Image from "next/image";
 import {
   ArrowLeft, MapPin, Building2, Calendar, History, MessageSquare,
-  AlertTriangle, UserCheck, Edit3, XCircle, Check, Loader2, RefreshCw, ThumbsUp, Users
+  AlertTriangle, UserCheck, Edit3, XCircle, Check, Loader2, RefreshCw,
+  ThumbsUp, Users, CheckCircle2, Image as ImageIcon, Plus, Eye, ShieldAlert
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
-import ClaimTracking from "@/components/reclamos/ClaimTracking";
-import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
-import ClaimVisibilityBadge from "@/components/reclamos/ClaimVisibilityBadge";
-import ClaimProgress from "@/components/reclamos/ClaimProgress";
+import {
+  Button,
+  Input,
+  Textarea,
+  Modal,
+  ConfirmModal,
+  Badge,
+  StatusBadge,
+  ImageViewer,
+} from "@/components/ui";
 import { getCategoryIcon } from "@/components/brand/icons";
-import { formatearFecha } from "@/utils/dateFormatters";
+import { formatearFecha, formatearFechaCorta, tiempoRelativo } from "@/utils/dateFormatters";
 import { toast } from "sonner";
+
+const PASOS_SECUENCIA = [
+  { key: "Pendiente", label: "Pendiente" },
+  { key: "En revisión", label: "En revisión" },
+  { key: "En proceso", label: "En proceso" },
+  { key: "Resuelto", label: "Resuelto" },
+];
+
+const EVENTOS_CIUDADANO = {
+  CREACION: "Creación",
+  EDICION: "Edición",
+  CAMBIO_ESTADO: "Cambio de estado",
+  CANCELACION: "Cancelación",
+  RESOLUCION: "Resolución",
+  REAPERTURA: "Reapertura",
+  REASIGNACION: "Reasignación",
+};
+
+function getNombreEvento(tipo) {
+  if (!tipo) return "Movimiento";
+  return EVENTOS_CIUDADANO[tipo] || tipo.replace(/_/g, " ").toLowerCase().replace(/^\w/, c => c.toUpperCase());
+}
+
+function getNodeStyle(tipoEvento) {
+  switch (tipoEvento) {
+    case 'CANCELACION':
+      return { dot: 'bg-rose-500 ring-2 ring-rose-500/20', text: 'text-rose-700 dark:text-rose-400' };
+    case 'RESOLUCION':
+      return { dot: 'bg-emerald-500 ring-2 ring-emerald-500/20', text: 'text-emerald-700 dark:text-emerald-400' };
+    case 'REAPERTURA':
+      return { dot: 'bg-amber-500 ring-2 ring-amber-500/20', text: 'text-amber-700 dark:text-amber-400' };
+    default:
+      return { dot: 'bg-primary ring-2 ring-primary/20', text: 'text-text-primary' };
+  }
+}
+
+function formatearDetalleHistorial(detalle, institucionNombre) {
+  if (!detalle) return "";
+  const instNombre = institucionNombre || "la institución asignada";
+  return detalle.replace(/Asignado a institución ID \d+/gi, `Asignado a ${instNombre}`);
+}
+
+function renderContenidoEvento(ev, institucionNombre) {
+  const detalleBase = formatearDetalleHistorial(ev.detalle, institucionNombre);
+  if (!detalleBase) return null;
+
+  if (ev.tipo_evento === 'CANCELACION') {
+    const partes = detalleBase.split(/\.?\s*Motivo:\s*/i);
+    const accion = partes[0]?.trim();
+    const motivo = partes[1]?.trim();
+
+    return (
+      <div className="text-xs text-text-secondary mt-0.5 space-y-0.5 leading-relaxed">
+        {accion && <p>{accion.endsWith('.') ? accion : `${accion}.`}</p>}
+        {motivo && (
+          <p className="text-text-secondary">
+            <span className="font-semibold text-text-primary">Motivo:</span> {motivo}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (ev.tipo_evento === 'REAPERTURA') {
+    const partes = detalleBase.split(/\.?\s*Motivo:\s*/i);
+    const accion = partes[0]?.trim();
+    const motivo = partes[1]?.trim();
+
+    return (
+      <div className="text-xs text-text-secondary mt-0.5 space-y-0.5 leading-relaxed">
+        {accion && <p>{accion.endsWith('.') ? accion : `${accion}.`}</p>}
+        {motivo && (
+          <p className="text-text-secondary">
+            <span className="font-semibold text-text-primary">Motivo:</span> {motivo}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (ev.tipo_evento === 'RESOLUCION') {
+    const partes = detalleBase.split(/\.?\s*Mensaje:\s*/i);
+    const accion = partes[0]?.trim();
+    const mensaje = partes[1]?.trim();
+
+    return (
+      <div className="text-xs text-text-secondary mt-0.5 space-y-0.5 leading-relaxed">
+        {accion && <p>{accion.endsWith('.') ? accion : `${accion}.`}</p>}
+        {mensaje && (
+          <p className="text-text-secondary">
+            <span className="font-semibold text-text-primary">Resolución:</span> &ldquo;{mensaje}&rdquo;
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
+      {detalleBase}
+    </p>
+  );
+}
+
+function getExplicacionEstado(estado) {
+  switch (estado) {
+    case 'Pendiente':
+      return "Tu reclamo fue recibido y está esperando revisión inicial.";
+    case 'En revisión':
+      return "La institución responsable está evaluando tu reclamo y analizando los pasos a seguir.";
+    case 'En proceso':
+      return "La institución está trabajando en la resolución del reclamo.";
+    case 'Resuelto':
+      return "El reclamo fue marcado como resuelto por la institución.";
+    case 'Cancelado':
+      return "El reclamo fue cancelado.";
+    default:
+      return "El reclamo se encuentra en seguimiento según las etapas correspondientes.";
+  }
+}
 
 export default function ReclamoDetallePage() {
   const params = useParams();
@@ -29,17 +155,23 @@ export default function ReclamoDetallePage() {
   const [error, setError] = useState("");
   const [errorStatus, setErrorStatus] = useState(null);
 
-  // Modales de Edición, Cancelación y Reapertura
+  // Modales
   const [editModal, setEditModal] = useState(false);
   const [cancelModal, setCancelModal] = useState(false);
   const [reopenModal, setReopenModal] = useState(false);
+  const [modalFoto, setModalFoto] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Formularios
   const [editForm, setEditForm] = useState({ titulo: "", descripcion: "", direccion: "" });
   const [motivoCancelacion, setMotivoCancelacion] = useState("");
   const [motivoReapertura, setMotivoReapertura] = useState("");
+  const [nuevaActualizacion, setNuevaActualizacion] = useState("");
+  const [mostrarFormActualizacion, setMostrarFormActualizacion] = useState(false);
+  const [submittingActualizacion, setSubmittingActualizacion] = useState(false);
+  const [mostrarTodoHistorial, setMostrarTodoHistorial] = useState(false);
 
-  const fetchDetalle = () => {
+  const fetchDetalle = useCallback(() => {
     if (!params.id) return;
     setLoading(true);
     apiClient.get(`/reclamos/${params.id}`)
@@ -56,7 +188,7 @@ export default function ReclamoDetallePage() {
           });
         } else {
           setError(d.mensaje || "Error al obtener reclamo.");
-          setErrorStatus(r.status || 500);
+          setErrorStatus(500);
         }
       })
       .catch(err => {
@@ -65,11 +197,11 @@ export default function ReclamoDetallePage() {
         setErrorStatus(err.response?.status || 500);
       })
       .finally(() => setLoading(false));
-  };
+  }, [params.id]);
 
   useEffect(() => {
     fetchDetalle();
-  }, [params.id]);
+  }, [fetchDetalle]);
 
   const esAutor = session?.user?.id && Number(session.user.id) === Number(reclamo?.id_usuario);
   const esPendiente = reclamo?.estado === "Pendiente";
@@ -78,23 +210,50 @@ export default function ReclamoDetallePage() {
 
   async function handleToggleAfectado() {
     if (!reclamo || esAutor || !esCiudadano || esTerminal) return;
-    setSaving(true);
+    const previoAfectado = Boolean(reclamo.isAfectado);
+    const previoCount = Number(reclamo.afectadosCount || 0);
+
+    // Optimistic UI
+    setReclamo(prev => ({
+      ...prev,
+      isAfectado: !previoAfectado,
+      afectadosCount: previoCount + (!previoAfectado ? 1 : -1),
+    }));
+
     try {
       const res = await apiClient.post(`/reclamos/${params.id}/afectado`);
       if (res.data?.ok) {
         toast.success(res.data.mensaje);
-        setReclamo(prev => ({
-          ...prev,
-          isAfectado: res.data.afectado,
-          afectadosCount: prev.afectadosCount + (res.data.afectado ? 1 : -1)
-        }));
       } else {
+        setReclamo(prev => ({ ...prev, isAfectado: previoAfectado, afectadosCount: previoCount }));
         toast.error(res.data?.mensaje || "Error al actualizar");
       }
     } catch (err) {
+      setReclamo(prev => ({ ...prev, isAfectado: previoAfectado, afectadosCount: previoCount }));
       toast.error(err.response?.data?.mensaje || "Ocurrió un error");
+    }
+  }
+
+  async function handleAgregarActualizacion(e) {
+    e.preventDefault();
+    if (!nuevaActualizacion.trim()) {
+      return toast.error("El texto de la actualización no puede estar vacío");
+    }
+    setSubmittingActualizacion(true);
+    try {
+      const res = await apiClient.post(`/reclamos/${params.id}/actualizaciones`, { texto: nuevaActualizacion.trim() });
+      if (res.data?.ok) {
+        toast.success("Actualización agregada exitosamente");
+        setNuevaActualizacion("");
+        setMostrarFormActualizacion(false);
+        fetchDetalle();
+      } else {
+        toast.error(res.data?.mensaje || "Error al agregar actualización");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.mensaje || "Error al agregar actualización");
     } finally {
-      setSaving(false);
+      setSubmittingActualizacion(false);
     }
   }
 
@@ -120,14 +279,14 @@ export default function ReclamoDetallePage() {
     }
   }
 
-  async function handleCancelarReclamo(e) {
-    e.preventDefault();
+  async function handleCancelarReclamo() {
     setSaving(true);
     try {
       const res = await apiClient.patch(`/reclamos/${params.id}/cancelar`, { motivo: motivoCancelacion });
       if (res.data?.ok) {
         toast.success("Reclamo cancelado exitosamente.");
         setCancelModal(false);
+        setMotivoCancelacion("");
         fetchDetalle();
       } else {
         toast.error(res.data?.mensaje || "No se pudo cancelar el reclamo.");
@@ -139,8 +298,7 @@ export default function ReclamoDetallePage() {
     }
   }
 
-  async function handleReabrirReclamo(e) {
-    e.preventDefault();
+  async function handleReabrirReclamo() {
     if (!motivoReapertura.trim()) {
       return toast.error("Por favor ingresá un motivo para la reapertura.");
     }
@@ -164,8 +322,9 @@ export default function ReclamoDetallePage() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto p-8 text-center text-text-muted text-sm">
-        Cargando seguimiento del reclamo...
+      <div className="max-w-3xl mx-auto py-16 text-center text-text-muted text-sm">
+        <Loader2 size={24} className="animate-spin mx-auto mb-3 text-primary" />
+        <p>Cargando información del reclamo...</p>
       </div>
     );
   }
@@ -186,16 +345,18 @@ export default function ReclamoDetallePage() {
     }
 
     return (
-      <div className="max-w-lg mx-auto my-10 p-6 rounded-2xl bg-red-50 border border-red-200 text-center text-red-900">
-        <AlertTriangle size={36} className="mx-auto mb-2 text-red-600" />
+      <div className="max-w-lg mx-auto my-10 p-6 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-center text-rose-900 dark:text-rose-200">
+        <AlertTriangle size={36} className="mx-auto mb-2 text-rose-600 dark:text-rose-400" />
         <h3 className="text-base font-bold mb-1">{tituloError}</h3>
-        <p className="text-xs text-red-700 mb-4">{descError}</p>
-        <button
+        <p className="text-xs text-rose-700 dark:text-rose-300 mb-4">{descError}</p>
+        <Button
+          variant="danger"
+          size="sm"
+          leftIcon={<ArrowLeft size={14} />}
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-colors"
         >
-          <ArrowLeft size={14} /> Volver a reclamos
-        </button>
+          Volver a mis reclamos
+        </Button>
       </div>
     );
   }
@@ -203,417 +364,645 @@ export default function ReclamoDetallePage() {
   if (!reclamo) return null;
 
   const CategoryIcon = getCategoryIcon(reclamo.categoriaCodigo || reclamo.categoriaNombre, reclamo.categoriaNombre);
+  const currentStepIdx = PASOS_SECUENCIA.findIndex(p => p.key === reclamo.estado);
+  const tiempoEnEstado = tiempoRelativo(reclamo.fecha_ultimo_cambio_estado || reclamo.fecha_creacion);
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-4xl mx-auto pb-8">
 
       {/* Botón Volver */}
-      <button
-        onClick={() => router.back()}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-subtle text-text-secondary text-xs font-semibold hover:bg-surface-elevated transition-colors cursor-pointer mb-4"
-      >
-        <ArrowLeft size={15} /> Volver a mis reclamos
-      </button>
+      <div className="mb-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          leftIcon={<ArrowLeft size={15} />}
+          onClick={() => router.back()}
+        >
+          Volver a mis reclamos
+        </Button>
+      </div>
 
-      {/* Tarjeta Principal de Seguimiento */}
-      <div className="bg-surface rounded-2xl border border-border-subtle p-5 shadow-xs mb-6">
+      {/* Contenedor Principal Continuo y Compacto */}
+      <div className="bg-surface rounded-2xl border border-border-subtle shadow-xs divide-y divide-border-subtle overflow-hidden">
 
-        {/* Header con Badges y Acciones de Autor */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pb-3 border-b border-border-subtle">
-          <div className="flex flex-wrap items-center gap-2">
-            <ClaimStatusBadge estado={reclamo.estado} />
-              <ClaimTracking reclamo={reclamo}  />
-            <ClaimVisibilityBadge visibilidad={reclamo.visibilidad} />
+        {/* 1. INFORMACIÓN PRINCIPAL */}
+        <div className="p-4 sm:px-5 sm:py-4">
 
+          {/* Fila superior: Título del reclamo primero + acciones contextuales a la derecha */}
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight leading-snug">
+              {reclamo.titulo}
+            </h1>
+
+            {/* Acciones contextuales del ciudadano creador */}
+            <div className="flex items-center gap-2 shrink-0">
+              {esAutor && esPendiente && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    leftIcon={<Edit3 size={13} />}
+                    onClick={() => setEditModal(true)}
+                  >
+                    Editar
+                  </Button>
+                  <Button
+                    variant="danger-soft"
+                    size="sm"
+                    leftIcon={<XCircle size={13} />}
+                    onClick={() => setCancelModal(true)}
+                  >
+                    Cancelar
+                  </Button>
+                </>
+              )}
+
+              {esAutor && (reclamo.estado === "Resuelto" || reclamo.estado === "Cancelado") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<RefreshCw size={13} />}
+                  onClick={() => setReopenModal(true)}
+                >
+                  Reabrir reclamo
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Metadata limpia debajo del título: Estado como único badge + elementos discretos */}
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs text-text-secondary mb-3 pb-3 border-b border-border-subtle">
+            {/* Estado como único badge principal */}
+            <StatusBadge status={reclamo.estado} size="sm" />
+
+            {/* Categoría: icono + texto sin pill */}
+            {reclamo.categoriaNombre && (
+              <>
+                <span className="text-border-subtle select-none hidden sm:inline">·</span>
+                <span className="inline-flex items-center gap-1.5 font-medium text-text-primary">
+                  <CategoryIcon size={13} className="text-primary shrink-0" />
+                  <span>{reclamo.categoriaNombre}</span>
+                </span>
+              </>
+            )}
+
+            {/* Visibilidad: icono + texto discreto */}
+            <span className="text-border-subtle select-none hidden sm:inline">·</span>
+            <span className="inline-flex items-center gap-1 text-text-muted">
+              {reclamo.visibilidad === "privado" ? (
+                <>
+                  <ShieldAlert size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>Privado</span>
+                </>
+              ) : (
+                <>
+                  <Eye size={13} className="shrink-0" />
+                  <span>Público</span>
+                </>
+              )}
+            </span>
+
+            {/* Ubicación: icono + texto */}
+            {reclamo.direccion && (
+              <>
+                <span className="text-border-subtle select-none hidden sm:inline">·</span>
+                <span className="inline-flex items-center gap-1 text-text-muted">
+                  <MapPin size={13} className="shrink-0" />
+                  <span>{reclamo.direccion}</span>
+                </span>
+              </>
+            )}
+
+            {/* Fecha: icono + fecha corta */}
+            <span className="text-border-subtle select-none hidden sm:inline">·</span>
+            <span className="inline-flex items-center gap-1 text-text-muted">
+              <Calendar size={13} className="shrink-0" />
+              <span>{formatearFechaCorta(reclamo.fecha_creacion)}</span>
+            </span>
+
+            {/* Editado: texto secundario sutil, sin badge */}
             {reclamo.editado === 1 && (
-              <span className="text-[11px] font-semibold bg-surface-subtle text-text-secondary px-2 py-0.5 rounded">
-                Editado
+              <span className="text-[11px] text-text-muted italic">
+                (editado)
               </span>
             )}
           </div>
 
-          {/* Acciones de Edición/Cancelación solo si es autor y el estado es Pendiente */}
-          {esAutor && esPendiente && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setEditModal(true)}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary bg-primary-subtle hover:bg-[var(--color-brand-100)] transition-colors cursor-pointer"
-              >
-                <Edit3 size={13} />
-                <span>Editar</span>
-              </button>
-
-              <button
-                onClick={() => setCancelModal(true)}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors cursor-pointer"
-              >
-                <XCircle size={13} />
-                <span>Cancelar</span>
-              </button>
-            </div>
-          )}
-
-          {/* Acciones de Reapertura solo si es autor y el estado es Resuelto o Cancelado */}
-          {esAutor && (reclamo.estado === "Resuelto" || reclamo.estado === "Cancelado") && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setReopenModal(true)}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer"
-              >
-                <RefreshCw size={13} />
-                <span>Reabrir reclamo</span>
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Título */}
-        <h1 className="text-xl font-bold text-text-primary mb-3 leading-snug">
-          {reclamo.titulo}
-        </h1>
-
-        {/* Metadatos */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-text-secondary mb-4 pb-3 border-b border-border-subtle">
-          {reclamo.categoriaNombre && (
-            <span className="inline-flex items-center gap-1.5 font-semibold text-text-primary">
-              <CategoryIcon size={14} className="text-primary" />
-              <span>{reclamo.categoriaNombre}</span>
-            </span>
-          )}
-
-          {reclamo.direccion && (
-            <span className="inline-flex items-center gap-1">
-              <MapPin size={14} className="text-text-muted" />
-              <span>{reclamo.direccion}</span>
-            </span>
-          )}
-
-          <span className="inline-flex items-center gap-1">
-            <Calendar size={14} className="text-text-muted" />
-            <span>Creado el {formatearFecha(reclamo.fecha_creacion)}</span>
-          </span>
-        </div>
-
-        {/* Institución Asignada */}
-        <div className="p-3.5 rounded-xl bg-primary-subtle/70 border border-[var(--color-brand-100)] flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center shrink-0">
-            <Building2 size={18} />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-[var(--color-brand-800)] uppercase tracking-wider">
-              Institución Responsable
-            </p>
-            <p className="text-xs font-bold text-text-primary">
-              {reclamo.institucionNombre || "Pendiente de asignación"}
-            </p>
-          </div>
-        </div>
-
-        {/* Barra de Progreso del Reclamo */}
-        <div className="mb-6 p-4 rounded-xl bg-surface-subtle border border-border-subtle">
-          <p className="text-xs font-bold text-text-secondary mb-2">Avance del reclamo</p>
-          <ClaimProgress estado={reclamo.estado} />
-        </div>
-
-        {/* Descripción */}
-        <div className="mb-5">
-          <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-1.5">
-            Descripción detallada
-          </h3>
-          <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-line">
+          {/* Descripción */}
+          <div className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
             {reclamo.descripcion}
-          </p>
+          </div>
+
+          {/* Foto adjunta: acción discreta sin imagen estirada fija */}
+          {reclamo.imagen && (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => setModalFoto(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary bg-primary-subtle hover:bg-primary-subtle/80 border border-primary/20 transition-colors cursor-pointer shadow-2xs"
+              >
+                <ImageIcon size={14} />
+                <span>Ver foto adjunta</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Participación ciudadana (A mi también me pasa - HU-16) */}
-        {reclamo.visibilidad === 'publico' && !esAutor && esCiudadano && (
-          <div className="mb-5 pt-5 border-t border-border-subtle flex items-center justify-between gap-4 bg-surface rounded-xl p-4 shadow-xs border">
-            <div>
-              <p className="text-sm font-bold text-text-primary mb-0.5">
-                {esTerminal ? "Problemática comunitaria" : "¿A vos también te pasa?"}
-              </p>
-              <p className="text-xs text-text-secondary">
-                {esTerminal
-                  ? `Reclamo finalizado. Registró un total de ${reclamo.afectadosCount} vecino${reclamo.afectadosCount !== 1 ? 's' : ''} afectado${reclamo.afectadosCount !== 1 ? 's' : ''}.`
-                  : `Sumá tu apoyo para darle más prioridad a este reclamo. Actualmente hay ${reclamo.afectadosCount} afectado${reclamo.afectadosCount !== 1 ? 's' : ''}.`}
-              </p>
+        {/* 2. INSTITUCIÓN RESPONSABLE (Sección compacta) */}
+        <div className="px-4 py-2 sm:px-5 sm:py-2.5 bg-surface-subtle/30">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Building2 size={14} className="text-primary shrink-0" />
+              <span className="text-xs font-semibold text-text-primary">
+                {reclamo.institucionNombre || "Pendiente de asignación"}
+              </span>
+              {Boolean(reclamo.institucionEsPrincipal) && (
+                <Badge variant="primary" size="sm">
+                  Institución principal
+                </Badge>
+              )}
             </div>
-            {!esTerminal ? (
-              <button
-                onClick={handleToggleAfectado}
-                disabled={saving}
-                className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  reclamo.isAfectado 
-                    ? 'bg-primary text-white hover:bg-[var(--color-brand-600)] shadow-md shadow-primary/20' 
-                    : 'bg-surface-elevated text-text-primary border border-border hover:bg-surface-hover hover:border-primary/30'
-                }`}
-              >
-                {saving ? <Loader2 size={16} className="animate-spin" /> : <ThumbsUp size={16} className={reclamo.isAfectado ? 'text-white' : 'text-primary'} />}
-                {reclamo.isAfectado ? 'Ya marqué mi apoyo' : 'A mí también me pasa'}
-              </button>
-            ) : (
-              <span className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-subtle text-text-muted text-xs font-semibold border border-border-subtle">
-                <Users size={14} />
-                <span>{reclamo.afectadosCount} afectados</span>
+            {!reclamo.institucionNombre && (
+              <span className="text-[11px] text-text-muted">
+                Se derivará automáticamente según categoría y localidad
               </span>
             )}
           </div>
-        )}
+        </div>
 
-        {/* Imagen si existe */}
-        {reclamo.imagen && (
-          <div className="mb-5">
-            <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-2">
-              Evidencia fotográfica
-            </h3>
-            <div className="relative w-full h-64 sm:h-80 rounded-xl overflow-hidden border border-border-subtle bg-surface-subtle">
-              <Image
-                src={reclamo.imagen}
-                alt={reclamo.titulo}
-                fill
-                unoptimized
-                className="object-cover"
+        {/* 3. SEGUIMIENTO DEL RECLAMO (Stepper informativo sin cajas ni controles administrativos) */}
+        <div className="p-4 sm:px-5 sm:py-4">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted mb-3">
+            Seguimiento
+          </h2>
+
+          {/* Stepper Desktop: línea continua y círculos indicadores informativos */}
+          <div className="hidden sm:block py-1.5">
+            <div className="relative flex items-center justify-between">
+              {/* Línea horizontal continua que pasa por el centro de los círculos */}
+              <div className="absolute left-6 right-6 top-4 -translate-y-1/2 flex items-center z-0">
+                {PASOS_SECUENCIA.slice(0, -1).map((_, segIdx) => {
+                  const isCompletedSeg = reclamo.estado === 'Resuelto' || segIdx < currentStepIdx;
+                  return (
+                    <div
+                      key={segIdx}
+                      className={`flex-1 h-0.5 transition-colors ${
+                        isCompletedSeg ? 'bg-emerald-500' : 'bg-border-subtle'
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Indicadores de paso */}
+              {PASOS_SECUENCIA.map((paso, idx) => {
+                const isCompleted = reclamo.estado === 'Resuelto' || (currentStepIdx >= 0 && idx < currentStepIdx);
+                const isCurrent = reclamo.estado !== 'Resuelto' && idx === currentStepIdx;
+                const isFuture = currentStepIdx === -1 || idx > currentStepIdx;
+
+                return (
+                  <div key={paso.key} className="flex flex-col items-center text-center z-10 w-28">
+                    <div className="relative">
+                      {isCompleted && (
+                        <span className="w-8 h-8 rounded-full bg-surface border-2 border-emerald-500 text-emerald-600 flex items-center justify-center shadow-xs">
+                          <Check size={14} strokeWidth={2.5} />
+                        </span>
+                      )}
+                      {isCurrent && (
+                        <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-4 ring-primary/20">
+                          <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/40 opacity-75" />
+                          <span className="relative w-2.5 h-2.5 rounded-full bg-white" />
+                        </span>
+                      )}
+                      {isFuture && (
+                        <span className="w-8 h-8 rounded-full bg-surface border border-border-subtle text-text-muted/40 flex items-center justify-center">
+                          <span className="w-2 h-2 rounded-full bg-border-subtle" />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`mt-1.5 text-xs leading-tight ${
+                      isCurrent ? 'font-bold text-primary' : isCompleted ? 'font-semibold text-text-primary' : 'font-normal text-text-muted'
+                    }`}>
+                      {paso.label}
+                    </span>
+                    <span className={`mt-0.5 text-[10px] ${isCurrent ? 'text-primary font-medium' : 'text-text-muted'}`}>
+                      {isCurrent
+                        ? (tiempoEnEstado ? `Actual · ${tiempoEnEstado}` : 'Actual')
+                        : isCompleted
+                        ? 'Completado'
+                        : 'Pendiente'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Stepper Mobile: lista conectada vertical */}
+          <div className="sm:hidden space-y-1 py-1">
+            {PASOS_SECUENCIA.map((paso, idx, arr) => {
+              const isCompleted = reclamo.estado === 'Resuelto' || (currentStepIdx >= 0 && idx < currentStepIdx);
+              const isCurrent = reclamo.estado !== 'Resuelto' && idx === currentStepIdx;
+              const isFuture = currentStepIdx === -1 || idx > currentStepIdx;
+              const isLast = idx === arr.length - 1;
+              const segColor = isCompleted ? 'bg-emerald-500' : 'bg-border-subtle';
+
+              return (
+                <div key={paso.key} className="flex items-center gap-3.5 py-1 px-1">
+                  <div className="flex flex-col items-center w-8 shrink-0">
+                    <div className="relative z-10">
+                      {isCompleted && (
+                        <span className="w-7 h-7 rounded-full bg-surface border-2 border-emerald-500 text-emerald-600 flex items-center justify-center shadow-xs">
+                          <Check size={12} strokeWidth={2.5} />
+                        </span>
+                      )}
+                      {isCurrent && (
+                        <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-4 ring-primary/20">
+                          <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/40 opacity-75" />
+                          <span className="relative w-2 h-2 rounded-full bg-white" />
+                        </span>
+                      )}
+                      {isFuture && (
+                        <span className="w-7 h-7 rounded-full bg-surface border border-border-subtle text-text-muted/40 flex items-center justify-center">
+                          <span className="w-1.5 h-1.5 rounded-full bg-border-subtle" />
+                        </span>
+                      )}
+                    </div>
+                    {!isLast && (
+                      <div className={`w-0.5 h-4 my-1 transition-colors ${segColor}`} />
+                    )}
+                  </div>
+
+                  <div className="flex-1 flex items-center justify-between min-w-0">
+                    <span className={`text-xs ${
+                      isCurrent ? 'font-bold text-primary' : isCompleted ? 'font-medium text-text-secondary' : 'font-normal text-text-muted'
+                    }`}>
+                      {paso.label}
+                    </span>
+                    <span className={`text-[10px] ${
+                      isCompleted ? 'text-emerald-700 dark:text-emerald-400' : isCurrent ? 'font-bold text-primary' : 'text-text-muted'
+                    }`}>
+                      {isCurrent
+                        ? (tiempoEnEstado ? `Actual · ${tiempoEnEstado}` : 'Actual')
+                        : isCompleted
+                        ? 'Completado'
+                        : 'Pendiente'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Explicación del estado actual (liviana, con bullet y tiempo asociado sin contenedor pesado) */}
+          <div className="mt-2.5 text-xs flex items-start gap-2">
+            {reclamo.estado === 'Cancelado' ? (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
+                <p className="text-text-secondary leading-relaxed">
+                  <span className="font-semibold text-rose-700 dark:text-rose-400">
+                    Reclamo cancelado {reclamo.cancelado_por_tipo === 'ciudadano' ? 'por vos (Ciudadano)' : 'por la institución'}.
+                  </span>
+                  {reclamo.motivo_cancelacion && (
+                    <span className="ml-1 text-text-secondary">Motivo: {reclamo.motivo_cancelacion}</span>
+                  )}
+                  {tiempoEnEstado && (
+                    <span className="text-text-muted ml-1.5">· {tiempoEnEstado}</span>
+                  )}
+                </p>
+              </>
+            ) : reclamo.estado === 'Resuelto' ? (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                <p className="text-text-secondary leading-relaxed">
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                    El reclamo fue marcado como resuelto por la institución.
+                  </span>
+                  {reclamo.mensaje_resolucion && (
+                    <span className="italic ml-1 text-text-secondary">&ldquo;{reclamo.mensaje_resolucion}&rdquo;</span>
+                  )}
+                  {tiempoEnEstado && (
+                    <span className="text-text-muted ml-1.5">· {tiempoEnEstado}</span>
+                  )}
+                </p>
+              </>
+            ) : (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                <p className="text-text-secondary leading-relaxed">
+                  <span className="text-text-primary font-medium">{getExplicacionEstado(reclamo.estado)}</span>
+                  {tiempoEnEstado && (
+                    <span className="text-text-muted ml-1.5">· {tiempoEnEstado}</span>
+                  )}
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* 4. ACTUALIZACIONES (Novedades y notas) */}
+        <div id="actualizaciones" className="p-4 sm:px-5 sm:py-4 scroll-mt-6">
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-2">
+              <MessageSquare size={15} className="text-primary" />
+              <h2 className="text-sm font-bold text-text-primary">
+                Actualizaciones
+              </h2>
+              {actualizaciones.length > 0 && (
+                <span className="text-xs font-semibold text-text-muted">
+                  ({actualizaciones.length})
+                </span>
+              )}
+            </div>
+
+            {esAutor && esPendiente && !mostrarFormActualizacion && (
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<Plus size={13} />}
+                onClick={() => setMostrarFormActualizacion(true)}
+              >
+                Agregar actualización
+              </Button>
+            )}
+          </div>
+
+          {/* Estado vacío unificado y discreto */}
+          {actualizaciones.length === 0 ? (
+            <p className="text-xs text-text-muted italic py-1">
+              No hay novedades todavía. Cuando la institución publique una actualización, la vas a ver acá.
+            </p>
+          ) : (
+            <div className="space-y-2.5">
+              {actualizaciones.map((act) => {
+                const esInst = act.tipo_autor === 'institucion';
+                const autorTitulo = esInst
+                  ? (act.institucionNombre || 'Institución asignada')
+                  : (act.autorNombre || 'Ciudadano');
+
+                return (
+                  <div
+                    key={act.id || act.id_actualizacion}
+                    className={`p-3 rounded-xl border text-xs ${
+                      esInst
+                        ? 'bg-primary-subtle/25 border-primary/25 border-l-4 border-l-primary'
+                        : 'bg-surface-subtle/60 border-border-subtle'
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-text-primary">
+                          {autorTitulo}
+                        </span>
+                        <Badge variant={esInst ? "primary" : "neutral"} size="sm">
+                          {esInst ? "Institución" : "Ciudadano"}
+                        </Badge>
+                      </div>
+                      <span className="text-[11px] text-text-muted">
+                        {formatearFecha(act.fecha_creacion)}
+                      </span>
+                    </div>
+                    <p className="text-text-secondary leading-relaxed whitespace-pre-line">
+                      {act.texto}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Formulario desplegable para nueva actualización */}
+          {esAutor && esPendiente && mostrarFormActualizacion && (
+            <form onSubmit={handleAgregarActualizacion} className="mt-3 p-3.5 rounded-xl bg-surface-subtle/80 border border-border-subtle space-y-3">
+              <Textarea
+                label="Nueva actualización"
+                value={nuevaActualizacion}
+                onChange={(e) => setNuevaActualizacion(e.target.value)}
+                placeholder="Escribí aquí nuevos detalles o novedades sobre tu reclamo..."
+                rows={3}
+                required
               />
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setMostrarFormActualizacion(false);
+                    setNuevaActualizacion("");
+                  }}
+                  disabled={submittingActualizacion}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  loading={submittingActualizacion}
+                  disabled={!nuevaActualizacion.trim()}
+                >
+                  Publicar actualización
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* 5. HISTORIAL (Resumen compacto con opción de ver completo) */}
+        <div className="p-4 sm:px-5 sm:py-3.5 bg-surface-subtle/20">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <History size={15} className="text-primary" />
+              <h2 className="text-sm font-bold text-text-primary">Historial</h2>
+            </div>
+            {historial.length > 2 && (
+              <button
+                type="button"
+                onClick={() => setMostrarTodoHistorial(prev => !prev)}
+                className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+              >
+                {mostrarTodoHistorial ? "Ver menos" : `Ver historial completo (${historial.length})`}
+              </button>
+            )}
+          </div>
+
+          {historial.length === 0 ? (
+            <p className="text-xs text-text-muted italic py-1">
+              No hay registros en el historial todavía.
+            </p>
+          ) : (
+            <div className="relative pl-4 space-y-2 border-l-2 border-border-subtle ml-1.5 mt-2">
+              {(mostrarTodoHistorial ? historial : historial.slice(0, 2)).map((ev, index) => {
+                const nodeStyle = getNodeStyle(ev.tipo_evento);
+                return (
+                  <div key={ev.id || index} className="relative">
+                    <div className={`absolute -left-[22px] top-1 w-2.5 h-2.5 rounded-full ${nodeStyle.dot} border-2 border-surface`} />
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <span className={`text-xs font-bold ${nodeStyle.text}`}>
+                        {getNombreEvento(ev.tipo_evento)}
+                      </span>
+                      <span className="text-[10px] text-text-muted">
+                        {formatearFecha(ev.fecha_creacion)}
+                      </span>
+                    </div>
+                    {renderContenidoEvento(ev, reclamo.institucionNombre)}
+                    {ev.autorNombre && (
+                      <p className="text-[11px] text-text-muted mt-0.5 flex items-center gap-1">
+                        <UserCheck size={11} />
+                        <span>Por: {ev.autorNombre}</span>
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 6. PARTICIPACIÓN CIUDADANA ("A mí también me pasa" - HU-16) */}
+        {reclamo.visibilidad === 'publico' && !esAutor && esCiudadano && (
+          <div className="p-4 sm:px-5 sm:py-3.5 bg-surface-subtle/40">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-xs font-bold text-text-primary">
+                  {esTerminal ? "Problemática comunitaria" : "¿A vos también te pasa?"}
+                </h3>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  {esTerminal
+                    ? `Reclamo finalizado. Registró un total de ${reclamo.afectadosCount || 0} vecino${reclamo.afectadosCount !== 1 ? 's' : ''} afectado${reclamo.afectadosCount !== 1 ? 's' : ''}.`
+                    : `Sumá tu apoyo para darle más visibilidad a este reclamo. Hay ${reclamo.afectadosCount || 0} afectado${reclamo.afectadosCount !== 1 ? 's' : ''}.`}
+                </p>
+              </div>
+
+              {!esTerminal ? (
+                <Button
+                  variant={reclamo.isAfectado ? "primary" : "outline"}
+                  size="sm"
+                  leftIcon={<ThumbsUp size={14} />}
+                  onClick={handleToggleAfectado}
+                  className="shrink-0"
+                >
+                  {reclamo.isAfectado ? "Ya marqué mi apoyo" : "A mí también me pasa"}
+                </Button>
+              ) : (
+                <span className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-subtle text-text-muted text-xs font-semibold border border-border-subtle">
+                  <Users size={14} />
+                  <span>{reclamo.afectadosCount || 0} afectados</span>
+                </span>
+              )}
             </div>
           </div>
         )}
 
-        {/* Mensaje de Cancelación o Resolución si aplica */}
-        {reclamo.motivo_cancelacion && (
-          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 mb-4">
-            <p className="text-xs font-bold mb-1">
-              Motivo de Cancelación ({reclamo.cancelado_por_tipo === 'ciudadano' ? 'por el Ciudadano' : 'por la Institución'}):
-            </p>
-            <p className="text-xs text-rose-800 leading-relaxed">{reclamo.motivo_cancelacion}</p>
-          </div>
-        )}
-
-        {reclamo.mensaje_resolucion && (
-          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 mb-4">
-            <p className="text-xs font-bold mb-1">
-              Mensaje de Resolución Institucional:
-            </p>
-            <p className="text-xs text-emerald-800 leading-relaxed">{reclamo.mensaje_resolucion}</p>
-          </div>
-        )}
       </div>
 
-      {/* Actualizaciones */}
-      <div className="bg-surface rounded-2xl border border-border-subtle p-5 shadow-xs mb-6">
-        <h3 className="text-sm font-bold text-text-primary mb-4 flex items-center gap-2">
-          <MessageSquare size={16} className="text-primary" />
-          <span>Actualizaciones del Reclamo</span>
-        </h3>
+      {/* Visor de Imagen Reutilizable */}
+      <ImageViewer
+        isOpen={modalFoto}
+        onClose={() => setModalFoto(false)}
+        src={reclamo.imagen}
+        alt={`Evidencia del reclamo: ${reclamo.titulo}`}
+      />
 
-        {actualizaciones.length === 0 ? (
-          <p className="text-xs text-text-muted">No hay actualizaciones en este reclamo.</p>
-        ) : (
-          <div className="space-y-4">
-            {actualizaciones.map((act) => (
-              <div key={act.id} className={`p-4 rounded-xl border ${act.tipo_autor === 'institucion' ? 'bg-primary-subtle/30 border-primary/20' : 'bg-surface-subtle border-border-subtle'}`}>
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-xs font-bold text-text-primary">
-                    {act.tipo_autor === 'institucion' ? act.institucionNombre : act.autorNombre}
-                  </span>
-                  <span className="text-[10px] text-text-muted">{formatearFecha(act.fecha_creacion)}</span>
-                </div>
-                <p className="text-xs text-text-secondary whitespace-pre-line">{act.texto}</p>
-              </div>
-            ))}
+      {/* Modal Editar Reclamo */}
+      <Modal
+        isOpen={editModal}
+        onClose={() => setEditModal(false)}
+        title="Editar reclamo"
+        description="Podés actualizar los datos únicamente mientras el reclamo se encuentre en estado Pendiente."
+        maxWidth="md"
+      >
+        <form onSubmit={handleGuardarEdicion} className="space-y-4 mt-3">
+          <Input
+            label="Título"
+            value={editForm.titulo}
+            onChange={e => setEditForm(p => ({ ...p, titulo: e.target.value }))}
+            required
+          />
+          <Textarea
+            label="Descripción"
+            value={editForm.descripcion}
+            onChange={e => setEditForm(p => ({ ...p, descripcion: e.target.value }))}
+            rows={4}
+            required
+          />
+          <Input
+            label="Ubicación (opcional)"
+            value={editForm.direccion}
+            onChange={e => setEditForm(p => ({ ...p, direccion: e.target.value }))}
+            placeholder="Ej. Av. San Martín 450"
+          />
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-subtle">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditModal(false)}
+              disabled={saving}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              loading={saving}
+              leftIcon={<Check size={14} />}
+            >
+              Guardar cambios
+            </Button>
           </div>
-        )}
-      </div>
+        </form>
+      </Modal>
 
-      {/* Historial e Hitos de Auditoría */}
-      <div className="bg-surface rounded-2xl border border-border-subtle p-5 shadow-xs">
-        <h3 className="text-sm font-bold text-text-primary mb-4 flex items-center gap-2">
-          <History size={16} className="text-primary" />
-          <span>Historial de seguimiento y auditoría</span>
-        </h3>
-
-        {historial.length === 0 ? (
-          <p className="text-xs text-text-muted">No hay registros en el historial todavía.</p>
-        ) : (
-          <div className="relative pl-4 space-y-4 border-l-2 border-border-subtle ml-2">
-            {historial.map((ev, index) => (
-              <div key={ev.id || index} className="relative">
-                <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-primary border-2 border-white" />
-
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-xs font-bold text-text-primary uppercase tracking-wide">
-                    {ev.tipo_evento}
-                  </span>
-                  <span className="text-[10px] text-text-muted">
-                    {formatearFecha(ev.fecha_creacion)}
-                  </span>
-                </div>
-
-                <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
-                  {ev.detalle || `Evento ${ev.tipo_evento} registrado`}
-                </p>
-
-                {ev.autorNombre && (
-                  <p className="text-[11px] text-text-muted mt-0.5 flex items-center gap-1">
-                    <UserCheck size={11} />
-                    <span>Por: {ev.autorNombre} ({ev.autorRol || "Usuario"})</span>
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Modal Editar */}
-      {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-surface rounded-2xl p-5 shadow-xl border border-border-subtle">
-            <h3 className="text-base font-bold text-text-primary mb-1">Editar Reclamo</h3>
-            <p className="text-xs text-text-muted mb-4">
-              Podés actualizar el título y la descripción únicamente mientras el reclamo está en estado Pendiente.
-            </p>
-            <form onSubmit={handleGuardarEdicion} className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1">Título</label>
-                <input
-                  type="text"
-                  value={editForm.titulo}
-                  onChange={e => setEditForm(p => ({ ...p, titulo: e.target.value }))}
-                  className="w-full text-xs p-2.5 rounded-xl border border-border-subtle focus:outline-hidden focus:border-[var(--color-brand-600)]"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1">Descripción</label>
-                <textarea
-                  value={editForm.descripcion}
-                  onChange={e => setEditForm(p => ({ ...p, descripcion: e.target.value }))}
-                  rows={4}
-                  className="w-full text-xs p-2.5 rounded-xl border border-border-subtle focus:outline-hidden focus:border-[var(--color-brand-600)]"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1">Ubicación</label>
-                <input
-                  type="text"
-                  value={editForm.direccion}
-                  onChange={e => setEditForm(p => ({ ...p, direccion: e.target.value }))}
-                  className="w-full text-xs p-2.5 rounded-xl border border-border-subtle focus:outline-hidden focus:border-[var(--color-brand-600)]"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setEditModal(false)}
-                  disabled={saving}
-                  className="px-3.5 py-2 text-xs font-semibold text-text-secondary hover:bg-surface-subtle rounded-xl transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-[var(--color-brand-700)] rounded-xl transition-colors shadow-xs"
-                >
-                  {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={14} />}
-                  <span>Guardar cambios</span>
-                </button>
-              </div>
-            </form>
-          </div>
+      {/* Modal Cancelar Reclamo */}
+      <ConfirmModal
+        isOpen={cancelModal}
+        onClose={() => setCancelModal(false)}
+        onConfirm={handleCancelarReclamo}
+        title="Cancelar reclamo"
+        description="¿Estás seguro de cancelar este reporte? El reclamo pasará al estado Cancelado."
+        confirmText="Confirmar cancelación"
+        cancelText="Volver"
+        variant="danger"
+        loading={saving}
+      >
+        <div className="mt-3">
+          <Textarea
+            label="Motivo de cancelación (opcional)"
+            value={motivoCancelacion}
+            onChange={e => setMotivoCancelacion(e.target.value)}
+            placeholder="Ej. El problema ya fue solucionado por los vecinos"
+            rows={3}
+          />
         </div>
-      )}
+      </ConfirmModal>
 
-      {/* Modal Cancelar */}
-      {cancelModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-surface rounded-2xl p-5 shadow-xl border border-border-subtle">
-            <h3 className="text-base font-bold text-text-primary mb-1">Cancelar Reclamo</h3>
-            <p className="text-xs text-text-muted mb-4">
-              ¿Estás seguro de cancelar este reporte? Esta acción marcará el reclamo como cancelado.
-            </p>
-            <form onSubmit={handleCancelarReclamo} className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1">Motivo (opcional)</label>
-                <textarea
-                  value={motivoCancelacion}
-                  onChange={e => setMotivoCancelacion(e.target.value)}
-                  placeholder="Ej. El problema ya fue resuelto por los vecinos"
-                  rows={3}
-                  className="w-full text-xs p-2.5 rounded-xl border border-border-subtle focus:outline-hidden focus:border-rose-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setCancelModal(false)}
-                  disabled={saving}
-                  className="px-3.5 py-2 text-xs font-semibold text-text-secondary hover:bg-surface-subtle rounded-xl transition-colors"
-                >
-                  Volver
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors shadow-xs"
-                >
-                  {saving ? <Loader2 size={13} className="animate-spin" /> : <XCircle size={14} />}
-                  <span>Confirmar cancelación</span>
-                </button>
-              </div>
-            </form>
-          </div>
+      {/* Modal Reabrir Reclamo */}
+      <ConfirmModal
+        isOpen={reopenModal}
+        onClose={() => setReopenModal(false)}
+        onConfirm={handleReabrirReclamo}
+        title="Reabrir reclamo"
+        description="¿El problema persiste? Podés reabrir este reclamo para que la institución responsable vuelva a evaluarlo."
+        confirmText="Confirmar reapertura"
+        cancelText="Cancelar"
+        variant="warning"
+        loading={saving}
+        confirmDisabled={!motivoReapertura.trim()}
+      >
+        <div className="mt-3">
+          <Textarea
+            label="Motivo de la reapertura (Obligatorio)"
+            value={motivoReapertura}
+            onChange={e => setMotivoReapertura(e.target.value)}
+            placeholder="Ej. El inconveniente volvió a presentarse tras las últimas lluvias"
+            rows={3}
+            required
+          />
         </div>
-      )}
-
-      {/* Modal Reabrir */}
-      {reopenModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-surface rounded-2xl p-5 shadow-xl border border-border-subtle">
-            <h3 className="text-base font-bold text-text-primary mb-1">Reabrir Reclamo</h3>
-            <p className="text-xs text-text-muted mb-4">
-              ¿El problema persiste? Podés reabrir este reclamo para que la institución vuelva a revisarlo.
-            </p>
-            <form onSubmit={handleReabrirReclamo} className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1">Motivo de la reapertura (Obligatorio)</label>
-                <textarea
-                  value={motivoReapertura}
-                  onChange={e => setMotivoReapertura(e.target.value)}
-                  placeholder="Ej. El pozo volvió a abrirse con la última lluvia"
-                  rows={3}
-                  required
-                  className="w-full text-xs p-2.5 rounded-xl border border-border-subtle focus:outline-hidden focus:border-amber-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setReopenModal(false)}
-                  disabled={saving}
-                  className="px-3.5 py-2 text-xs font-semibold text-text-secondary hover:bg-surface-subtle rounded-xl transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-colors shadow-xs"
-                >
-                  {saving ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={14} />}
-                  <span>Confirmar reapertura</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      </ConfirmModal>
 
     </div>
   );

@@ -1,19 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { MapPin, Clock, ChevronRight, Building2 } from "lucide-react";
+import Link from "next/link";
+import { MapPin, ChevronRight, Building2, Eye, ShieldAlert, Filter } from "lucide-react";
 import apiClient from "@/services/apiClient";
-import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
-import ClaimVisibilityBadge from "@/components/reclamos/ClaimVisibilityBadge";
+import StatusBadge from "@/components/ui/StatusBadge";
 import ClaimProgress from "@/components/reclamos/ClaimProgress";
 import ClaimFilters from "@/components/reclamos/ClaimFilters";
-import ClaimTracking from "@/components/reclamos/ClaimTracking";
 import useCategorias from "@/hooks/useCategorias";
 import EmptyState from "@/components/ui/EmptyState";
 import { getCategoryIcon, ReportProblemIcon } from "@/components/brand/icons";
 import { tiempoRelativo, fechaExacta } from "@/utils/dateFormatters";
+
+function getTextoTemporalCiudadano(r) {
+  const fechaRef = r.fecha_ultimo_cambio_estado || r.fecha_creacion;
+  const tiempo = tiempoRelativo(fechaRef);
+  if (!tiempo) return "";
+  if (r.estado === "Pendiente") return `Creado ${tiempo.toLowerCase()}`;
+  if (r.estado === "Resuelto") return `Resuelto ${tiempo.toLowerCase()}`;
+  if (r.estado === "Cancelado") return `Cancelado ${tiempo.toLowerCase()}`;
+  return `${r.estado} desde ${tiempo.toLowerCase()}`;
+}
 
 export default function MisReclamosPage() {
   const { data: session, status } = useSession();
@@ -26,6 +35,10 @@ export default function MisReclamosPage() {
   const [categoria, setCategoria] = useState("Todas");
   const [error, setError] = useState("");
   const { categorias } = useCategorias("reclamo");
+
+  const hayFiltrosActivos = useMemo(() => {
+    return estado !== "Todos" || categoria !== "Todas";
+  }, [estado, categoria]);
 
   useEffect(() => {
     if (status === "loading" || !session?.user?.id) return;
@@ -42,122 +55,180 @@ export default function MisReclamosPage() {
     return () => { vigente = false; };
   }, [session, status, estado, categoria]);
 
+  function handleLimpiarFiltros() {
+    setEstado("Todos");
+    setCategoria("Todas");
+  }
+
   return (
     <div className="w-full">
-
       {/* Header Mis Reclamos */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-border-subtle">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         <div>
-          <h1 className="text-xl font-bold text-text-primary tracking-tight">
+          <h1 className="text-xl md:text-2xl font-bold text-text-primary tracking-tight">
             Mis reclamos
           </h1>
-          <p className="text-xs text-text-muted mt-1">
-            Seguí el avance y las actualizaciones de tus reportes en la ciudad
+          <p className="text-xs md:text-sm text-text-secondary mt-1">
+            Seguí el avance y las actualizaciones de tus reportes en la ciudad.
           </p>
         </div>
 
         <button
+          type="button"
           onClick={() => router.push("/ciudadano/reclamos/nuevo")}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary-hover transition-colors cursor-pointer shadow-xs self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary-hover transition-colors cursor-pointer shadow-xs self-start sm:self-auto"
         >
-          <ReportProblemIcon size={16} />
+          <ReportProblemIcon size={15} />
           <span>Reportar un problema</span>
         </button>
       </div>
 
-      <ClaimFilters estado={estado} categoria={categoria} categorias={categorias} onEstado={setEstado} onCategoria={setCategoria} onClear={() => { setEstado("Todos"); setCategoria("Todas"); }} />
-      {error && <p role="alert" className="mb-4 text-sm text-text-primary">{error}</p>}
+      <ClaimFilters
+        estado={estado}
+        categoria={categoria}
+        categorias={categorias}
+        onEstado={setEstado}
+        onCategoria={setCategoria}
+        onClear={handleLimpiarFiltros}
+      />
+
+      {error && (
+        <div className="mb-4 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 text-xs text-rose-700 dark:text-rose-300">
+          <p role="alert">{error}</p>
+        </div>
+      )}
+
       {loading && (
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="p-4 rounded-xl bg-surface border border-border-subtle animate-pulse">
-              <div className="w-1/3 h-4 bg-border-subtle rounded mb-2" />
-              <div className="w-2/3 h-5 bg-surface-subtle rounded mb-2" />
-              <div className="w-full h-8 bg-surface-subtle rounded" />
+            <div key={i} className="p-4 rounded-2xl bg-surface border border-border-subtle animate-pulse">
+              <div className="w-1/3 h-4 bg-border-subtle rounded mb-2.5" />
+              <div className="w-2/3 h-4 bg-surface-subtle rounded mb-2.5" />
+              <div className="w-full h-3 bg-surface-subtle rounded" />
             </div>
           ))}
         </div>
       )}
 
       {!loading && !error && reclamos.length === 0 && (
-        <EmptyState
-          title="Todavía no registradas ningún reporte"
-          description="Reportá los problemas que veas en tu ciudad para informar a las autoridades y darles seguimiento."
-          actionLabel="Reportar un problema"
-          onAction={() => router.push("/ciudadano/reclamos/nuevo")}
-        />
+        hayFiltrosActivos ? (
+          <EmptyState
+            icon={Filter}
+            title="Sin resultados para los filtros seleccionados"
+            description="No encontramos reclamos tuyos que coincidan con los filtros aplicados."
+            actionLabel="Limpiar filtros"
+            onAction={handleLimpiarFiltros}
+          />
+        ) : (
+          <EmptyState
+            title="Todavía no registraste ningún reclamo"
+            description="Reportá los problemas que veas en tu ciudad para informar a las autoridades y darles seguimiento."
+            actionLabel="Reportar un problema"
+            onAction={() => router.push("/ciudadano/reclamos/nuevo")}
+          />
+        )
       )}
 
-      {!loading && !error && (
-        <div className="space-y-3.5">
+      {!loading && !error && reclamos.length > 0 && (
+        <div className="space-y-3">
           {reclamos.map(r => {
             const CategoryIcon = getCategoryIcon(r.categoriaCodigo || r.categoriaNombre, r.categoriaNombre);
-            const fechaLarga = fechaExacta(r.fecha_creacion);
+            const fechaTooltip = fechaExacta(r.fecha_ultimo_cambio_estado || r.fecha_creacion);
 
             return (
-              <div
+              <Link
                 key={r.id}
-                onClick={() => router.push(`/ciudadano/reclamos/${r.id}`)}
-                className="p-4 rounded-2xl bg-surface border border-border-subtle shadow-xs hover:shadow-sm hover:border-primary transition-all cursor-pointer group"
+                href={`/ciudadano/reclamos/${r.id}`}
+                className="block p-4 rounded-2xl bg-surface border border-border-subtle shadow-xs hover:border-primary/40 hover:shadow-sm transition-all duration-200 group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <ClaimVisibilityBadge visibilidad={r.visibilidad} />
-
-                      {r.categoriaNombre && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-subtle text-text-secondary text-[11px] font-semibold border border-border-subtle">
-                          <CategoryIcon size={12} className="text-primary" />
-                          <span>{r.categoriaNombre}</span>
-                        </span>
-                      )}
-
-                      {r.editado === 1 && (
-                        <span className="text-[10px] font-semibold bg-surface-subtle text-text-muted px-1.5 py-0.5 rounded border border-border-subtle">
-                          Editado
-                        </span>
-                      )}
-                    </div>
-
-                    <h3 className="text-base font-bold text-text-primary group-hover:text-primary transition-colors leading-snug">
+                {/* Fila Superior: Título + Estado Badge + Chevron */}
+                <div className="flex items-start justify-between gap-3 mb-1.5">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-base font-bold text-text-primary group-hover:text-primary transition-colors leading-snug line-clamp-2">
                       {r.titulo}
-                    </h3>
+                    </h2>
                   </div>
 
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <ClaimStatusBadge estado={r.estado} />
-                    <ChevronRight size={16} className="text-text-muted group-hover:text-primary transition-colors mt-1" />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <StatusBadge status={r.estado} size="sm" />
+                    <ChevronRight
+                      size={16}
+                      className="text-text-muted group-hover:text-primary group-hover:translate-x-0.5 transition-all"
+                    />
                   </div>
                 </div>
 
-                {/* Metadatos adicionales */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted my-2 pt-1 border-t border-border-subtle">
-                  {r.institucionNombre && (
-                    <span className="inline-flex items-center gap-1 font-medium text-primary">
-                      <Building2 size={13} />
-                      <span>{r.institucionNombre}</span>
+                {/* Fila de Metadatos Limpia (Privado/Público, Categoría, Institución, Ubicación, Editado) */}
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-text-muted mb-3">
+                  {/* Visibilidad */}
+                  {r.visibilidad === "privado" ? (
+                    <span className="inline-flex items-center gap-1 font-semibold text-rose-700 dark:text-rose-400">
+                      <ShieldAlert size={12} className="shrink-0" />
+                      <span>Privado</span>
                     </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-text-muted">
+                      <Eye size={12} className="shrink-0" />
+                      <span>Público</span>
+                    </span>
+                  )}
+
+                  {r.categoriaNombre && (
+                    <>
+                      <span className="text-border-subtle select-none">·</span>
+                      <span className="inline-flex items-center gap-1.5 font-medium text-text-primary">
+                        <CategoryIcon size={13} className="text-primary shrink-0" />
+                        <span>{r.categoriaNombre}</span>
+                      </span>
+                    </>
+                  )}
+
+                  {r.institucionNombre && (
+                    <>
+                      <span className="text-border-subtle select-none">·</span>
+                      <span className="inline-flex items-center gap-1 text-text-secondary">
+                        <Building2 size={12} className="shrink-0 text-text-muted" />
+                        <span className="truncate max-w-[200px]">{r.institucionNombre}</span>
+                      </span>
+                    </>
                   )}
 
                   {r.direccion && (
-                    <span className="inline-flex items-center gap-1 text-text-secondary">
-                      <MapPin size={13} className="text-text-muted" />
-                      <span className="truncate max-w-[220px]">{r.direccion}</span>
-                    </span>
+                    <>
+                      <span className="text-border-subtle select-none">·</span>
+                      <span className="inline-flex items-center gap-1 text-text-muted">
+                        <MapPin size={12} className="shrink-0" />
+                        <span className="truncate max-w-[180px]">{r.direccion}</span>
+                      </span>
+                    </>
                   )}
 
-                  <span className="inline-flex items-center gap-1" title={fechaLarga}>
-                    <Clock size={13} className="text-text-muted" />
-                    <span>{tiempoRelativo(r.fecha_creacion)}</span>
-                  </span>
+                  {r.editado === 1 && (
+                    <>
+                      <span className="text-border-subtle select-none">·</span>
+                      <span className="text-[11px] text-text-muted italic">
+                        (editado)
+                      </span>
+                    </>
+                  )}
                 </div>
 
-                {/* Barra de progreso visual de estado del reclamo */}
-                <div className="mt-3">
-                  <ClaimProgress estado={r.estado} />
-                  <div className="mt-2"><ClaimTracking reclamo={r} /></div>
+                {/* Barra de Progreso Compacta + Referencia Temporal Única */}
+                <div className="pt-2.5 border-t border-border-subtle/70">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="w-full sm:max-w-xs">
+                      <ClaimProgress estado={r.estado} />
+                    </div>
+
+                    <div
+                      className="text-xs text-text-muted font-medium sm:text-right shrink-0"
+                      title={fechaTooltip}
+                    >
+                      {getTextoTemporalCiudadano(r)}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
