@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 
 const estadosIniciales = [
-  { nombre: "Abierto", desc: "Estado inicial al crear un reporte", color: "#378ADD", bg: "#E6F1FB", text: "#0C447C", tipo: "Inicial" },
+  { nombre: "Pendiente", desc: "Estado inicial al crear un reporte", color: "#378ADD", bg: "#E6F1FB", text: "#0C447C", tipo: "Inicial" },
+  { nombre: "En revisión", desc: "La institución inició la revisión", color: "#378ADD", bg: "#E6F1FB", text: "#0C447C", tipo: "Intermedio" },
   { nombre: "En proceso", desc: "Asignado a un área responsable", color: "#EF9F27", bg: "#FAEEDA", text: "#633806", tipo: "Intermedio" },
   { nombre: "Resuelto", desc: "Incidencia resuelta y cerrada", color: "#639922", bg: "#EAF3DE", text: "#27500A", tipo: "Final" },
-  { nombre: "Rechazado", desc: "Reporte inválido o duplicado", color: "#888780", bg: "#F1EFE8", text: "#444441", tipo: "Final" },
+  { nombre: "Cancelado", desc: "Reclamo cancelado con trazabilidad", color: "#888780", bg: "#F1EFE8", text: "#444441", tipo: "Final" },
 ];
 
 const zonasHorarias = [

@@ -6,34 +6,18 @@ import Navbar from "@/components/admin/Navbar";
 import Breadcrumb from "@/components/admin/Breadcrumb";
 import { MapPin, Clock, Tag, ChevronLeft, ChevronRight, User } from "lucide-react";
 import apiClient from "@/services/apiClient";
+import { toast } from "sonner";
 
-const ESTADOS = [
-  { key: "", label: "Todos" },
-  { key: "recibido", label: "Recibido" },
-  { key: "en_proceso", label: "En proceso" },
-  { key: "resuelto", label: "Resuelto" },
-  { key: "rechazado", label: "Rechazado" },
-];
-
-const ESTADO_LABELS = {
-  recibido: "Recibido",
-  en_proceso: "En proceso",
-  resuelto: "Resuelto",
-  rechazado: "Rechazado",
-};
+import { CLAIM_STATUSES } from "@/utils/claimStatus";
+import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
+import ClaimTracking from "@/components/reclamos/ClaimTracking";
+import { tiempoRelativo, formatearFecha } from "@/utils/dateFormatters";
+const ESTADOS = [{ key: "", label: "Todos" }, ...CLAIM_STATUSES.map(key => ({ key, label: key }))];
+const ESTADO_LABELS = Object.fromEntries(CLAIM_STATUSES.map(key => [key, key]));
 
 function estadoClass(estado) {
-  return `estado-${estado.replace("_", "-")}`;
-}
-
-function tiempoRelativo(fecha) {
-  const diff = Date.now() - new Date(fecha).getTime();
-  const min = Math.floor(diff / 60000);
-  const hs = Math.floor(diff / 3600000);
-  const dias = Math.floor(diff / 86400000);
-  if (min < 60) return `Hace ${min} min`;
-  if (hs < 24) return `Hace ${hs}h`;
-  return `Hace ${dias} día${dias > 1 ? "s" : ""}`;
+  if (!estado) return "";
+  return `estado-${estado.toLowerCase().replace(" ", "-").replace("ó", "o")}`;
 }
 
 export default function AdminReclamosPage() {
@@ -46,6 +30,9 @@ export default function AdminReclamosPage() {
   const [filtroEstado, setFiltroEstado] = useState("");
   const [detalle, setDetalle] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
+  const [instituciones, setInstituciones] = useState([]);
+  const [institucionDestino, setInstitucionDestino] = useState("");
+  const [loadingInstituciones, setLoadingInstituciones] = useState(false);
 
   const fetchReclamos = useCallback(async () => {
     setLoading(true);
@@ -69,21 +56,42 @@ export default function AdminReclamosPage() {
     try {
       const res = await apiClient.get(`/admin/reclamos/${id}`);
       const data = res.data;
-      if (data.ok) setDetalle(data.data);
+      if (data.ok) {
+        setDetalle(data.data);
+        setInstitucionDestino("");
+        cargarInstituciones();
+      }
     } catch { }
   }
 
-  async function cambiarEstado(id, estado) {
-    setUpdatingId(id);
+  async function cargarInstituciones() {
+    if (instituciones.length > 0) return;
+    setLoadingInstituciones(true);
     try {
-      const res = await apiClient.patch(`/admin/reclamos/${id}/estado`, { estado });
-      const data = res.data;
-      if (data.ok) {
-        setReclamos(prev => prev.map(r => r.id === id ? { ...r, estado } : r));
-        if (detalle?.id === id) setDetalle(prev => ({ ...prev, estado }));
+      const res = await apiClient.get('/admin/instituciones?estado=verificada');
+      if (res.data.ok) {
+        setInstituciones(res.data.data);
       }
     } catch { }
-    finally { setUpdatingId(null); }
+    finally { setLoadingInstituciones(false); }
+  }
+
+  async function reasignarReclamo(id) {
+    if (!institucionDestino) return;
+    setUpdatingId(`reasignar-${id}`);
+    try {
+      const res = await apiClient.patch(`/admin/reclamos/${id}/institucion`, { id_institucion: Number(institucionDestino) });
+      if (res.data.ok) {
+        await cargarDetalle(id);
+        await fetchReclamos();
+        setInstitucionDestino("");
+        toast.success("Reclamo reasignado exitosamente");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.mensaje || "Error al reasignar reclamo");
+    } finally {
+      setUpdatingId(null);
+    }
   }
 
   function filtrar(estado) {
@@ -108,12 +116,19 @@ export default function AdminReclamosPage() {
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-            {ESTADOS.map(e => (
-              <button key={e.key} onClick={() => filtrar(e.key)} className={`ar-filter-btn${filtroEstado === e.key ? " active" : ""}`}>
-                {e.label}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16, justifyContent: "space-between" }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {ESTADOS.map(e => (
+                <button key={e.key} onClick={() => filtrar(e.key)} className={`ar-filter-btn${filtroEstado === e.key ? " active" : ""}`}>
+                  {e.label}
+                </button>
+              ))}
+            </div>
+            <div>
+              <button onClick={() => window.location.href = "/admin/reclamos/nuevo"} className="ar-filter-btn active" style={{ background: "var(--color-primary)", color: "white", border: "none" }}>
+                + Nuevo Reclamo
               </button>
-            ))}
+            </div>
           </div>
 
           <div className={`ar-grid${detalle ? " with-detail" : ""}`}>
@@ -264,7 +279,7 @@ export default function AdminReclamosPage() {
                   )}
                   <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12, color: "var(--color-muted)" }}>
                     <Clock size={13} style={{ flexShrink: 0 }} />
-                    <span>{new Date(detalle.fecha_creacion).toLocaleString("es-AR")}</span>
+                    <span>{formatearFecha(detalle.fecha_creacion)}</span>
                   </div>
                   {detalle.autorNombre && (
                     <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12, color: "var(--color-muted)" }}>
@@ -273,26 +288,40 @@ export default function AdminReclamosPage() {
                   )}
                 </div>
 
-                <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 14 }}>
+                <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 14, paddingBottom: 14 }}>
                   <p style={{ margin: "0 0 10px", fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 0.5 }}>
-                    CAMBIAR ESTADO
+                    REASIGNAR INSTITUCIÓN (ADMIN)
                   </p>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    {["recibido", "en_proceso", "resuelto", "rechazado"].map(est => {
-                      const active = detalle.estado === est;
-                      return (
-                        <button
-                          key={est}
-                          disabled={active || updatingId === detalle.id}
-                          onClick={() => cambiarEstado(detalle.id, est)}
-                          className={`estado-btn ${estadoClass(est)}${active ? " active" : ""}`}
-                          style={{ opacity: updatingId === detalle.id && !active ? 0.6 : 1 }}
-                        >
-                          {active ? `✓ ${ESTADO_LABELS[est]}` : ESTADO_LABELS[est]}
-                        </button>
-                      );
-                    })}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <select aria-label="Institución destino" disabled={loadingInstituciones || updatingId !== null}
+                      value={institucionDestino} 
+                      onChange={e => setInstitucionDestino(e.target.value)}
+                      style={{ flex: 1, padding: "8px", borderRadius: "6px", border: "1px solid var(--color-border)", fontSize: 13 }}
+                    >
+                      <option value="">Seleccionar nueva institución...</option>
+                      {instituciones
+                        .filter(inst => Number(inst.id_ciudad) === Number(detalle.id_ciudad) && Number(inst.id) !== Number(detalle.id_institucion))
+                        .map(inst => (
+                        <option key={inst.id} value={inst.id}>{inst.nombre}</option>
+                      ))}
+                    </select>
+                    <button 
+                      disabled={!institucionDestino || updatingId === `reasignar-${detalle.id}`}
+                      onClick={() => reasignarReclamo(detalle.id)}
+                      className="ar-filter-btn"
+                      style={{ background: institucionDestino ? "var(--color-primary)" : "#eee", color: institucionDestino ? "white" : "#999", border: "none" }}
+                    >
+                      {updatingId === `reasignar-${detalle.id}` ? "..." : "Reasignar"}
+                    </button>
                   </div>
+                </div>
+
+                <div className="border-t border-border-subtle pt-3">
+                  <ClaimStatusBadge estado={detalle.estado} />
+                  <div className="mt-2"><ClaimTracking reclamo={detalle} /></div>
+                  <p className="text-xs text-text-secondary mt-2">Responsable: {detalle.institucionNombre || "Sin asignar"}</p>
+                  <h4 className="font-semibold mt-3">Historial</h4>
+                  <ol className="space-y-2 mt-2 text-xs text-text-secondary">{detalle.historial?.map(h => <li key={h.id}><p>{h.detalle}</p><p>{h.autorNombre} · {formatearFecha(h.fecha_creacion)}</p></li>)}</ol>
                 </div>
               </div>
             )}

@@ -321,7 +321,7 @@ export default function Navbar({ section = "Dashboard", onMenuClick }) {
                 </button>
 
                 <button
-                  onClick={() => { setProfileOpen(false); router.push("/home"); }}
+                  onClick={() => { setProfileOpen(false); router.push("/ciudadano"); }}
                   style={{
                     display: "flex", alignItems: "center", gap: 10,
                     width: "100%", padding: "10px 16px",
