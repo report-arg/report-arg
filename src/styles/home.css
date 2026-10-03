@@ -178,7 +178,7 @@
   justify-content: space-between;
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: 9999;
   gap: 12px;
 }
 
