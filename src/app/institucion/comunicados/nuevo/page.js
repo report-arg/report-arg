@@ -81,8 +81,20 @@ export default function NuevoComunicadoPage() {
       // Subir imagen si existe
       let imagenUrl = null;
       if (imagenFile) {
-        const upData = await uploadImage(imagenFile);
-        if (upData.ok) imagenUrl = upData.url;
+        try {
+          const upData = await uploadImage(imagenFile);
+          if (upData?.ok && upData?.url) {
+            imagenUrl = upData.url;
+          } else {
+            setError(upData?.mensaje || "Error al subir la imagen adjunta. Intente nuevamente.");
+            setEnviando(false);
+            return;
+          }
+        } catch (uploadErr) {
+          setError(uploadErr?.response?.data?.mensaje || "Error al subir la imagen adjunta a Cloudinary.");
+          setEnviando(false);
+          return;
+        }
       }
 
       const payload = {
@@ -124,18 +136,30 @@ export default function NuevoComunicadoPage() {
   }
 
   return (
-    <div className="inst-nuevo-page">
-      <div className="inst-nuevo-header">
-        <button className="inst-back-btn" onClick={() => router.back()}>
-          <ArrowLeft size={20} />
-        </button>
-        <div>
-          <h1 className="inst-page-title">Nuevo Comunicado</h1>
-          <p className="inst-page-sub">Informa a la comunidad de manera oficial y transparente</p>
+    <div className="w-full max-w-4xl mx-auto py-2 sm:py-4 pb-20 sm:pb-8">
+      {/* Contenedor principal del formulario integrado */}
+      <div className="bg-surface rounded-2xl border border-border-subtle shadow-xs p-5 sm:p-7 md:p-8">
+        
+        {/* Encabezado integrado dentro de la card */}
+        <div className="mb-6 pb-4 border-b border-border-subtle">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-text-muted hover:text-text-primary transition-colors cursor-pointer mb-3"
+            aria-label="Volver a la pantalla anterior"
+          >
+            <ArrowLeft size={14} />
+            <span>Volver</span>
+          </button>
+          <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
+            Nuevo comunicado
+          </h1>
+          <p className="text-xs sm:text-sm text-text-muted mt-1 leading-relaxed">
+            Informa a la comunidad de manera oficial y transparente.
+          </p>
         </div>
-      </div>
 
-      <div className="inst-form-card">
+        <div className="space-y-6">
         {/* Título */}
         <div className="inst-form-group">
           <label className="inst-form-label">
@@ -252,5 +276,6 @@ export default function NuevoComunicadoPage() {
         </div>
       </div>
     </div>
+  </div>
   );
 }

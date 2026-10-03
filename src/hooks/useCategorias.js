@@ -14,15 +14,18 @@ const categoriasCache = {
 /**
  * Hook reutilizable para obtener categorías según su tipo.
  * @param {string} tipo - "todas" | "reclamo" | "comunicado"
+ * @param {boolean} [forceRefresh=false] - Forzar recarga omitiendo la caché en memoria
  */
-export default function useCategorias(tipo = "todas") {
-  const [categorias, setCategorias] = useState(categoriasCache[tipo] || []);
-  const [loading, setLoading] = useState(!categoriasCache[tipo]);
+export default function useCategorias(tipo = "todas", forceRefresh = false) {
+  const [categorias, setCategorias] = useState(
+    !forceRefresh && categoriasCache[tipo] ? categoriasCache[tipo] : []
+  );
+  const [loading, setLoading] = useState(forceRefresh || !categoriasCache[tipo]);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Si ya está en caché, no hacemos fetch de nuevo a menos que queramos forzar recarga (lo cual no es común aquí)
-    if (categoriasCache[tipo]) {
+    // Si ya está en caché y no se fuerza recarga, reutilizar
+    if (!forceRefresh && categoriasCache[tipo]) {
       setCategorias(categoriasCache[tipo]);
       setLoading(false);
       return;
@@ -50,7 +53,7 @@ export default function useCategorias(tipo = "todas") {
       .finally(() => {
         setLoading(false);
       });
-  }, [tipo]);
+  }, [tipo, forceRefresh]);
 
   return { categorias, loading, error };
 }

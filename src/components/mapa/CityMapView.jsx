@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, MapPin, Loader2, X } from "lucide-react";
+import { MapPin, Loader2, X } from "lucide-react";
 import apiClient from "@/services/apiClient";
 
 import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
 import { CLAIM_STATUSES } from "@/utils/claimStatus";
+import PageHeader from "@/components/layout/PageHeader";
 
 const MapaReclamos = dynamic(
   () => import("./MapaReclamos"),
@@ -37,18 +38,12 @@ export default function CityMapView() {
   const visibles = filtro ? reclamos.filter(r => r.estado === filtro) : reclamos;
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-6">
-      <div className="flex items-center gap-3 mb-5">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary-hover transition-colors cursor-pointer"
-        >
-          <ArrowLeft size={18} /> Volver
-        </button>
-        <h1 className="text-xl font-bold text-text-primary m-0 tracking-tight">
-          Mapa de Reclamos
-        </h1>
-      </div>
+    <div className="w-full">
+      {/* Header Unificado Mapa */}
+      <PageHeader
+        title="Mapa de la ciudad"
+        description="Explorá geográficamente los reportes y reclamos activos en tu localidad."
+      />
 
       <div className="flex flex-wrap gap-2 mb-5">
         {FILTROS.map(f => {

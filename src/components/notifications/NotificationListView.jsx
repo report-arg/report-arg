@@ -19,6 +19,7 @@ import {
 import apiClient from "@/services/apiClient";
 import EmptyState from "@/components/ui/EmptyState";
 import { tiempoRelativo } from "@/utils/dateFormatters";
+import PageHeader from "@/components/layout/PageHeader";
 
 export default function NotificationListView({
   title = "Notificaciones",
@@ -123,33 +124,24 @@ export default function NotificationListView({
 
   return (
     <div className="w-full">
-      {/* Header Notificaciones */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[var(--home-border)]">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--primary-subtle)] text-[var(--home-primary)] text-xs font-semibold mb-1">
-            <Bell size={13} />
-            <span>Novedades del sistema</span>
-          </div>
-          <h1 className="text-xl font-bold text-[var(--home-text)] tracking-tight">
-            {title}
-          </h1>
-          <p className="text-xs text-[var(--home-muted)] mt-0.5">
-            {description}
-          </p>
-        </div>
-
-        {noLeidasCount > 0 && (
-          <button
-            type="button"
-            onClick={handleMarcarTodasLeidas}
-            disabled={markingAll}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[var(--home-text)] bg-[var(--home-bg)] border border-[var(--home-border)] hover:bg-[var(--home-card)] transition-colors cursor-pointer self-start sm:self-auto disabled:opacity-50"
-          >
-            <CheckCheck size={14} className="text-[var(--home-primary)]" />
-            <span>Marcar todas como leídas</span>
-          </button>
-        )}
-      </div>
+      {/* Header Unificado Notificaciones */}
+      <PageHeader
+        title={title}
+        description={description}
+        action={
+          noLeidasCount > 0 ? (
+            <button
+              type="button"
+              onClick={handleMarcarTodasLeidas}
+              disabled={markingAll}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-text-primary bg-surface border border-border-subtle hover:bg-surface-elevated hover:border-border-strong transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <CheckCheck size={14} className="text-primary" />
+              <span>Marcar todas como leídas</span>
+            </button>
+          ) : null
+        }
+      />
 
       {/* Tabs de Filtro */}
       <div className="flex items-center gap-2 mb-5">

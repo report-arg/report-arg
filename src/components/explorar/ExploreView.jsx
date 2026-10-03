@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Search, X, ChevronDown, Check } from "lucide-react";
+import { Search, X } from "lucide-react";
 import FeedCard from "@/components/feed/FeedCard";
-import EmptyState from "@/components/ui/EmptyState";
-import { getCategoryIcon } from "@/components/brand/icons";
+import { EmptyState, CategoryDropdown, StatusDropdown } from "@/components/ui";
 import apiClient from "@/services/apiClient";
 import { toast } from "sonner";
 import useCategorias from "@/hooks/useCategorias";
+import PageHeader from "@/components/layout/PageHeader";
 
 export default function ExploreView() {
   const router = useRouter();
@@ -20,32 +20,21 @@ export default function ExploreView() {
 
   const [busqueda, setBusqueda] = useState(queryInicial);
   const [tipo, setTipo] = useState("todos");
+  const [estado, setEstado] = useState("Todos");
   const [categoriaId, setCategoriaId] = useState(catInicial);
   const { categorias } = useCategorias("todas");
   const [feed, setFeed] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  // Click outside para cerrar dropdown
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setDropdownOpen(false);
-      }
-    }
-    if (dropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [dropdownOpen]);
 
   const fetchExplorar = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limite: 30 });
+      const params = new URLSearchParams({ limite: 40 });
       if (tipo !== "todos") params.set("tipo", tipo);
       if (categoriaId) params.set("categoria", categoriaId);
+      if (tipo === "reclamo" && estado && estado !== "Todos") {
+        params.set("estado", estado);
+      }
 
       const res = await apiClient.get(`/feed?${params}`);
       const data = res.data;
@@ -57,7 +46,8 @@ export default function ExploreView() {
             (i.titulo && i.titulo.toLowerCase().includes(q)) ||
             (i.descripcion && i.descripcion.toLowerCase().includes(q)) ||
             (i.direccion && i.direccion.toLowerCase().includes(q)) ||
-            (i.categoriaNombre && i.categoriaNombre.toLowerCase().includes(q))
+            (i.categoriaNombre && i.categoriaNombre.toLowerCase().includes(q)) ||
+            (i.autorNombre && i.autorNombre.toLowerCase().includes(q))
           );
         }
         setFeed(items);
@@ -67,7 +57,7 @@ export default function ExploreView() {
     } finally {
       setLoading(false);
     }
-  }, [tipo, categoriaId, busqueda]);
+  }, [tipo, estado, categoriaId, busqueda]);
 
   useEffect(() => {
     fetchExplorar();
@@ -76,26 +66,43 @@ export default function ExploreView() {
   function limpiarFiltros() {
     setBusqueda("");
     setTipo("todos");
+    setEstado("Todos");
     setCategoriaId(null);
     router.replace(pathname);
   }
 
-  const hayFiltros = busqueda.trim() !== "" || tipo !== "todos" || categoriaId !== null;
+  const hayFiltros = Boolean(
+    busqueda.trim() !== "" ||
+    tipo !== "todos" ||
+    categoriaId !== null ||
+    (tipo === "reclamo" && estado !== "Todos")
+  );
+
+  // Textos contextuales para estados vacíos
+  let emptyTitle = "No encontramos publicaciones";
+  let emptyDesc = "Aún no hay publicaciones disponibles en esta sección.";
+
+  if (busqueda.trim()) {
+    emptyTitle = "Sin resultados para tu búsqueda";
+    emptyDesc = `No encontramos publicaciones que coincidan con "${busqueda}". Probá con otras palabras.`;
+  } else if (categoriaId || (tipo === "reclamo" && estado !== "Todos")) {
+    emptyTitle = "No hay publicaciones con estos filtros";
+    emptyDesc = "Probá ajustando la categoría o el estado seleccionado.";
+  } else if (tipo !== "todos") {
+    emptyTitle = tipo === "reclamo" ? "No hay reclamos disponibles" : "No hay comunicados disponibles";
+    emptyDesc = "Aún no se han registrado publicaciones de este tipo en tu localidad.";
+  }
 
   return (
     <div className="w-full">
-      {/* Header Explorar */}
-      <div className="mb-6 pb-4 border-b border-border-subtle">
-        <h1 className="text-xl md:text-2xl font-bold text-text-primary tracking-tight">
-          Explorar la ciudad
-        </h1>
-        <p className="text-sm text-text-muted mt-1">
-          Buscá reportes vecinales, comunicaciones oficiales y temas de interés en tu localidad.
-        </p>
-      </div>
+      {/* Header Unificado Explorar */}
+      <PageHeader
+        title="Explorar la ciudad"
+        description="Buscá reportes vecinales, comunicaciones oficiales y temas de interés en tu localidad."
+      />
 
       {/* Buscador inteligente */}
-      <div className="mb-6 relative">
+      <div className="mb-4 relative">
         <Search size={18} className="absolute left-4 top-3.5 text-text-muted" />
         <input
           type="text"
@@ -106,123 +113,148 @@ export default function ExploreView() {
         />
         {busqueda && (
           <button
+            type="button"
             onClick={() => setBusqueda("")}
             className="absolute right-3 top-3 text-text-muted hover:text-text-secondary p-1 rounded-full bg-surface-subtle hover:bg-border-subtle transition-colors cursor-pointer"
+            aria-label="Borrar búsqueda"
           >
             <X size={14} />
           </button>
         )}
       </div>
 
-      <div className="mb-6 space-y-3">
-        {/* Toolbar de Filtros */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="p-1.5 rounded-xl bg-surface-subtle border border-border-subtle flex items-center shadow-xs">
-            {[
-              { id: "todos", label: "Todo" },
-              { id: "reclamo", label: "Reclamos" },
-              { id: "comunicado", label: "Comunicados" },
-            ].map(t => (
-              <button
-                key={t.id}
-                onClick={() => setTipo(t.id)}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${tipo === t.id
-                    ? "bg-surface text-text-primary shadow-xs border border-border-subtle"
-                    : "text-text-muted hover:text-text-primary"
-                  }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="relative" ref={dropdownRef}>
+      {/* Toolbar integrada de Filtros */}
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 flex-wrap">
+        {/* Selector de Tipo (Todo / Reclamos / Comunicados) */}
+        <div className="p-1 rounded-xl bg-surface-subtle border border-border-subtle flex items-center shadow-xs self-start sm:self-auto">
+          {[
+            { id: "todos", label: "Todo" },
+            { id: "reclamo", label: "Reclamos" },
+            { id: "comunicado", label: "Comunicados" },
+          ].map(t => (
             <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="w-full sm:w-auto flex items-center justify-between gap-3 bg-surface border border-border-subtle hover:border-border-strong text-text-secondary text-xs font-semibold px-4 py-2 rounded-xl focus:outline-hidden focus:border-primary shadow-xs transition-colors cursor-pointer min-w-[160px]"
+              key={t.id}
+              type="button"
+              onClick={() => {
+                setTipo(t.id);
+                if (t.id !== "reclamo") setEstado("Todos");
+              }}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                tipo === t.id
+                  ? "bg-surface text-text-primary shadow-xs border border-border-subtle"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
             >
-              <span>Categoría</span>
-              <ChevronDown size={14} className={`text-text-muted transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+              {t.label}
             </button>
-
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-[240px] max-w-[calc(100vw-2rem)] sm:w-64 bg-surface rounded-xl shadow-lg border border-border-subtle z-50 overflow-hidden">
-                <div className="max-h-80 overflow-y-auto overscroll-contain">
-                  <button
-                    onClick={() => { setCategoriaId(null); setDropdownOpen(false); }}
-                    className={`w-full flex items-center justify-between px-4 py-3 text-left text-xs transition-colors cursor-pointer ${categoriaId === null ? "bg-surface-subtle font-bold text-text-primary" : "font-medium text-text-secondary hover:bg-surface-subtle"
-                      }`}
-                  >
-                    <span>Todas las categorías</span>
-                    {categoriaId === null && <Check size={14} className="text-primary" />}
-                  </button>
-
-                  {categorias.map(cat => {
-                    const CategoryIcon = getCategoryIcon(cat.codigo || cat.nombre, cat.nombre);
-                    const isSelected = categoriaId === cat.id;
-                    return (
-                      <button
-                        key={cat.id}
-                        onClick={() => { setCategoriaId(cat.id); setDropdownOpen(false); }}
-                        className={`w-full flex items-center justify-between px-4 py-3 border-t border-border-subtle text-left text-xs transition-colors cursor-pointer group ${isSelected ? "bg-primary-subtle font-bold text-text-primary" : "font-medium text-text-secondary hover:bg-surface-subtle"
-                          }`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <CategoryIcon size={14} className={isSelected ? "text-primary" : "text-text-muted group-hover:text-text-secondary"} />
-                          <span>{cat.nombre}</span>
-                        </div>
-                        {isSelected && <Check size={14} className="text-primary" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
+          ))}
         </div>
 
-        {/* Filtro Activo */}
-        {categoriaId && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-text-secondary">Filtro:</span>
-            <button
-              onClick={() => setCategoriaId(null)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary-subtle border border-official-border text-primary text-[11px] font-bold hover:bg-border-subtle transition-colors cursor-pointer group"
-            >
-              {categorias.find(c => c.id === categoriaId)?.nombre || "Categoría"}
-              <X size={12} className="text-primary group-hover:text-primary-hover" />
-            </button>
-          </div>
+        {/* Dropdowns de Filtro */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Filtro por Estado: SÓLO cuando se ven Reclamos */}
+          {tipo === "reclamo" && (
+            <StatusDropdown
+              value={estado}
+              onChange={(nuevoEstado) => setEstado(nuevoEstado)}
+              placeholder="Todos los estados"
+              triggerClassName="w-full sm:w-auto min-w-[155px]"
+              menuClassName="right-0 w-[210px]"
+            />
+          )}
+
+          {/* Filtro por Categoría */}
+          <CategoryDropdown
+            categorias={categorias}
+            value={categoriaId}
+            onChange={(id) => setCategoriaId(id)}
+            showAllOption={true}
+            allOptionLabel="Todas las categorías"
+            placeholder="Categoría"
+            triggerClassName="w-full sm:w-auto min-w-[155px]"
+            menuClassName="right-0 w-[240px] max-w-[calc(100vw-2rem)] sm:w-64"
+          />
+        </div>
+      </div>
+
+      {/* Contador discreto de resultados y filtros activos */}
+      <div className="flex items-center justify-between gap-2 text-xs text-text-muted mb-4 px-0.5 min-h-[24px]">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-text-secondary">
+            {loading
+              ? "Cargando publicaciones..."
+              : feed.length === 0
+              ? "0 publicaciones encontradas"
+              : feed.length === 1
+              ? (tipo === "reclamo" ? "1 reclamo encontrado" : tipo === "comunicado" ? "1 comunicado oficial" : "1 publicación encontrada")
+              : (tipo === "reclamo" ? `${feed.length} reclamos encontrados` : tipo === "comunicado" ? `${feed.length} comunicados oficiales` : `${feed.length} publicaciones encontradas`)}
+          </span>
+
+          {/* Chips discretos de filtros activos */}
+          {categoriaId && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-subtle text-primary border border-primary/20 text-[10px] font-semibold">
+              <span>{categorias.find(c => c.id === categoriaId)?.nombre || "Categoría"}</span>
+              <button
+                type="button"
+                onClick={() => setCategoriaId(null)}
+                className="hover:text-primary-hover cursor-pointer"
+                aria-label="Quitar filtro de categoría"
+              >
+                <X size={10} />
+              </button>
+            </span>
+          )}
+
+          {tipo === "reclamo" && estado !== "Todos" && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-subtle text-primary border border-primary/20 text-[10px] font-semibold">
+              <span>{estado}</span>
+              <button
+                type="button"
+                onClick={() => setEstado("Todos")}
+                className="hover:text-primary-hover cursor-pointer"
+                aria-label="Quitar filtro de estado"
+              >
+                <X size={10} />
+              </button>
+            </span>
+          )}
+        </div>
+
+        {/* Botón discreto "Limpiar filtros" visible sólo si hay filtros activos */}
+        {hayFiltros && (
+          <button
+            type="button"
+            onClick={limpiarFiltros}
+            className="text-xs font-semibold text-primary hover:text-primary-hover hover:underline cursor-pointer transition-colors shrink-0"
+          >
+            Limpiar filtros
+          </button>
         )}
       </div>
 
-      {/* Lista de Resultados */}
+      {/* Lista de Publicaciones */}
       <div>
         {loading ? (
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             {[1, 2, 3].map(i => (
               <div key={i} className="p-4 rounded-xl bg-surface border border-border-subtle animate-pulse">
-                <div className="w-1/3 h-4 bg-border-subtle rounded mb-2" />
-                <div className="w-full h-12 bg-surface-subtle rounded" />
+                <div className="w-1/3 h-4 bg-border-subtle rounded mb-2.5" />
+                <div className="w-full h-10 bg-surface-subtle rounded" />
               </div>
             ))}
           </div>
         ) : feed.length === 0 ? (
           <EmptyState
-            title="No encontramos publicaciones"
-            description={
-              hayFiltros
-                ? "Probá ajustar la búsqueda o seleccionar otra categoría."
-                : "Aún no hay publicaciones disponibles en esta sección."
-            }
+            title={emptyTitle}
+            description={emptyDesc}
             actionLabel={hayFiltros ? "Limpiar filtros" : null}
             onAction={hayFiltros ? limpiarFiltros : null}
           />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             {feed.map((item, index) => (
               <FeedCard
-                key={item.id}
+                key={`${item.tipo}-${item.id}`}
                 item={item}
                 priorityImage={index === 0}
                 onEliminado={(id) => setFeed(prev => prev.filter(x => x.id !== id))}

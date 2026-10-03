@@ -12,10 +12,10 @@
   /* ============================================================
      SISTEMA DE TOKENS SEMÁNTICOS (CIUDADANO)
      ============================================================ */
-  --background: #f4f6fb;
+  --background: #edf5fd;
   --surface: #ffffff;
   --surface-elevated: #ffffff;
-  --surface-subtle: #f8fafc;
+  --surface-subtle: #f0f7ff;
   
   --border-subtle: #e2e8f0;
   --border-strong: #cbd5e1;
@@ -32,13 +32,13 @@
   --official-border: #dbeafe;
 
   /* Tokens del Sidebar */
-  --sidebar-bg: #0f172a;
-  --sidebar-text: #f1f5f9;
+  --sidebar-bg: #162438;
+  --sidebar-text: #f8fafc;
   --sidebar-text-muted: #94a3b8;
-  --sidebar-hover: #1e293b;
-  --sidebar-active: #1e293b;
+  --sidebar-hover: #223650;
+  --sidebar-active: #223650;
   --sidebar-active-text: #60a5fa;
-  --sidebar-border: #1e293b;
+  --sidebar-border: #223650;
 
   /* Estados en Light Mode */
   --status-recibido-bg: #E6F1FB;

@@ -13,6 +13,7 @@ import useCategorias from "@/hooks/useCategorias";
 import EmptyState from "@/components/ui/EmptyState";
 import { getCategoryIcon, ReportProblemIcon } from "@/components/brand/icons";
 import { tiempoRelativo, fechaExacta } from "@/utils/dateFormatters";
+import PageHeader from "@/components/layout/PageHeader";
 
 function getTextoTemporalCiudadano(r) {
   const fechaRef = r.fecha_ultimo_cambio_estado || r.fecha_creacion;
@@ -33,12 +34,13 @@ export default function MisReclamosPage() {
 
   const [estado, setEstado] = useState("Todos");
   const [categoria, setCategoria] = useState("Todas");
+  const [orden, setOrden] = useState("recientes");
   const [error, setError] = useState("");
   const { categorias } = useCategorias("reclamo");
 
   const hayFiltrosActivos = useMemo(() => {
-    return estado !== "Todos" || categoria !== "Todas";
-  }, [estado, categoria]);
+    return estado !== "Todos" || categoria !== "Todas" || orden !== "recientes";
+  }, [estado, categoria, orden]);
 
   useEffect(() => {
     if (status === "loading" || !session?.user?.id) return;
@@ -48,40 +50,37 @@ export default function MisReclamosPage() {
     const params = {};
     if (estado !== "Todos") params.estado = estado;
     if (categoria !== "Todas") params.categoria = categoria;
+    if (orden !== "recientes") params.orderBy = orden;
     apiClient.get('/reclamos/mis-reclamos', { params })
       .then(r => { if (!r.data.ok) throw new Error(r.data.mensaje); if (vigente) setReclamos(r.data.data || []); })
       .catch(err => { if (vigente) setError(err.response?.data?.mensaje || "No se pudieron cargar tus reclamos. Intentá nuevamente."); })
       .finally(() => { if (vigente) setLoading(false); });
     return () => { vigente = false; };
-  }, [session, status, estado, categoria]);
+  }, [session, status, estado, categoria, orden]);
 
   function handleLimpiarFiltros() {
     setEstado("Todos");
     setCategoria("Todas");
+    setOrden("recientes");
   }
 
   return (
     <div className="w-full">
-      {/* Header Mis Reclamos */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-text-primary tracking-tight">
-            Mis reclamos
-          </h1>
-          <p className="text-xs md:text-sm text-text-secondary mt-1">
-            Seguí el avance y las actualizaciones de tus reportes en la ciudad.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => router.push("/ciudadano/reclamos/nuevo")}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary-hover transition-colors cursor-pointer shadow-xs self-start sm:self-auto"
-        >
-          <ReportProblemIcon size={15} />
-          <span>Reportar un problema</span>
-        </button>
-      </div>
+      {/* Header Unificado Mis Reclamos */}
+      <PageHeader
+        title="Mis reclamos"
+        description="Seguí el avance y las actualizaciones de tus reportes en la ciudad."
+        action={
+          <button
+            type="button"
+            onClick={() => router.push("/ciudadano/reclamos/nuevo")}
+            className="btn-primary-report shrink-0 cursor-pointer"
+          >
+            <ReportProblemIcon size={16} />
+            <span>Reportar un problema</span>
+          </button>
+        }
+      />
 
       <ClaimFilters
         estado={estado}
@@ -89,6 +88,8 @@ export default function MisReclamosPage() {
         categorias={categorias}
         onEstado={setEstado}
         onCategoria={setCategoria}
+        orden={orden}
+        onOrden={setOrden}
         onClear={handleLimpiarFiltros}
       />
 

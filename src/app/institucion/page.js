@@ -9,6 +9,7 @@ import { Clock, AlertTriangle, CheckCircle, Search, FileText } from "lucide-reac
 import ClaimTracking from "@/components/reclamos/ClaimTracking";
 import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
 import { tiempoRelativo } from "@/utils/dateFormatters";
+import PageHeader from "@/components/layout/PageHeader";
 
 export default function InstitucionHome() {
   const router = useRouter();
@@ -53,45 +54,64 @@ export default function InstitucionHome() {
 
   return (
     <div className="w-full">
-      <div className="mb-10 flex flex-col md:flex-row gap-6 md:items-start justify-between">
-        <div className="flex-1">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-text-primary mb-1">
-                Hola, {session?.user?.name || "Institución"}
-              </h1>
-              <p className="text-sm text-text-secondary">
-                Estos son los reclamos que necesitan tu atención hoy.
-              </p>
+      {/* 1. Encabezado Unificado */}
+      <PageHeader
+        title={`Hola, ${session?.user?.name || "Institución"}`}
+        description="Estos son los reclamos que necesitan tu atención hoy."
+        action={
+          <button
+            onClick={() => router.push("/institucion/comunicados/nuevo")}
+            className="btn-primary-report shrink-0 cursor-pointer"
+          >
+            <FileText size={16} />
+            <span>Crear comunicado</span>
+          </button>
+        }
+      />
+
+      {/* 2. Resumen operativo rápido (3 métricas clave) */}
+      <section aria-label="Resumen operativo" className="mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <Link
+            href="/institucion/reclamos?estado=Pendiente"
+            className="p-4 rounded-xl bg-surface border border-border-subtle hover:border-rose-500/40 shadow-xs hover:shadow-sm transition-all group cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-text-muted">Pendientes</span>
+              <AlertTriangle size={16} className="text-rose-500" />
             </div>
+            <p className="text-2xl font-bold text-text-primary mt-2 mb-0 group-hover:text-rose-600 transition-colors">
+              {pendientes.length}
+            </p>
+          </Link>
 
-            <button
-              onClick={() => router.push("/institucion/comunicados/nuevo")}
-              className="btn-primary-report shrink-0"
-              style={{ backgroundColor: "var(--color-brand-600)", color: "white" }} // O adaptar a la clase que corresponda
-            >
-              <FileText size={16} />
-              <span>Crear comunicado</span>
-            </button>
-          </div>
+          <Link
+            href="/institucion/reclamos?estado=En%20revisi%C3%B3n"
+            className="p-4 rounded-xl bg-surface border border-border-subtle hover:border-amber-500/40 shadow-xs hover:shadow-sm transition-all group cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-text-muted">En revisión</span>
+              <Search size={16} className="text-amber-500" />
+            </div>
+            <p className="text-2xl font-bold text-text-primary mt-2 mb-0 group-hover:text-amber-600 transition-colors">
+              {enRevision.length}
+            </p>
+          </Link>
+
+          <Link
+            href="/institucion/reclamos?estado=En%20proceso"
+            className="p-4 rounded-xl bg-surface border border-border-subtle hover:border-blue-500/40 shadow-xs hover:shadow-sm transition-all group cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-text-muted">En proceso</span>
+              <Clock size={16} className="text-blue-500" />
+            </div>
+            <p className="text-2xl font-bold text-text-primary mt-2 mb-0 group-hover:text-blue-600 transition-colors">
+              {enProceso.length}
+            </p>
+          </Link>
         </div>
-      </div>
-
-      {/* Resumen compacto horizontal */}
-      <div className="flex flex-wrap items-center gap-3 sm:gap-6 mb-10 pb-4 border-b border-border-subtle">
-        <Link href="/institucion/reclamos?estado=Pendiente" className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-rose-600 transition-colors cursor-pointer">
-          <AlertTriangle size={16} className="text-rose-500" />
-          <span>{pendientes.length} pendientes</span>
-        </Link>
-        <Link href="/institucion/reclamos?estado=En%20revisi%C3%B3n" className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-amber-600 transition-colors cursor-pointer">
-          <Search size={16} className="text-amber-500" />
-          <span>{enRevision.length} en revisión</span>
-        </Link>
-        <Link href="/institucion/reclamos?estado=En%20proceso" className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-blue-600 transition-colors cursor-pointer">
-          <Clock size={16} className="text-blue-500" />
-          <span>{enProceso.length} en proceso</span>
-        </Link>
-      </div>
+      </section>
 
       {/* Sección principal: Necesitan atención */}
       <div className="mb-10">

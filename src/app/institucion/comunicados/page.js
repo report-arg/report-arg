@@ -6,13 +6,16 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   PlusCircle, CheckCircle, Clock, Eye, EyeOff,
-  Pencil, Trash2, AlertTriangle, Loader2, X, ImageIcon
+  Pencil, Trash2, AlertTriangle, Loader2, X, ImageIcon, Megaphone
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import { uploadImage } from "@/services/uploadService";
 import useCategorias from "@/hooks/useCategorias";
 import { toast } from "sonner";
 import { tiempoRelativo } from "@/utils/dateFormatters";
+import PageHeader from "@/components/layout/PageHeader";
+import EmptyState from "@/components/ui/EmptyState";
+import { CategoryDropdown } from "@/components/ui";
 
 const ESTADO_CONFIG = {
   recibido: { label: "Publicado", cls: "inst-com-badge-publicado", icon: Eye },
@@ -30,7 +33,7 @@ export default function ComunicadosInstitucionPage() {
   const [comunicados, setComunicados] = useState([]);
   const { categorias } = useCategorias("comunicado");
   const [loading, setLoading] = useState(true);
-  const [filtroTab, setFiltroTab] = useState("todos");
+  const [filtroCategoria, setFiltroCategoria] = useState("todas");
 
   // Estado para Edición de Comunicado
   const [comunicadoEditando, setComunicadoEditando] = useState(null);
@@ -174,56 +177,82 @@ export default function ComunicadosInstitucionPage() {
     }
   }
 
-  const tabs = [
-    { id: "todos", label: "Todos" },
-    ...categorias.map(c => ({ id: String(c.id), label: c.nombre })),
-  ];
-
-  const filtrados = filtroTab === "todos"
+  const filtrados = filtroCategoria === "todas"
     ? comunicados
-    : comunicados.filter(c => String(c.categoriaId) === filtroTab);
+    : comunicados.filter(c => String(c.categoriaId) === filtroCategoria);
 
   return (
     <div className="inst-comunicados-page">
-      <div className="inst-page-header">
-        <div>
-          <h1 className="inst-page-title">Comunicados</h1>
-          <p className="inst-page-sub">Información oficial emitida por la institución</p>
-        </div>
-        <button
-          className="inst-btn-primary"
-          onClick={() => router.push("/institucion/comunicados/nuevo")}
-        >
-          <PlusCircle size={18} />
-          Nuevo Comunicado
-        </button>
-      </div>
-
-      {/* Tabs de categoría */}
-      <div className="inst-tabs-row">
-        {tabs.map(tab => (
+      {/* Header Unificado Comunicados */}
+      <PageHeader
+        title="Comunicados"
+        description="Información oficial emitida por la institución."
+        action={
           <button
-            key={tab.id}
-            className={`inst-tab ${filtroTab === tab.id ? "active" : ""}`}
-            onClick={() => setFiltroTab(tab.id)}
+            className="btn-primary-report shrink-0 cursor-pointer"
+            onClick={() => router.push("/institucion/comunicados/nuevo")}
           >
-            {tab.label}
+            <PlusCircle size={16} />
+            <span>Nuevo comunicado</span>
           </button>
-        ))}
+        }
+      />
+
+      {/* Barra de Filtros Unificada */}
+      <div className="mb-5 rounded-2xl border border-border-subtle bg-surface p-3 sm:px-4 sm:py-3 shadow-2xs">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-wrap items-end gap-3 flex-1">
+            {/* Filtro por Categoría */}
+            <div className="w-full sm:w-auto min-w-[200px]">
+              <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                Categoría
+              </label>
+              <CategoryDropdown
+                categorias={categorias}
+                value={filtroCategoria === "todas" ? null : Number(filtroCategoria)}
+                onChange={(catId) => setFiltroCategoria(catId ? String(catId) : "todas")}
+                showAllOption={true}
+                allOptionLabel="Todas las categorías"
+                placeholder="Todas las categorías"
+                triggerClassName="w-full sm:w-[220px]"
+                menuClassName="left-0 w-full sm:w-[240px]"
+              />
+            </div>
+
+            {/* Botón Limpiar filtro */}
+            {filtroCategoria !== "todas" && (
+              <div className="shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setFiltroCategoria("todas")}
+                  className="h-9 px-3 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition-colors bg-surface-subtle text-text-primary hover:bg-border-subtle cursor-pointer border border-border-subtle"
+                >
+                  <X size={12} className="shrink-0" />
+                  <span>Limpiar filtro</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Contador de resultados */}
+          <div className="text-xs text-text-muted shrink-0 pb-1.5 font-medium">
+            {filtrados.length === 1
+              ? "1 comunicado oficial"
+              : `${filtrados.length} comunicados oficiales`}
+          </div>
+        </div>
       </div>
 
       {loading ? (
         <div className="inst-loading">Cargando comunicados...</div>
       ) : filtrados.length === 0 ? (
-        <div className="inst-empty">
-          <p>No hay comunicados{filtroTab !== "todos" ? " en esta categoría" : ""}.</p>
-          <button
-            className="inst-btn-primary"
-            onClick={() => router.push("/institucion/comunicados/nuevo")}
-          >
-            Crear primer comunicado
-          </button>
-        </div>
+        <EmptyState
+          icon={Megaphone}
+          title={filtroCategoria !== "todas" ? "Sin comunicados en esta categoría" : "No hay comunicados publicados"}
+          description={filtroCategoria !== "todas" ? "Probá seleccionando otra categoría o emití un nuevo comunicado oficial." : "Tu institución todavía no publicó avisos o comunicados para la comunidad."}
+          actionLabel={filtroCategoria !== "todas" ? "Limpiar filtro" : "Crear comunicado"}
+          onAction={filtroCategoria !== "todas" ? () => setFiltroCategoria("todas") : () => router.push("/institucion/comunicados/nuevo")}
+        />
       ) : (
         <div className="inst-comunicados-list">
           {filtrados.map(com => {
@@ -347,19 +376,14 @@ export default function ComunicadosInstitucionPage() {
                 <label className="block text-xs font-bold text-text-primary mb-1">
                   Categoría <span className="text-rose-500">*</span>
                 </label>
-                <select
-                  value={editCategoriaId}
-                  onChange={e => setEditCategoriaId(e.target.value)}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-border-subtle focus:outline-hidden focus:border-primary bg-surface cursor-pointer"
-                  required
-                >
-                  <option value="" disabled>Seleccioná una categoría</option>
-                  {categorias.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.nombre}
-                    </option>
-                  ))}
-                </select>
+                <CategoryDropdown
+                  categorias={categorias}
+                  value={editCategoriaId ? Number(editCategoriaId) : null}
+                  onChange={(catId) => setEditCategoriaId(catId ? Number(catId) : "")}
+                  placeholder="Seleccioná una categoría..."
+                  triggerClassName="w-full"
+                  menuClassName="left-0 w-full"
+                />
               </div>
 
               {/* Contenido / Descripción */}

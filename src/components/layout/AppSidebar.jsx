@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { X, LogOut } from "lucide-react";
-import ReportArgLogo from "@/components/brand/ReportArgLogo";
+import Image from "next/image";
 
 export default function AppSidebar({
   open = false,
@@ -26,8 +26,15 @@ export default function AppSidebar({
 
       <aside className={`home-sidebar ${open ? "open" : ""}`}>
         <div className="home-sidebar-logo">
-          <Link href={logoHref} onClick={onClose} style={{ textDecoration: "none" }}>
-            <ReportArgLogo variant="horizontal" size={28} darkMode={true} />
+          <Link href={logoHref} onClick={onClose} style={{ textDecoration: "none", display: "inline-block" }}>
+            <Image
+              src="/logo.png"
+              alt="ReportARG"
+              width={125}
+              height={42}
+              style={{ objectFit: "contain", height: "auto" }}
+              priority
+            />
             {subtitle && (
               <p className="home-sidebar-logo-sub" style={{ marginTop: 4 }}>{subtitle}</p>
             )}

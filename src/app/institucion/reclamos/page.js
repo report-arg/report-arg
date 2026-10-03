@@ -9,6 +9,7 @@ import { Loader2, Filter, Inbox } from "lucide-react";
 import ClaimFilters from "@/components/reclamos/ClaimFilters";
 import { CLAIM_STATUSES } from "@/utils/claimStatus";
 import useCategorias from "@/hooks/useCategorias";
+import PageHeader from "@/components/layout/PageHeader";
 
 const ESTADOS_PERMITIDOS = ["Todos", ...CLAIM_STATUSES];
 
@@ -60,16 +61,11 @@ function BandejaReclamos() {
 
   return (
     <div className="w-full">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-text-primary tracking-tight">
-            Bandeja de Reclamos
-          </h1>
-          <p className="text-xs md:text-sm text-text-secondary mt-1">
-            Gestioná y priorizá los reclamos asignados a tu institución.
-          </p>
-        </div>
-      </div>
+      {/* Header Unificado Bandeja de Reclamos */}
+      <PageHeader
+        title="Bandeja de reclamos"
+        description="Gestioná y priorizá los reclamos asignados a tu institución."
+      />
 
       <ClaimFilters
         estado={estado}

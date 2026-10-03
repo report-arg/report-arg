@@ -1,9 +1,8 @@
 "use client";
 
-import { useId, useMemo } from "react";
-import { CLAIM_STATUSES } from "@/utils/claimStatus";
+import { useId } from "react";
 import { X } from "lucide-react";
-import Select from "@/components/ui/Select";
+import { CategoryDropdown, StatusDropdown, SortDropdown } from "@/components/ui";
 
 export default function ClaimFilters({
   estado,
@@ -21,57 +20,63 @@ export default function ClaimFilters({
     (categoria && categoria !== "Todas") ||
     (orden && orden !== "recientes");
 
-  const optionsEstado = useMemo(() => [
-    { value: "Todos", label: "Todos los estados" },
-    ...CLAIM_STATUSES.map((e) => ({ value: e, label: e })),
-  ], []);
-
-  const optionsCategoria = useMemo(() => [
-    { value: "Todas", label: "Todas las categorías" },
-    ...categorias.map((c) => ({ value: c.id, label: c.nombre })),
-  ], [categorias]);
-
-  const optionsOrden = useMemo(() => [
-    { value: "recientes", label: "Más recientes" },
-    { value: "atencion", label: "Requieren atención" },
-    { value: "antiguos", label: "Más tiempo esperando" },
-    { value: "impacto", label: "Mayor impacto" },
-  ], []);
-
   return (
     <div className="mb-5 rounded-2xl border border-border-subtle bg-surface p-3 sm:px-4 sm:py-3 shadow-2xs">
       <div className="flex flex-wrap items-end gap-3">
         {/* Filtro Estado */}
         <div className="flex-1 min-w-[150px]">
-          <Select
+          <label
+            htmlFor={`${id}-estado`}
+            className="block text-[11px] font-semibold text-text-muted mb-1"
+          >
+            Estado
+          </label>
+          <StatusDropdown
             id={`${id}-estado`}
-            label="Estado"
             value={estado}
             onChange={onEstado}
-            options={optionsEstado}
+            placeholder="Todos los estados"
+            triggerClassName="w-full"
+            menuClassName="left-0 w-full min-w-[190px]"
           />
         </div>
 
         {/* Filtro Categoría */}
         <div className="flex-1 min-w-[170px]">
-          <Select
+          <label
+            htmlFor={`${id}-categoria`}
+            className="block text-[11px] font-semibold text-text-muted mb-1"
+          >
+            Categoría
+          </label>
+          <CategoryDropdown
             id={`${id}-categoria`}
-            label="Categoría"
-            value={categoria}
-            onChange={onCategoria}
-            options={optionsCategoria}
+            categorias={categorias}
+            value={categoria === "Todas" || !categoria ? null : categoria}
+            onChange={(catId) => onCategoria(catId ? String(catId) : "Todas")}
+            showAllOption={true}
+            allOptionLabel="Todas las categorías"
+            placeholder="Todas las categorías"
+            triggerClassName="w-full"
+            menuClassName="left-0 w-full min-w-[220px]"
           />
         </div>
 
-        {/* Ordenar por (Solo Institución) */}
+        {/* Ordenar por */}
         {onOrden && (
           <div className="flex-1 min-w-[170px]">
-            <Select
+            <label
+              htmlFor={`${id}-orden`}
+              className="block text-[11px] font-semibold text-text-muted mb-1"
+            >
+              Ordenar por
+            </label>
+            <SortDropdown
               id={`${id}-orden`}
-              label="Ordenar por"
-              value={orden}
+              value={orden || "recientes"}
               onChange={onOrden}
-              options={optionsOrden}
+              triggerClassName="w-full"
+              menuClassName="left-0 w-full min-w-[210px]"
             />
           </div>
         )}
@@ -99,12 +104,12 @@ export default function ClaimFilters({
       {hayFiltrosActivos && (
         <div className="mt-2.5 pt-2 border-t border-border-subtle/60 flex flex-wrap items-center gap-1.5 text-[11px] text-text-muted">
           <span className="font-semibold text-text-secondary">Filtros activos:</span>
-          {estado !== "Todos" && (
+          {estado && estado !== "Todos" && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-primary-subtle text-primary font-medium">
               {estado}
             </span>
           )}
-          {categoria !== "Todas" && (
+          {categoria && categoria !== "Todas" && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-primary-subtle text-primary font-medium">
               {categorias.find((c) => String(c.id) === String(categoria))?.nombre || "Categoría"}
             </span>

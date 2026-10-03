@@ -88,10 +88,10 @@ export default function AppNavbar({
             onClick={() => setProfileOpen(prev => !prev)}
           >
             <div className="home-profile-text hidden sm:block" style={{ textAlign: "right", lineHeight: 1.3 }}>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--home-text)" }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#ffffff" }}>
                 {nombreMostrado}
               </p>
-              <p style={{ margin: 0, fontSize: 11, color: "var(--home-primary)", fontWeight: 500 }}>
+              <p style={{ margin: 0, fontSize: 11, color: "#60a5fa", fontWeight: 600 }}>
                 {roleName}
               </p>
             </div>
@@ -105,7 +105,7 @@ export default function AppNavbar({
             <ChevronDown
               size={14}
               style={{
-                color: "var(--home-muted)",
+                color: "#cbd5e1",
                 transition: "transform 0.2s",
                 transform: profileOpen ? "rotate(180deg)" : "rotate(0deg)",
               }}
