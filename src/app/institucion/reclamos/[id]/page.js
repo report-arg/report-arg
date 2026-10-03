@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, MapPin, Calendar, History, MessageSquare,
@@ -16,25 +16,12 @@ import { getCategoryIcon } from "@/components/brand/icons";
 import { formatearFecha } from "@/utils/dateFormatters";
 import { toast } from "sonner";
 
-const PASOS_SECUENCIA = [
-  { key: "Pendiente", label: "Pendiente" },
-  { key: "En revisión", label: "En revisión" },
-  { key: "En proceso", label: "En proceso" },
-  { key: "Resuelto", label: "Resuelto" },
-];
+import { 
+  PASOS_SECUENCIA, 
+  formatearDetalleHistorial 
+} from "@/utils/claimTimelineUtils";
 
-function getSegmentClass(segIdx, currentIdx, isTerminalResolved) {
-  if (isTerminalResolved) {
-    return "bg-emerald-500";
-  }
-  if (segIdx < currentIdx - 1) {
-    return "bg-emerald-500";
-  }
-  if (segIdx === currentIdx - 1) {
-    return "bg-primary";
-  }
-  return "bg-border-subtle";
-}
+import ClaimTimeline from "@/components/reclamos/ClaimTimeline";
 
 const NOMBRES_EVENTO = {
   CANCELACION: "CANCELACIÓN",
@@ -51,6 +38,8 @@ function getNombreEvento(tipo) {
   return NOMBRES_EVENTO[tipo] || tipo.replace(/_/g, " ").toUpperCase();
 }
 
+
+
 function getNodeStyle(tipoEvento) {
   switch (tipoEvento) {
     case 'CANCELACION':
@@ -64,11 +53,7 @@ function getNodeStyle(tipoEvento) {
   }
 }
 
-function formatearDetalleHistorial(detalle, institucionNombre) {
-  if (!detalle) return "";
-  const instNombre = institucionNombre || "la institución asignada";
-  return detalle.replace(/Asignado a institución ID \d+/gi, `Asignado a ${instNombre}`);
-}
+
 
 function renderContenidoEvento(ev, institucionNombre) {
   const detalleBase = formatearDetalleHistorial(ev.detalle, institucionNombre);
@@ -156,7 +141,7 @@ export default function InstitucionReclamoDetallePage() {
   const [mostrarTooltipCancelar, setMostrarTooltipCancelar] = useState(false);
   const [modalFoto, setModalFoto] = useState(false);
 
-  async function fetchDetalle() {
+  const fetchDetalle = useCallback(async () => {
     if (!params.id) return;
     setLoading(true);
     try {
@@ -173,11 +158,11 @@ export default function InstitucionReclamoDetallePage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [params.id]);
 
   useEffect(() => {
     fetchDetalle();
-  }, [params.id]);
+  }, [fetchDetalle]);
 
   async function ejecutarAvanzarEstado(nuevoEstado) {
     setSaving(true);
@@ -435,213 +420,11 @@ export default function InstitucionReclamoDetallePage() {
               </div>
             ) : (
               <div>
-                {/* Desktop: Stepper Horizontal con Línea Conectora Centrada */}
-                <div className="hidden sm:block py-4">
-                  <div className="grid grid-cols-4 gap-2 sm:gap-6 relative">
-                    {/* Línea horizontal continua pasando por detrás del centro exacto de los círculos (top: 18px = 36px / 2) */}
-                    <div className="absolute top-[18px] -translate-y-1/2 left-0 right-0 h-0.5 z-0 pointer-events-none">
-                      {[0, 1, 2].map((segIdx) => {
-                        const leftPositions = ["12.5%", "37.5%", "62.5%"];
-                        const segColor = getSegmentClass(segIdx, currentStepIdx, reclamo.estado === 'Resuelto');
-                        return (
-                          <div
-                            key={segIdx}
-                            className={`absolute top-0 h-0.5 transition-colors duration-300 ${segColor}`}
-                            style={{ left: leftPositions[segIdx], width: "25%" }}
-                          />
-                        );
-                      })}
-                    </div>
-
-                    {/* 4 Columnas centradas sin borde rectangular */}
-                    {PASOS_SECUENCIA.map((paso, idx) => {
-                      const isCompleted = reclamo.estado === 'Resuelto' || idx < currentStepIdx;
-                      const isCurrent = reclamo.estado !== 'Resuelto' && idx === currentStepIdx;
-                      const isNext = reclamo.estado !== 'Resuelto' && idx === currentStepIdx + 1;
-                      const isLocked = reclamo.estado !== 'Resuelto' && idx > currentStepIdx + 1;
-
-                      return (
-                        <div
-                          key={paso.key}
-                          role={isNext ? "button" : undefined}
-                          tabIndex={isNext ? 0 : undefined}
-                          aria-label={isNext ? `Avanzar reclamo a estado ${paso.label}` : undefined}
-                          onClick={() => isNext && handlePasoClick(paso.key)}
-                          onKeyDown={(e) => {
-                            if (isNext && (e.key === "Enter" || e.key === " ")) {
-                              e.preventDefault();
-                              handlePasoClick(paso.key);
-                            }
-                          }}
-                          className={`flex flex-col items-center text-center transition-all ${
-                            isNext
-                              ? 'cursor-pointer group hover:bg-primary-subtle/25 rounded-xl px-2 pb-2 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary'
-                              : 'px-2 pb-2'
-                          }`}
-                        >
-                          {/* 1. Indicador / Círculo centrado con fondo sólido para cubrir la línea */}
-                          <div className="relative z-10">
-                            {isCompleted && (
-                              <span className="w-9 h-9 rounded-full bg-surface border-2 border-emerald-500 text-emerald-600 flex items-center justify-center shadow-xs">
-                                <Check size={16} strokeWidth={2.5} />
-                              </span>
-                            )}
-                            {isCurrent && (
-                              <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-4 ring-primary/20">
-                                <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/40 opacity-75" />
-                                <span className="relative w-3 h-3 rounded-full bg-white" />
-                              </span>
-                            )}
-                            {isNext && (
-                              <span className="w-9 h-9 rounded-full bg-surface border-2 border-primary/40 group-hover:border-primary group-hover:bg-primary-subtle text-primary/70 group-hover:text-primary flex items-center justify-center shadow-xs transition-all">
-                                <ArrowRight size={15} strokeWidth={2.2} className="group-hover:translate-x-0.5 transition-transform" />
-                              </span>
-                            )}
-                            {isLocked && (
-                              <span className="w-9 h-9 rounded-full bg-surface border border-border-subtle text-text-muted/60 flex items-center justify-center">
-                                <Lock size={13} />
-                              </span>
-                            )}
-                          </div>
-
-                          {/* 2. Nombre del estado centrado */}
-                          <h4
-                            className={`mt-2.5 text-sm leading-tight ${
-                              isCurrent
-                                ? 'font-bold text-primary'
-                                : isNext
-                                ? 'font-semibold text-text-primary group-hover:text-primary transition-colors'
-                                : isCompleted
-                                ? 'font-medium text-text-secondary'
-                                : 'font-normal text-text-muted'
-                            }`}
-                          >
-                            {paso.label}
-                          </h4>
-
-                          {/* 3. Badge de situación centrado */}
-                          <div className="mt-1">
-                            {isCompleted && (
-                              <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/70">
-                                Completado
-                              </span>
-                            )}
-                            {isCurrent && (
-                              <span className="text-[11px] font-bold text-primary bg-primary-subtle px-2.5 py-0.5 rounded-full border border-primary/30 shadow-2xs">
-                                Actual
-                              </span>
-                            )}
-                            {isNext && (
-                              <span className="text-[11px] font-semibold text-primary bg-primary-subtle/60 group-hover:bg-primary group-hover:text-white px-2.5 py-0.5 rounded-full border border-primary/30 transition-all inline-flex items-center gap-1 shadow-2xs">
-                                <span>Siguiente</span>
-                                <ArrowRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
-                              </span>
-                            )}
-                            {isLocked && (
-                              <span className="text-[11px] text-text-muted">
-                                Bloqueado
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Mobile: Stepper Vertical sin cajas rectangulares */}
-                <div className="sm:hidden space-y-1 py-1">
-                  {PASOS_SECUENCIA.map((paso, idx, arr) => {
-                    const isCompleted = reclamo.estado === 'Resuelto' || idx < currentStepIdx;
-                    const isCurrent = reclamo.estado !== 'Resuelto' && idx === currentStepIdx;
-                    const isNext = reclamo.estado !== 'Resuelto' && idx === currentStepIdx + 1;
-                    const isLocked = reclamo.estado !== 'Resuelto' && idx > currentStepIdx + 1;
-                    const isLast = idx === arr.length - 1;
-                    const segColor = !isLast ? getSegmentClass(idx, currentStepIdx, reclamo.estado === 'Resuelto') : '';
-
-                    return (
-                      <div
-                        key={paso.key}
-                        role={isNext ? "button" : undefined}
-                        tabIndex={isNext ? 0 : undefined}
-                        aria-label={isNext ? `Avanzar reclamo a estado ${paso.label}` : undefined}
-                        onClick={() => isNext && handlePasoClick(paso.key)}
-                        onKeyDown={(e) => {
-                          if (isNext && (e.key === "Enter" || e.key === " ")) {
-                            e.preventDefault();
-                            handlePasoClick(paso.key);
-                          }
-                        }}
-                        className={`flex items-center gap-3.5 py-1.5 px-2 rounded-xl transition-all ${
-                          isNext ? 'cursor-pointer hover:bg-primary-subtle/25 active:bg-primary-subtle/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary' : ''
-                        }`}
-                      >
-                        {/* Columna indicadora con línea vertical */}
-                        <div className="flex flex-col items-center w-8 shrink-0">
-                          <div className="relative z-10">
-                            {isCompleted && (
-                              <span className="w-8 h-8 rounded-full bg-surface border-2 border-emerald-500 text-emerald-600 flex items-center justify-center shadow-xs">
-                                <Check size={14} strokeWidth={2.5} />
-                              </span>
-                            )}
-                            {isCurrent && (
-                              <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-4 ring-primary/20">
-                                <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/40 opacity-75" />
-                                <span className="relative w-2.5 h-2.5 rounded-full bg-white" />
-                              </span>
-                            )}
-                            {isNext && (
-                              <span className="w-8 h-8 rounded-full bg-surface border-2 border-primary/40 text-primary flex items-center justify-center shadow-xs">
-                                <ArrowRight size={14} strokeWidth={2.2} />
-                              </span>
-                            )}
-                            {isLocked && (
-                              <span className="w-8 h-8 rounded-full bg-surface border border-border-subtle text-text-muted/60 flex items-center justify-center">
-                                <Lock size={12} />
-                              </span>
-                            )}
-                          </div>
-                          {!isLast && (
-                            <div className={`w-0.5 h-6 my-1 transition-colors ${segColor}`} />
-                          )}
-                        </div>
-
-                        {/* Información del estado: nombre y badge */}
-                        <div className="flex-1 flex items-center justify-between min-w-0">
-                          <span className={`text-sm ${
-                            isCurrent ? 'font-bold text-primary' : isCompleted ? 'font-medium text-text-secondary' : isNext ? 'font-semibold text-text-primary' : 'font-normal text-text-muted'
-                          }`}>
-                            {paso.label}
-                          </span>
-
-                          <div>
-                            {isCompleted && (
-                              <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/70">
-                                Completado
-                              </span>
-                            )}
-                            {isCurrent && (
-                              <span className="text-[11px] font-bold text-primary bg-primary-subtle px-2.5 py-0.5 rounded-full border border-primary/30 shadow-2xs">
-                                Actual
-                              </span>
-                            )}
-                            {isNext && (
-                              <span className="text-[11px] font-semibold text-primary bg-primary-subtle/60 px-2.5 py-0.5 rounded-full border border-primary/30 inline-flex items-center gap-1 shadow-2xs">
-                                <span>Siguiente</span>
-                                <ArrowRight size={10} />
-                              </span>
-                            )}
-                            {isLocked && (
-                              <span className="text-[11px] text-text-muted">
-                                Bloqueado
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <ClaimTimeline 
+                  estadoActual={reclamo.estado}
+                  variant="institution"
+                  onStepClick={handlePasoClick}
+                />
 
                 {/* Banner de Resolución si aplica */}
                 {reclamo.estado === 'Resuelto' && (

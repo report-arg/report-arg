@@ -23,108 +23,12 @@ import { getCategoryIcon } from "@/components/brand/icons";
 import { formatearFecha, formatearFechaCorta, tiempoRelativo } from "@/utils/dateFormatters";
 import { toast } from "sonner";
 
-const PASOS_SECUENCIA = [
-  { key: "Pendiente", label: "Pendiente" },
-  { key: "En revisión", label: "En revisión" },
-  { key: "En proceso", label: "En proceso" },
-  { key: "Resuelto", label: "Resuelto" },
-];
-
-const EVENTOS_CIUDADANO = {
-  CREACION: "Creación",
-  EDICION: "Edición",
-  CAMBIO_ESTADO: "Cambio de estado",
-  CANCELACION: "Cancelación",
-  RESOLUCION: "Resolución",
-  REAPERTURA: "Reapertura",
-  REASIGNACION: "Reasignación",
-};
-
-function getNombreEvento(tipo) {
-  if (!tipo) return "Movimiento";
-  return EVENTOS_CIUDADANO[tipo] || tipo.replace(/_/g, " ").toLowerCase().replace(/^\w/, c => c.toUpperCase());
-}
-
-function getNodeStyle(tipoEvento) {
-  switch (tipoEvento) {
-    case 'CANCELACION':
-      return { dot: 'bg-rose-500 ring-2 ring-rose-500/20', text: 'text-rose-700 dark:text-rose-400' };
-    case 'RESOLUCION':
-      return { dot: 'bg-emerald-500 ring-2 ring-emerald-500/20', text: 'text-emerald-700 dark:text-emerald-400' };
-    case 'REAPERTURA':
-      return { dot: 'bg-amber-500 ring-2 ring-amber-500/20', text: 'text-amber-700 dark:text-amber-400' };
-    default:
-      return { dot: 'bg-primary ring-2 ring-primary/20', text: 'text-text-primary' };
-  }
-}
-
-function formatearDetalleHistorial(detalle, institucionNombre) {
-  if (!detalle) return "";
-  const instNombre = institucionNombre || "la institución asignada";
-  return detalle.replace(/Asignado a institución ID \d+/gi, `Asignado a ${instNombre}`);
-}
-
-function renderContenidoEvento(ev, institucionNombre) {
-  const detalleBase = formatearDetalleHistorial(ev.detalle, institucionNombre);
-  if (!detalleBase) return null;
-
-  if (ev.tipo_evento === 'CANCELACION') {
-    const partes = detalleBase.split(/\.?\s*Motivo:\s*/i);
-    const accion = partes[0]?.trim();
-    const motivo = partes[1]?.trim();
-
-    return (
-      <div className="text-xs text-text-secondary mt-0.5 space-y-0.5 leading-relaxed">
-        {accion && <p>{accion.endsWith('.') ? accion : `${accion}.`}</p>}
-        {motivo && (
-          <p className="text-text-secondary">
-            <span className="font-semibold text-text-primary">Motivo:</span> {motivo}
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  if (ev.tipo_evento === 'REAPERTURA') {
-    const partes = detalleBase.split(/\.?\s*Motivo:\s*/i);
-    const accion = partes[0]?.trim();
-    const motivo = partes[1]?.trim();
-
-    return (
-      <div className="text-xs text-text-secondary mt-0.5 space-y-0.5 leading-relaxed">
-        {accion && <p>{accion.endsWith('.') ? accion : `${accion}.`}</p>}
-        {motivo && (
-          <p className="text-text-secondary">
-            <span className="font-semibold text-text-primary">Motivo:</span> {motivo}
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  if (ev.tipo_evento === 'RESOLUCION') {
-    const partes = detalleBase.split(/\.?\s*Mensaje:\s*/i);
-    const accion = partes[0]?.trim();
-    const mensaje = partes[1]?.trim();
-
-    return (
-      <div className="text-xs text-text-secondary mt-0.5 space-y-0.5 leading-relaxed">
-        {accion && <p>{accion.endsWith('.') ? accion : `${accion}.`}</p>}
-        {mensaje && (
-          <p className="text-text-secondary">
-            <span className="font-semibold text-text-primary">Resolución:</span> &ldquo;{mensaje}&rdquo;
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
-      {detalleBase}
-    </p>
-  );
-}
+import { 
+  getNombreEvento, 
+  getNodeStyle, 
+  renderContenidoEvento 
+} from "@/utils/claimTimelineUtils";
+import ClaimTimeline from "@/components/reclamos/ClaimTimeline";
 
 function getExplicacionEstado(estado) {
   switch (estado) {
@@ -364,7 +268,7 @@ export default function ReclamoDetallePage() {
   if (!reclamo) return null;
 
   const CategoryIcon = getCategoryIcon(reclamo.categoriaCodigo || reclamo.categoriaNombre, reclamo.categoriaNombre);
-  const currentStepIdx = PASOS_SECUENCIA.findIndex(p => p.key === reclamo.estado);
+  const currentStepIdx = ["Pendiente", "En revisión", "En proceso", "Resuelto", "Cancelado"].findIndex(p => p === reclamo.estado);
   const tiempoEnEstado = tiempoRelativo(reclamo.fecha_ultimo_cambio_estado || reclamo.fecha_creacion);
 
   return (
@@ -536,123 +440,11 @@ export default function ReclamoDetallePage() {
             Seguimiento
           </h2>
 
-          {/* Stepper Desktop: línea continua y círculos indicadores informativos */}
-          <div className="hidden sm:block py-1.5">
-            <div className="relative flex items-center justify-between">
-              {/* Línea horizontal continua que pasa por el centro de los círculos */}
-              <div className="absolute left-6 right-6 top-4 -translate-y-1/2 flex items-center z-0">
-                {PASOS_SECUENCIA.slice(0, -1).map((_, segIdx) => {
-                  const isCompletedSeg = reclamo.estado === 'Resuelto' || segIdx < currentStepIdx;
-                  return (
-                    <div
-                      key={segIdx}
-                      className={`flex-1 h-0.5 transition-colors ${
-                        isCompletedSeg ? 'bg-emerald-500' : 'bg-border-subtle'
-                      }`}
-                    />
-                  );
-                })}
-              </div>
-
-              {/* Indicadores de paso */}
-              {PASOS_SECUENCIA.map((paso, idx) => {
-                const isCompleted = reclamo.estado === 'Resuelto' || (currentStepIdx >= 0 && idx < currentStepIdx);
-                const isCurrent = reclamo.estado !== 'Resuelto' && idx === currentStepIdx;
-                const isFuture = currentStepIdx === -1 || idx > currentStepIdx;
-
-                return (
-                  <div key={paso.key} className="flex flex-col items-center text-center z-10 w-28">
-                    <div className="relative">
-                      {isCompleted && (
-                        <span className="w-8 h-8 rounded-full bg-surface border-2 border-emerald-500 text-emerald-600 flex items-center justify-center shadow-xs">
-                          <Check size={14} strokeWidth={2.5} />
-                        </span>
-                      )}
-                      {isCurrent && (
-                        <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-4 ring-primary/20">
-                          <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/40 opacity-75" />
-                          <span className="relative w-2.5 h-2.5 rounded-full bg-white" />
-                        </span>
-                      )}
-                      {isFuture && (
-                        <span className="w-8 h-8 rounded-full bg-surface border border-border-subtle text-text-muted/40 flex items-center justify-center">
-                          <span className="w-2 h-2 rounded-full bg-border-subtle" />
-                        </span>
-                      )}
-                    </div>
-                    <span className={`mt-1.5 text-xs leading-tight ${
-                      isCurrent ? 'font-bold text-primary' : isCompleted ? 'font-semibold text-text-primary' : 'font-normal text-text-muted'
-                    }`}>
-                      {paso.label}
-                    </span>
-                    <span className={`mt-0.5 text-[10px] ${isCurrent ? 'text-primary font-medium' : 'text-text-muted'}`}>
-                      {isCurrent
-                        ? (tiempoEnEstado ? `Actual · ${tiempoEnEstado}` : 'Actual')
-                        : isCompleted
-                        ? 'Completado'
-                        : 'Pendiente'}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Stepper Mobile: lista conectada vertical */}
-          <div className="sm:hidden space-y-1 py-1">
-            {PASOS_SECUENCIA.map((paso, idx, arr) => {
-              const isCompleted = reclamo.estado === 'Resuelto' || (currentStepIdx >= 0 && idx < currentStepIdx);
-              const isCurrent = reclamo.estado !== 'Resuelto' && idx === currentStepIdx;
-              const isFuture = currentStepIdx === -1 || idx > currentStepIdx;
-              const isLast = idx === arr.length - 1;
-              const segColor = isCompleted ? 'bg-emerald-500' : 'bg-border-subtle';
-
-              return (
-                <div key={paso.key} className="flex items-center gap-3.5 py-1 px-1">
-                  <div className="flex flex-col items-center w-8 shrink-0">
-                    <div className="relative z-10">
-                      {isCompleted && (
-                        <span className="w-7 h-7 rounded-full bg-surface border-2 border-emerald-500 text-emerald-600 flex items-center justify-center shadow-xs">
-                          <Check size={12} strokeWidth={2.5} />
-                        </span>
-                      )}
-                      {isCurrent && (
-                        <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-4 ring-primary/20">
-                          <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/40 opacity-75" />
-                          <span className="relative w-2 h-2 rounded-full bg-white" />
-                        </span>
-                      )}
-                      {isFuture && (
-                        <span className="w-7 h-7 rounded-full bg-surface border border-border-subtle text-text-muted/40 flex items-center justify-center">
-                          <span className="w-1.5 h-1.5 rounded-full bg-border-subtle" />
-                        </span>
-                      )}
-                    </div>
-                    {!isLast && (
-                      <div className={`w-0.5 h-4 my-1 transition-colors ${segColor}`} />
-                    )}
-                  </div>
-
-                  <div className="flex-1 flex items-center justify-between min-w-0">
-                    <span className={`text-xs ${
-                      isCurrent ? 'font-bold text-primary' : isCompleted ? 'font-medium text-text-secondary' : 'font-normal text-text-muted'
-                    }`}>
-                      {paso.label}
-                    </span>
-                    <span className={`text-[10px] ${
-                      isCompleted ? 'text-emerald-700 dark:text-emerald-400' : isCurrent ? 'font-bold text-primary' : 'text-text-muted'
-                    }`}>
-                      {isCurrent
-                        ? (tiempoEnEstado ? `Actual · ${tiempoEnEstado}` : 'Actual')
-                        : isCompleted
-                        ? 'Completado'
-                        : 'Pendiente'}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <ClaimTimeline 
+            estadoActual={reclamo.estado}
+            tiempoEnEstado={tiempoEnEstado}
+            variant="citizen"
+          />
 
           {/* Explicación del estado actual (liviana, con bullet y tiempo asociado sin contenedor pesado) */}
           <div className="mt-2.5 text-xs flex items-start gap-2">
