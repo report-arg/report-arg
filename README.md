@@ -93,7 +93,7 @@ El frontend de ReportARG está construido con tecnologías modernas para asegura
   - `/ciudadano`: Portal principal para vecinos (explorar, mapa, reclamos propios).
   - `/institucion`: Portal para instituciones verificadas (bandeja de reclamos, comunicados).
   - `/admin`: Panel de administración global.
-  - `/auth`: Rutas públicas de autenticación (`/login`, `/register`, etc.).
+  - `/(auth)`: Grupo de rutas públicas de autenticación (`/login`, `/register`, etc.).
 - **/src/components/**: Todos los componentes reutilizables de React organizados temáticamente:
   - `auth/`: Formularios de login, registro de ciudadanos e instituciones.
   - `feed/`: Tarjetas de feed (comunicados, reclamos) y layouts del feed.

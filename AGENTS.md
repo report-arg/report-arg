@@ -16,8 +16,8 @@ ReportARG es una plataforma de participación ciudadana con experiencias separad
 ## Cómo trabajar
 
 1. Partí de la rama indicada en la tarea. Si no se especifica una, verificá primero la rama y los cambios locales; no sobrescribas trabajo ajeno ni hagas merge por tu cuenta.
-2. Identificá si el componente es compartido entre roles. Si el cambio corresponde a un solo rol, evitá alterar las otras experiencias.
-3. Seguí las convenciones del área que editás. Preferí componentes y utilidades reutilizables cuando exista repetición real; evitá refactorizaciones amplias ajenas a la tarea.
+2. Identificá si el componente es compartido entre roles. Si el cambio corresponde a un solo rol, evitá alterar las otras experiencias. Mantené la separación por rol.
+3. Seguí las convenciones del área que editás. Reutilizá componentes existentes, evitá la duplicación de código, y **no crees componentes gigantes llenos de flags** para manejar distintos roles. Extraé las lógicas condicionales excesivas. Reutilizá `apiClient` para toda comunicación con el backend.
 4. Usá endpoints y campos confirmados en el backend. No inventes respuestas, cifras ni permisos. Los ejemplos de la página de catálogo deben quedar señalados como muestras.
 5. Mantené separados los reclamos ciudadanos y los comunicados institucionales. No presentes acciones o estados de uno como si pertenecieran al otro.
 6. Para reclamos, respetá los estados actuales (`Pendiente`, `En revisión`, `En proceso`, `Resuelto`, `Cancelado`) y el control de visibilidad público/privado. Revisá `src/utils/claimStatus.js` y el backend antes de modificar transiciones o textos de negocio.
