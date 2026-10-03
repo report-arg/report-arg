@@ -120,36 +120,7 @@ export default function AppNavbar({
               </div>
 
               <div className="home-profile-dropdown-body">
-                {mounted && (
-                  <div className="px-4 py-3 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-text-secondary">Apariencia</span>
-                    <div className="flex bg-surface-subtle border border-border-subtle rounded-lg p-0.5 shadow-xs">
-                      <button
-                        onClick={() => { setTheme("light"); setProfileOpen(false); }}
-                        className={`p-1.5 rounded-md transition-colors cursor-pointer ${
-                          theme === "light"
-                            ? "bg-surface shadow-xs text-primary"
-                            : "text-text-muted hover:text-text-primary"
-                        }`}
-                        title="Tema Claro"
-                      >
-                        <Sun size={14} />
-                      </button>
-                      <button
-                        onClick={() => { setTheme("dark"); setProfileOpen(false); }}
-                        className={`p-1.5 rounded-md transition-colors cursor-pointer ${
-                          theme === "dark"
-                            ? "bg-surface shadow-xs text-primary"
-                            : "text-text-muted hover:text-text-primary"
-                        }`}
-                        title="Tema Oscuro"
-                      >
-                        <Moon size={14} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-                <div className="home-profile-dropdown-divider" style={{ margin: 0 }} />
+{/* Apariencia switch temporarily removed because it is broken */}
 
                 {profileLink && (
                   <button

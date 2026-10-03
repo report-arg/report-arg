@@ -45,7 +45,7 @@ export default function ClaimFeedCard({ item, priorityImage }) {
 
   // Determinar si el reclamo está asignado a la institución autenticada
   const esAsignadoInstitucion = esInstitucion && (
-    (session?.user?.id_institucion && item.id_institucion && Number(session.user.id_institucion) === Number(item.id_institucion)) ||
+    (session?.user?.id_institucion && (item.id_institucion || item.institucionId) && Number(session.user.id_institucion) === Number(item.id_institucion || item.institucionId)) ||
     (item.id_usuario_institucion && Number(session.user.id) === Number(item.id_usuario_institucion))
   );
 
