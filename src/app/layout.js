@@ -27,7 +27,7 @@ export default function RootLayout({ children }) {
         className={`${manrope.className} font-sans antialiased`}
         suppressHydrationWarning
       >
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" enableSystem={false} disableTransitionOnChange>
           <AuthProvider>
             <DynamicHeroProvider>
               {children}
