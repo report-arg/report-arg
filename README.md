@@ -39,7 +39,7 @@ Para consultar las decisiones de arquitectura general, modelo territorial y regl
 
 El frontend de ReportARG está construido con tecnologías modernas para asegurar una experiencia rápida, escalable y mantenible:
 
-- **Framework principal:** [Next.js 15](https://nextjs.org/) (App Router).
+- **Framework principal:** [Next.js 16](https://nextjs.org/) (App Router).
 - **Librería de UI:** [React 19](https://react.dev/).
 - **Estilos:** [Tailwind CSS v4](https://tailwindcss.com/) junto con [HeroUI](https://heroui.com/) para componentes accesibles y atractivos.
 - **Autenticación:** [NextAuth.js](https://next-auth.js.org/) con soporte para credenciales locales, Google y Facebook.
@@ -118,7 +118,7 @@ El sistema maneja 3 tipos de roles de usuarios, y las rutas/vistas se protegen u
    - **Rutas clave:** `/ciudadano`, `/ciudadano/reclamos`, `/ciudadano/mapa`, `/ciudadano/explorar`.
 
 3. **Institución (`institucion`)**
-   - Cuentas verificadas para organizaciones (ej. municipalidad, policía, hospital). Pueden emitir comunicados oficiales y gestionar los reclamos que les sean asignados.
+   - Cuentas para organizaciones (ej. municipalidad, policía, hospital). Pueden operar únicamente según su estado de verificación y las capacidades que tengan explícitamente autorizadas (por ejemplo, publicar comunicados o gestionar reclamos, siendo estas independientes entre sí).
    - **Rutas clave:** `/institucion`, `/institucion/reclamos`, `/institucion/comunicados`.
 
 > **Nota:** Todos los roles (incluyendo ciudadanos e instituciones) tienen acceso al panel de su perfil en `/profile` (o el correspondiente de su portal) para modificar su información, contraseña y visualizar sus configuraciones.

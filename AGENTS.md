@@ -12,6 +12,19 @@ ReportARG es una plataforma de participación ciudadana con experiencias separad
 - La autenticación usa NextAuth. Revisá `src/app/api/auth/[...nextauth]/route.js` y `src/middleware.js` antes de cambiar acceso o redirecciones.
 - La identidad visual está en `src/components/brand/`, `src/styles/brand.css` y la página interna `/identidad-visual`. Los iconos de categorías se resuelven con un fallback para códigos desconocidos.
 - Las decisiones de dominio y base de datos se documentan en el repositorio backend, especialmente `docs/arquitectura_y_reglas.md` y `docs/sprint4_reclamos.md`. Contrastá esas decisiones con los endpoints implementados antes de usar un dato.
+ 
+## Reglas territoriales e institucionales
+
+Antes de modificar registro, autenticación, ciudades, instituciones, permisos, reclamos, comunicados o navegación territorial, **se debe leer `docs/arquitectura_y_reglas.md` del repositorio backend**.
+
+Reglas breves:
+- No asumir que residencia, `usuarios.id_ciudad` y ciudad seleccionada son lo mismo.
+- Ciudad seleccionada no concede permisos.
+- No asumir que institución verificada posee todas las capacidades.
+- No asumir que una capacidad concede categorías.
+- No implementar autorización únicamente en frontend.
+- No hardcodear Viale, `id_ciudad = 1`, Municipalidad de Viale, ni IDs de categorías/instituciones.
+- Las reglas de permisos y territorialidad deben validarse en backend.
 
 ## Cómo trabajar
 
