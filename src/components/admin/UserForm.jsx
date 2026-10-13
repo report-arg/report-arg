@@ -2,26 +2,49 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import {
+  User,
+  Mail,
+  Lock,
+  Shield,
+  Building2,
+  CheckCircle2,
+  AlertTriangle,
+  Camera,
+  Loader2,
+  ArrowLeft,
+  Save,
+} from "lucide-react";
 import apiClient from "@/services/apiClient";
+import Button from "@/components/ui/Button";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-const rolesOpciones   = ["ciudadano", "admin", "institucion"];
-const estadosOpciones = ["activo", "inactivo"];
+const rolesOpciones = [
+  { value: "ciudadano", label: "Ciudadano", desc: "Acceso comunitario regular (feed, mapas, reportes)" },
+  { value: "institucion", label: "Institución", desc: "Gestión institucional y resolución de reclamos asignados" },
+  { value: "admin", label: "Administrador", desc: "Acceso total de supervisión y gestión de plataforma" },
+];
 
 export default function UserForm({ usuarioId = null }) {
-  const router  = useRouter();
-  const isEdit  = !!usuarioId;
+  const router = useRouter();
+  const { data: session } = useSession();
+  const currentUserId = Number(session?.user?.id || 0);
+
+  const isEdit = Boolean(usuarioId);
+  const esMiCuenta = isEdit && Number(usuarioId) === currentUserId;
   const fileRef = useRef(null);
 
   const [form, setForm] = useState({
-    nombre:   "",
-    email:    "",
+    nombre: "",
+    email: "",
     password: "",
-    rol:      "ciudadano",
-    estado:   "activo",
-    foto:     null,
+    rol: "ciudadano",
+    estado: "activo",
+    foto: null,
   });
-  const [errors, setErrors]   = useState({});
+
+  const [originalRol, setOriginalRol] = useState("ciudadano");
+  const [errors, setErrors] = useState({});
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(isEdit);
@@ -29,299 +52,407 @@ export default function UserForm({ usuarioId = null }) {
   const [infoMessage, setInfoMessage] = useState("");
   const [uploadingFoto, setUploadingFoto] = useState(false);
 
-  // Si es edición cargamos los datos del usuario
+  // Cargar usuario si estamos en modo edición
   useEffect(() => {
     if (!isEdit) return;
+
+    let isMounted = true;
     async function cargarUsuario() {
+      setLoadingData(true);
+      setApiError("");
       try {
-        const res  = await apiClient.get(`/admin/usuarios/${usuarioId}`);
-        const data = res.data;
-        if (data.ok) {
-          setForm(prev => ({
-            ...prev,
-            nombre: data.data.nombre || "",
-            email:  data.data.email  || "",
-            rol:    data.data.rol    || "ciudadano",
-            estado: data.data.estado || "activo",
-            foto:   data.data.foto   || null,
-          }));
-          if (data.data.foto) setPreview(data.data.foto);
+        const res = await apiClient.get(`/admin/usuarios/${usuarioId}`);
+        if (res.data?.ok && isMounted) {
+          const u = res.data.data;
+          setForm({
+            nombre: u.nombre || "",
+            email: u.email || "",
+            password: "",
+            rol: (u.rol || "ciudadano").toLowerCase(),
+            estado: u.estado || "activo",
+            foto: u.foto || null,
+          });
+          setOriginalRol((u.rol || "ciudadano").toLowerCase());
+          if (u.foto) setPreview(u.foto);
+        } else if (isMounted) {
+          setApiError(res.data?.mensaje || "No se encontraron los datos del usuario.");
         }
       } catch (err) {
-        setApiError('Error al cargar datos del usuario');
+        if (isMounted) {
+          setApiError(err.response?.data?.mensaje || "Error al cargar los datos del usuario.");
+        }
       } finally {
-        setLoadingData(false);
+        if (isMounted) setLoadingData(false);
       }
     }
+
     cargarUsuario();
-  }, [usuarioId]);
+    return () => {
+      isMounted = false;
+    };
+  }, [usuarioId, isEdit]);
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-    setErrors(prev => ({ ...prev, [name]: "" }));
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
     setApiError("");
     setInfoMessage("");
   }
 
-  async function submitUser(payload, { redirect = true, successMessage = "" } = {}) {
-    const errs = validate(payload);
+  function validate() {
+    const errs = {};
+    if (!form.nombre.trim()) {
+      errs.nombre = "El nombre es obligatorio.";
+    }
+    if (!form.email.trim()) {
+      errs.email = "El correo electrónico es obligatorio.";
+    } else if (!/\S+@\S+\.\S+/.test(form.email)) {
+      errs.email = "Ingresá un formato de email válido.";
+    }
+
+    if (!isEdit) {
+      if (!form.password) {
+        errs.password = "La contraseña es obligatoria para nuevos usuarios.";
+      } else if (form.password.length < 6) {
+        errs.password = "La contraseña debe tener al menos 6 caracteres.";
+      }
+    }
+
+    return errs;
+  }
+
+  async function handleFoto(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const urlPreview = URL.createObjectURL(file);
+    setPreview(urlPreview);
+
+    setUploadingFoto(true);
+    setApiError("");
+    setInfoMessage("");
+
+    try {
+      const formData = new FormData();
+      formData.append("foto", file);
+
+      const res = await apiClient.post(`/admin/upload/foto`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (res.data?.ok && res.data.url) {
+        setForm((prev) => ({ ...prev, foto: res.data.url }));
+        setInfoMessage("Foto cargada correctamente. Guardá el formulario para confirmar los cambios.");
+      } else {
+        setApiError(res.data?.mensaje || "No se pudo subir la foto de perfil.");
+      }
+    } catch (err) {
+      setApiError(err.response?.data?.mensaje || "Error de conexión al subir la imagen.");
+    } finally {
+      setUploadingFoto(false);
+    }
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const errs = validate();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
-      return false;
+      return;
     }
 
     setLoading(true);
     setApiError("");
+    setInfoMessage("");
 
     try {
-      const body = {
-        email: payload.email,
-        nombre: payload.nombre,
-        rol: payload.rol,
-        estado: payload.estado,
-        foto: payload.foto,
+      const payload = {
+        nombre: form.nombre.trim(),
+        email: form.email.trim().toLowerCase(),
+        rol: form.rol,
+        estado: form.estado,
+        foto: form.foto,
       };
 
       if (!isEdit) {
-        body.password = payload.password;
+        payload.password = form.password;
       }
 
-      const res = await (isEdit ? apiClient.put : apiClient.post)(isEdit ? `/admin/usuarios/${usuarioId}` : `/admin/usuarios`, body);
-      const data = res.data;
+      const res = isEdit
+        ? await apiClient.put(`/admin/usuarios/${usuarioId}`, payload)
+        : await apiClient.post(`/admin/usuarios`, payload);
 
-      if (!data.ok) {
-        setApiError(data.mensaje || 'No se pudo guardar el usuario');
-        return false;
+      if (res.data?.ok) {
+        router.push("/admin/users");
+      } else {
+        setApiError(res.data?.mensaje || "No se pudo guardar el usuario.");
       }
-
-      if (successMessage) {
-        setInfoMessage(successMessage);
-      }
-
-      if (redirect) {
-        router.push('/admin/users');
-      }
-
-      return true;
     } catch (err) {
-      setApiError('Error al conectar con el servidor');
-      return false;
+      setApiError(
+        err.response?.data?.mensaje ||
+          "Ocurrió un error al procesar la solicitud en el servidor."
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleFoto(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  // Preview inmediato
-  const url = URL.createObjectURL(file);
-  setPreview(url);
-
-  // Subir a Cloudinary
-  setUploadingFoto(true);
-  setApiError("");
-  setInfoMessage("");
-  try {
-    const formData = new FormData();
-    formData.append('foto', file);
-
-    const res  = await apiClient.post(`/admin/upload/foto`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    const data = res.data || {};
-
-    if (data.ok) {
-      const nextForm = { ...form, foto: data.url };
-      setForm(nextForm);
-
-      if (isEdit) {
-        const saved = await submitUser(nextForm, {
-          redirect: false,
-          successMessage: 'Foto de perfil actualizada correctamente',
-        });
-        if (!saved) {
-          setApiError('La imagen se subió, pero no se pudo guardar en el perfil. Intentá guardar cambios nuevamente.');
-        }
-      } else {
-        setInfoMessage('Imagen subida. Para guardarla en el perfil, hacé clic en Crear usuario.');
-      }
-    } else {
-      setApiError(data.mensaje || data.error || 'Error al subir la imagen');
-    }
-  } catch (err) {
-    setApiError(err.message || 'Error al subir la imagen');
-  } finally {
-    setUploadingFoto(false);
-  }
-}
-
-  function validate(values = form) {
-    const errs = {};
-    if (!values.nombre.trim()) errs.nombre = "El nombre es obligatorio.";
-    if (!values.email.trim())  errs.email  = "El email es obligatorio.";
-    else if (!/\S+@\S+\.\S+/.test(values.email)) errs.email = "El email no es válido.";
-    if (!isEdit && !values.password) errs.password = "La contraseña es obligatoria.";
-    if (!isEdit && values.password && values.password.length < 6)
-      errs.password = "Mínimo 6 caracteres.";
-    return errs;
-  }
-
-  async function handleSubmit() {
-    await submitUser(form, {
-      redirect: true,
-      successMessage: isEdit ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente',
-    });
-  }
-
-  const inputStyle = {
-    width: "100%", padding: "9px 12px", fontSize: 13,
-    border: "1px solid var(--color-border)", borderRadius: 8,
-    background: "#fff", color: "var(--color-text)", boxSizing: "border-box", marginTop: 6,
-  };
-  const labelStyle = { fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 1 };
-  const errorStyle = { fontSize: 12, color: "var(--color-danger)", marginTop: 4 };
+  // Comprobar restricciones de edición
+  const esInstitucion = isEdit && originalRol === "institucion";
 
   if (loadingData) {
-    return <p className="users-empty-state">Cargando datos del usuario...</p>;
+    return (
+      <div className="p-8 rounded-2xl bg-surface border border-border-subtle shadow-xs text-center flex flex-col items-center justify-center gap-3">
+        <Loader2 size={24} className="animate-spin text-primary" />
+        <span className="text-xs text-text-muted">Cargando datos del usuario...</span>
+      </div>
+    );
   }
 
   return (
-    <div className="card users-form-card">
-
-      {/* Error general API */}
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Alertas informativas y de error */}
       {apiError && (
-        <div style={{
-          background: "#FEE2E2", border: "1px solid #FCA5A5",
-          borderRadius: 8, padding: "10px 14px", marginBottom: 16,
-          fontSize: 13, color: "#991B1B",
-        }}>
-          {apiError}
+        <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2.5">
+          <AlertTriangle size={16} className="shrink-0" />
+          <span>{apiError}</span>
         </div>
       )}
 
       {infoMessage && (
-        <div style={{
-          background: "#DCFCE7", border: "1px solid #86EFAC",
-          borderRadius: 8, padding: "10px 14px", marginBottom: 16,
-          fontSize: 13, color: "#166534",
-        }}>
-          {infoMessage}
+        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2.5">
+          <CheckCircle2 size={16} className="shrink-0" />
+          <span>{infoMessage}</span>
         </div>
       )}
 
-      {/* Foto de perfil */}
-      <div className="users-photo-block">
-        <div
-          onClick={() => fileRef.current.click()}
-          style={{
-            width: 72, height: 72, borderRadius: "50%", cursor: "pointer",
-            background: preview ? "transparent" : "#e8eaf6",
-            border: "2px dashed var(--color-border)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            overflow: "hidden", flexShrink: 0,
-          }}
-        >
-          {preview
-            ? <img src={preview} alt="foto" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            : <span style={{ fontSize: 11, color: "var(--color-muted)", textAlign: "center", padding: 4 }}>Subir foto</span>
-          }
+      {/* Tarjeta del Formulario */}
+      <form
+        onSubmit={handleSubmit}
+        className="p-6 sm:p-8 rounded-2xl bg-surface border border-border-subtle shadow-xs space-y-6"
+      >
+        {/* Cabecera visual del formulario con avatar */}
+        <div className="flex flex-col sm:flex-row items-center gap-5 pb-6 border-b border-border-subtle">
+          <div className="relative group">
+            <div
+              onClick={() => !uploadingFoto && fileRef.current?.click()}
+              className="w-20 h-20 rounded-full overflow-hidden bg-surface-subtle border-2 border-border-subtle flex items-center justify-center cursor-pointer hover:border-primary transition-all relative"
+              title="Seleccionar foto de perfil"
+            >
+              {preview ? (
+                <img
+                  src={preview}
+                  alt="Vista previa"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={32} className="text-text-muted" />
+              )}
+              {uploadingFoto && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <Loader2 size={20} className="animate-spin text-white" />
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploadingFoto}
+              className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-primary text-white shadow-xs hover:bg-primary-hover transition-colors cursor-pointer"
+              title="Cambiar imagen"
+            >
+              <Camera size={13} />
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFoto}
+            />
+          </div>
+
+          <div className="text-center sm:text-left min-w-0">
+            <h2 className="text-base font-bold text-text-primary m-0">
+              {isEdit ? "Editar Información del Usuario" : "Registro de Nuevo Usuario"}
+            </h2>
+            <p className="text-xs text-text-secondary m-0 mt-0.5">
+              {isEdit
+                ? "Modificá los datos personales, rol o estado operativo de la cuenta."
+                : "Completá los campos requeridos para dar de alta la cuenta en ReportARG."}
+            </p>
+          </div>
         </div>
-        <div>
-          <p style={{ margin: "0 0 4px", fontSize: 13, color: "var(--color-text)", fontWeight: 600 }}>Foto de perfil</p>
-          <button
-            onClick={() => fileRef.current.click()}
-            disabled={uploadingFoto}
-            style={{
-              padding: "6px 14px", border: "1px solid var(--color-border)",
-              borderRadius: 8, background: "#fff", fontSize: 12,
-              cursor: uploadingFoto ? "not-allowed" : "pointer",
-              color: "var(--color-text)",
-              opacity: uploadingFoto ? 0.7 : 1,
-            }}
+
+        {/* Campos principales */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Nombre Completo */}
+          <div className="space-y-1.5 sm:col-span-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+              Nombre Completo / Denominación <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="nombre"
+              value={form.nombre}
+              onChange={handleChange}
+              placeholder="Ej: Laura Gómez o Municipalidad de Viale"
+              className={`w-full text-xs py-2.5 px-3.5 rounded-xl bg-surface-subtle border ${
+                errors.nombre ? "border-rose-500" : "border-border-subtle"
+              } focus:bg-surface focus:border-primary text-text-primary placeholder:text-text-muted outline-hidden transition-all`}
+            />
+            {errors.nombre && <p className="text-[11px] text-rose-500 m-0">{errors.nombre}</p>}
+          </div>
+
+          {/* Email */}
+          <div className="space-y-1.5 sm:col-span-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+              Correo Electrónico <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              placeholder="usuario@reportarg.gob.ar"
+              className={`w-full text-xs py-2.5 px-3.5 rounded-xl bg-surface-subtle border ${
+                errors.email ? "border-rose-500" : "border-border-subtle"
+              } focus:bg-surface focus:border-primary text-text-primary placeholder:text-text-muted outline-hidden transition-all`}
+            />
+            {errors.email && <p className="text-[11px] text-rose-500 m-0">{errors.email}</p>}
+          </div>
+
+          {/* Contraseña (solo al crear) */}
+          {!isEdit && (
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                Contraseña Inicial <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                placeholder="Mínimo 6 caracteres"
+                className={`w-full text-xs py-2.5 px-3.5 rounded-xl bg-surface-subtle border ${
+                  errors.password ? "border-rose-500" : "border-border-subtle"
+                } focus:bg-surface focus:border-primary text-text-primary placeholder:text-text-muted outline-hidden transition-all`}
+              />
+              {errors.password && <p className="text-[11px] text-rose-500 m-0">{errors.password}</p>}
+            </div>
+          )}
+
+          {/* Rol del Usuario */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+              Rol de Acceso <span className="text-rose-500">*</span>
+            </label>
+            <select
+              name="rol"
+              value={form.rol}
+              onChange={handleChange}
+              disabled={esMiCuenta || esInstitucion}
+              className={`w-full text-xs py-2.5 px-3.5 rounded-xl bg-surface-subtle border border-border-subtle focus:bg-surface focus:border-primary text-text-primary outline-hidden transition-all ${
+                esMiCuenta || esInstitucion ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+              }`}
+            >
+              {(isEdit
+                ? rolesOpciones
+                : rolesOpciones.filter((r) => r.value !== "institucion")
+              ).map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+            {esMiCuenta && (
+              <p className="text-[10px] text-text-muted m-0">
+                No podés modificar el rol de tu propia cuenta administradora.
+              </p>
+            )}
+            {esInstitucion && (
+              <p className="text-[10px] text-text-muted m-0">
+                Las cuentas institucionales no admiten cambio de rol directo para preservar la
+                trazabilidad de los reclamos asignados.
+              </p>
+            )}
+            {!isEdit && (
+              <p className="text-[10px] text-text-muted m-0 leading-relaxed">
+                El alta de instituciones se realiza mediante el{" "}
+                <a
+                  href="/register/institution"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:underline font-semibold"
+                >
+                  registro institucional
+                </a>{" "}
+                o la gestión de{" "}
+                <a
+                  href="/admin/solicitudes"
+                  className="text-primary hover:underline font-semibold"
+                >
+                  solicitudes
+                </a>{" "}
+                para asegurar su asignación territorial y datos requeridos.
+              </p>
+            )}
+          </div>
+
+          {/* Estado Operativo */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+              Estado de la Cuenta <span className="text-rose-500">*</span>
+            </label>
+            <select
+              name="estado"
+              value={form.estado}
+              onChange={handleChange}
+              disabled={esMiCuenta}
+              className={`w-full text-xs py-2.5 px-3.5 rounded-xl bg-surface-subtle border border-border-subtle focus:bg-surface focus:border-primary text-text-primary outline-hidden transition-all ${
+                esMiCuenta ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+              }`}
+            >
+              <option value="activo">Activo (Habilitado)</option>
+              <option value="inactivo">Inactivo (Deshabilitado)</option>
+            </select>
+            {esMiCuenta && (
+              <p className="text-[10px] text-text-muted m-0">
+                No podés inhabilitar tu propia cuenta administradora.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Acciones de Guardar / Cancelar */}
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-border-subtle">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push("/admin/users")}
+            disabled={loading || uploadingFoto}
           >
-          {uploadingFoto ? "Subiendo..." : preview ? "Cambiar foto" : "Seleccionar imagen"}
-          </button>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFoto} />
+            Cancelar
+          </Button>
+
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={loading || uploadingFoto}
+            leftIcon={
+              loading ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <Save size={15} />
+              )
+            }
+          >
+            {loading ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear usuario"}
+          </Button>
         </div>
-      </div>
-
-      {/* Nombre */}
-      <div style={{ marginBottom: 16 }}>
-        <label style={labelStyle}>NOMBRE COMPLETO</label>
-        <input
-          name="nombre" value={form.nombre} onChange={handleChange}
-          placeholder="Ej: Mateo Sánchez"
-          style={{ ...inputStyle, borderColor: errors.nombre ? "var(--color-danger)" : "" }}
-        />
-        {errors.nombre && <p style={errorStyle}>{errors.nombre}</p>}
-      </div>
-
-      {/* Email */}
-      <div style={{ marginBottom: 16 }}>
-        <label style={labelStyle}>EMAIL</label>
-        <input
-          name="email" value={form.email} onChange={handleChange}
-          placeholder="Ej: usuario@reportarg.gob.ar"
-          style={{ ...inputStyle, borderColor: errors.email ? "var(--color-danger)" : "" }}
-        />
-        {errors.email && <p style={errorStyle}>{errors.email}</p>}
-      </div>
-
-      {/* Password — solo al crear */}
-      {!isEdit && (
-        <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>CONTRASEÑA</label>
-          <input
-            name="password" type="password" value={form.password} onChange={handleChange}
-            placeholder="Mínimo 6 caracteres"
-            style={{ ...inputStyle, borderColor: errors.password ? "var(--color-danger)" : "" }}
-          />
-          {errors.password && <p style={errorStyle}>{errors.password}</p>}
-        </div>
-      )}
-
-      {/* Rol y Estado */}
-      <div className="users-form-grid">
-        <div>
-          <label style={labelStyle}>ROL</label>
-          <select name="rol" value={form.rol} onChange={handleChange} style={inputStyle}>
-            {rolesOpciones.map(r => <option key={r} value={r}>{r.toUpperCase()}</option>)}
-          </select>
-        </div>
-        <div>
-          <label style={labelStyle}>ESTADO</label>
-          <select name="estado" value={form.estado} onChange={handleChange} style={inputStyle}>
-            {estadosOpciones.map(e => <option key={e} value={e}>{e.toUpperCase()}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {/* Botones */}
-      <div className="users-form-actions">
-        <button
-          onClick={() => router.push("/admin/users")}
-          style={{
-            padding: "10px 22px", border: "1px solid var(--color-border)",
-            borderRadius: 8, background: "#fff", fontSize: 13, cursor: "pointer", color: "var(--color-text)",
-          }}
-        >Cancelar</button>
-        <button
-          onClick={handleSubmit}
-          disabled={loading || uploadingFoto}
-          style={{
-            padding: "10px 22px", background: (loading || uploadingFoto) ? "#ccc" : "var(--color-primary)",
-            color: "#fff", border: "none", borderRadius: 8,
-            fontSize: 13, fontWeight: "bold",
-            cursor: (loading || uploadingFoto) ? "not-allowed" : "pointer",
-          }}
-        >
-          {uploadingFoto ? "Subiendo imagen..." : loading ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear usuario"}
-        </button>
-      </div>
-
+      </form>
     </div>
   );
 }

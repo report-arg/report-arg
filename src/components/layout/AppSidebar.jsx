@@ -66,12 +66,20 @@ export default function AppSidebar({
         </nav>
 
         <div className="home-sidebar-footer">
-          {footerLinks.map(({ href, label, icon: Icon }) => (
-            <Link key={href} href={href} className="home-nav-item" onClick={onClose}>
-              {Icon && <Icon size={18} className="home-nav-icon" />}
-              {label}
-            </Link>
-          ))}
+          {footerLinks.map(({ href, label, icon: Icon }) => {
+            const isAdminLink = href === "/admin";
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`home-nav-item ${isAdminLink ? "!text-primary font-bold bg-primary/10 hover:bg-primary/20 border border-primary/20" : ""}`}
+                onClick={onClose}
+              >
+                {Icon && <Icon size={18} className={`home-nav-icon ${isAdminLink ? "!text-primary" : ""}`} />}
+                {label}
+              </Link>
+            );
+          })}
           <button
             className="home-nav-item"
             onClick={async () => {

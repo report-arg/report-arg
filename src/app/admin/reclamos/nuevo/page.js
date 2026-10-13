@@ -9,9 +9,8 @@ import {
   Loader2, Globe, Lock
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
-import Sidebar from "@/components/admin/Sidebar";
-import Navbar from "@/components/admin/Navbar";
-import Breadcrumb from "@/components/admin/Breadcrumb";
+import PageHeader from "@/components/layout/PageHeader";
+import Button from "@/components/ui/Button";
 import { uploadImage } from "@/services/uploadService";
 import { getCategoryIcon, ReportProblemIcon } from "@/components/brand/icons";
 import { toast } from "sonner";
@@ -167,20 +166,20 @@ export default function NuevoReclamoPage() {
   if (status === "loading") return null;
 
   return (
-    <div className="admin-layout">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="admin-content">
-        <Navbar section="Reportes" onMenuClick={() => setSidebarOpen(true)} />
-        <main className="admin-main">
-          <div style={{ marginBottom: 20 }}>
-            <Breadcrumb items={[{ label: "ADMIN PANEL", href: "/admin" }, { label: "REPORTES", href: "/admin/reclamos" }, { label: "NUEVO" }]} />
-            <h1 style={{ margin: "6px 0 2px", fontSize: 26, fontWeight: "bold", color: "var(--color-primary)" }}>
-              Crear Reclamo (Prueba)
-            </h1>
-            <p style={{ margin: 0, fontSize: 13, color: "#666" }}>
-              Herramienta administrativa para registrar reclamos manualmente
-            </p>
-          </div>
+    <div className="w-full">
+      <PageHeader
+        title="Crear Reclamo Administrativo"
+        description="Herramienta para registrar reclamos manualmente desde el panel de administración."
+        action={
+          <Button
+            onClick={() => router.push("/admin/reclamos")}
+            variant="outline"
+            leftIcon={<ArrowLeft size={16} />}
+          >
+            Volver a supervisión
+          </Button>
+        }
+      />
 
       {/* Formulario principal */}
       <form onSubmit={handleSubmit} noValidate className="bg-surface rounded-2xl border border-border-subtle p-5 shadow-xs space-y-5">
@@ -424,8 +423,6 @@ export default function NuevoReclamoPage() {
           </button>
         </div>
       </form>
-        </main>
-      </div>
     </div>
   );
 }

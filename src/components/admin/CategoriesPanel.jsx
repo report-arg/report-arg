@@ -1,14 +1,44 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, MinusCircle, AlertTriangle } from "lucide-react";
+import Link from "next/link";
+import {
+  Tag,
+  Search,
+  X,
+  Filter,
+  Plus,
+  Pencil,
+  PowerOff,
+  Power,
+  Trash2,
+  AlertTriangle,
+  Loader2,
+  RefreshCw,
+  CheckCircle2,
+  Layers,
+} from "lucide-react";
 import apiClient from "@/services/apiClient";
+import Button from "@/components/ui/Button";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import StatusBadge from "@/components/ui/StatusBadge";
+import { getCategoryIcon } from "@/components/brand/icons";
+import { toast } from "sonner";
 
-const tipoBadge = {
-  reclamo: { label: "Reclamo", bg: "#dbeafe", color: "#1e40af" },
-  comunicado: { label: "Comunicado", bg: "#fef9c3", color: "#854d0e" },
-  ambos: { label: "Ambos", bg: "#dcfce7", color: "#166534" },
+const TIPO_CONFIG = {
+  reclamo: {
+    label: "Reclamo",
+    badgeCls: "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40",
+  },
+  comunicado: {
+    label: "Comunicado",
+    badgeCls: "bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-800/40",
+  },
+  ambos: {
+    label: "Reclamo y Comunicado",
+    badgeCls: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40",
+  },
 };
 
 export default function CategoriesPanel() {
@@ -16,401 +46,469 @@ export default function CategoriesPanel() {
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
-  const [confirmBaja, setConfirmBaja] = useState(null);
-  const [bajando, setBajando] = useState(false);
 
   // Filtros
+  const [busqueda, setBusqueda] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("");
 
-  // Paginación
-  const [pagina, setPagina] = useState(1);
-  const [porPagina, setPorPagina] = useState(5);
+  // Modales de acción
+  const [modalBaja, setModalBaja] = useState(null);
+  const [modalReactivar, setModalReactivar] = useState(null);
+  const [modalEliminar, setModalEliminar] = useState(null);
+  const [procesando, setProcesando] = useState(false);
 
-  useEffect(() => { fetchCategorias(); }, []);
+  // Ref para debounce de búsqueda
+  const searchTimeoutRef = useRef(null);
 
-  // Volver a página 1 al cambiar filtros
-  useEffect(() => { setPagina(1); }, [filtroTipo, filtroEstado]);
-
-  async function fetchCategorias() {
+  const fetchCategorias = async (search = busqueda, tipo = filtroTipo, estado = filtroEstado) => {
     setLoading(true);
+    setError("");
     try {
-      const res = await apiClient.get(`/admin/categorias`);
-      const data = res.data;
-      if (data.ok) setCategorias(data.data);
-    } catch {
-      setError("Error al cargar categorías");
+      const params = new URLSearchParams();
+      if (search.trim()) params.append("busqueda", search.trim());
+      if (tipo) params.append("tipo", tipo);
+      if (estado) params.append("estado", estado);
+
+      const res = await apiClient.get(`/admin/categorias?${params.toString()}`);
+      if (res.data?.ok) {
+        setCategorias(res.data.data || []);
+      } else {
+        setError(res.data?.mensaje || "Error al cargar categorías");
+      }
+    } catch (err) {
+      setError(
+        err.response?.data?.mensaje ||
+          "No se pudo conectar con el servidor para consultar categorías."
+      );
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  async function confirmarBaja() {
-    if (!confirmBaja) return;
-    setBajando(true);
+  useEffect(() => {
+    fetchCategorias(busqueda, filtroTipo, filtroEstado);
+  }, [filtroTipo, filtroEstado]);
+
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setBusqueda(val);
+
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchCategorias(val, filtroTipo, filtroEstado);
+    }, 350);
+  };
+
+  const handleClearSearch = () => {
+    setBusqueda("");
+    fetchCategorias("", filtroTipo, filtroEstado);
+  };
+
+  // Métricas
+  const totalCategorias = categorias.length;
+  const activasCount = categorias.filter((c) => c.estado === "activo").length;
+  const inactivasCount = categorias.filter((c) => c.estado === "inactivo").length;
+
+  // Acciones
+  async function handleConfirmBaja() {
+    if (!modalBaja) return;
+    setProcesando(true);
     try {
-      const res = await apiClient.patch(`/admin/categorias/${confirmBaja.id}/baja`);
-      const data = res.data;
-      if (!data.ok) { setError(data.mensaje); return; }
-      await fetchCategorias();
-      setSuccessMsg("Categoría desactivada correctamente");
-      setTimeout(() => setSuccessMsg(""), 3000);
-    } catch {
-      setError("Error al desactivar categoría");
+      const res = await apiClient.patch(`/admin/categorias/${modalBaja.id}/baja`);
+      if (res.data?.ok) {
+        toast.success(`Categoría "${modalBaja.nombre}" desactivada correctamente.`);
+        setModalBaja(null);
+        await fetchCategorias();
+      } else {
+        toast.error(res.data?.mensaje || "Error al desactivar categoría.");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.mensaje || "Error al desactivar categoría.");
     } finally {
-      setBajando(false);
-      setConfirmBaja(null);
+      setProcesando(false);
     }
   }
 
-  // Filtrado local
-  const categoriasFiltradas = categorias.filter(c => {
-    if (filtroTipo && c.tipo !== filtroTipo) return false;
-    if (filtroEstado && c.estado !== filtroEstado) return false;
-    return true;
-  });
+  async function handleConfirmReactivar() {
+    if (!modalReactivar) return;
+    setProcesando(true);
+    try {
+      const res = await apiClient.patch(`/admin/categorias/${modalReactivar.id}/reactivar`);
+      if (res.data?.ok) {
+        toast.success(`Categoría "${modalReactivar.nombre}" activada correctamente.`);
+        setModalReactivar(null);
+        await fetchCategorias();
+      } else {
+        toast.error(res.data?.mensaje || "Error al activar categoría.");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.mensaje || "Error al activar categoría.");
+    } finally {
+      setProcesando(false);
+    }
+  }
 
-  const filtrosActivos = [
-    filtroTipo && { label: `Tipo: ${filtroTipo}`, onRemove: () => setFiltroTipo("") },
-    filtroEstado && { label: `Estado: ${filtroEstado}`, onRemove: () => setFiltroEstado("") },
-  ].filter(Boolean);
-
-  // Paginación
-  const totalFiltradas = categoriasFiltradas.length;
-  const totalPaginas = porPagina === 0 ? 1 : Math.ceil(totalFiltradas / porPagina);
-  const categoriasVisibles = porPagina === 0
-    ? categoriasFiltradas
-    : categoriasFiltradas.slice((pagina - 1) * porPagina, pagina * porPagina);
+  async function handleConfirmEliminar() {
+    if (!modalEliminar) return;
+    setProcesando(true);
+    try {
+      const res = await apiClient.delete(`/admin/categorias/${modalEliminar.id}`);
+      if (res.data?.ok) {
+        toast.success(`Categoría "${modalEliminar.nombre}" eliminada correctamente.`);
+        setModalEliminar(null);
+        await fetchCategorias();
+      } else {
+        toast.error(res.data?.mensaje || "Error al eliminar categoría.");
+      }
+    } catch (err) {
+      const msg = err.response?.data?.mensaje || "Error al eliminar categoría.";
+      toast.error(msg, { duration: 5000 });
+      setModalEliminar(null);
+    } finally {
+      setProcesando(false);
+    }
+  }
 
   return (
-    <div>
-
-      {/* Modal baja lógica */}
-      {confirmBaja && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
-          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
-        }}>
-          <div style={{
-            background: "#fff", borderRadius: 12, padding: 28,
-            maxWidth: 400, width: "90%", border: "1px solid var(--color-border)",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-              <AlertTriangle size={20} color="#F5C842" />
-              <h3 style={{ margin: 0, fontSize: 16, color: "#333" }}>Desactivar categoría</h3>
-            </div>
-            <p style={{ margin: "0 0 20px", fontSize: 13, color: "#666" }}>
-              ¿Estás seguro de que deseas desactivar la categoría <strong>"{confirmBaja.nombre}"</strong>?
-              Los usuarios no podrán generar nuevos reportes bajo esta clasificación.
-            </p>
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-              <button onClick={() => setConfirmBaja(null)} style={{
-                padding: "9px 20px", border: "1px solid var(--color-primary)",
-                borderRadius: 8, background: "#fff", fontSize: 13, cursor: "pointer",
-                fontWeight: 600,
-              }}>Cancelar</button>
-              <button onClick={confirmarBaja} disabled={bajando} style={{
-                padding: "9px 20px", background: "var(--color-danger)",
-                color: "#fff", border: "none", borderRadius: 8,
-                fontSize: 13, fontWeight: "bold", cursor: bajando ? "not-allowed" : "pointer",
-              }}>{bajando ? "Desactivando..." : "Confirmar"}</button>
-            </div>
+    <div className="space-y-6">
+      {/* 1. Tarjetas KPI */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-4 sm:p-5 rounded-2xl bg-surface border border-border-subtle shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-text-muted m-0">Total Categorías</p>
+            <h3 className="text-2xl font-black text-text-primary mt-1 m-0">
+              {loading ? <Loader2 size={20} className="animate-spin text-text-muted mt-1" /> : totalCategorias}
+            </h3>
+            <p className="text-[11px] text-text-secondary mt-1 m-0">Clasificaciones del sistema</p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+            <Layers size={24} />
           </div>
         </div>
-      )}
 
-      {/* Mensajes */}
-      {error && (
-        <div className="cat-msg-error" style={{ marginBottom: 16 }}>{error}</div>
-      )}
-      {successMsg && (
-        <div className="cat-msg-success" style={{ marginBottom: 16 }}>✓ {successMsg}</div>
-      )}
+        <div
+          onClick={() => setFiltroEstado(filtroEstado === "activo" ? "" : "activo")}
+          className={`p-4 sm:p-5 rounded-2xl bg-surface border shadow-xs flex items-center justify-between cursor-pointer transition-all hover:border-emerald-400 ${
+            filtroEstado === "activo" ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-border-subtle"
+          }`}
+          title="Click para filtrar solo activas"
+        >
+          <div>
+            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 m-0">Activas</p>
+            <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 m-0">
+              {loading ? <Loader2 size={20} className="animate-spin text-text-muted mt-1" /> : activasCount}
+            </h3>
+            <p className="text-[11px] text-text-secondary mt-1 m-0">Disponibles para reportes</p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <CheckCircle2 size={24} />
+          </div>
+        </div>
 
-      {/* Filtros */}
-      <div className="card" style={{ padding: "16px 20px", marginBottom: 16 }}>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ flex: 1, minWidth: 160 }}>
-            <label className="form-label" style={{ display: "block", marginBottom: 6 }}>Tipo de Reporte</label>
-            <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
-              className="select" style={{ width: "100%", boxSizing: "border-box" }}>
-              <option value="">Todos los tipos</option>
-              <option value="reclamo">Reclamo</option>
-              <option value="comunicado">Comunicado</option>
-              <option value="ambos">Ambos</option>
-            </select>
+        <div
+          onClick={() => setFiltroEstado(filtroEstado === "inactivo" ? "" : "inactivo")}
+          className={`p-4 sm:p-5 rounded-2xl bg-surface border shadow-xs flex items-center justify-between cursor-pointer transition-all hover:border-amber-400 ${
+            filtroEstado === "inactivo" ? "border-amber-500 ring-2 ring-amber-500/20" : "border-border-subtle"
+          }`}
+          title="Click para filtrar solo inactivas"
+        >
+          <div>
+            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 m-0">Inactivas</p>
+            <h3 className="text-2xl font-black text-amber-700 dark:text-amber-400 mt-1 m-0">
+              {loading ? <Loader2 size={20} className="animate-spin text-text-muted mt-1" /> : inactivasCount}
+            </h3>
+            <p className="text-[11px] text-text-secondary mt-1 m-0">Dadas de baja lógica</p>
           </div>
-          <div style={{ flex: 1, minWidth: 160 }}>
-            <label className="form-label" style={{ display: "block", marginBottom: 6 }}>Estado</label>
-            <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}
-              className="select" style={{ width: "100%", boxSizing: "border-box" }}>
-              <option value="">Todos los estados</option>
-              <option value="activo">Activo</option>
-              <option value="inactivo">Inactivo</option>
-            </select>
+          <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <PowerOff size={24} />
           </div>
-          {(filtroTipo || filtroEstado) && (
-            <button onClick={() => { setFiltroTipo(""); setFiltroEstado(""); }}
-              style={{ padding: "8px 14px", border: "1px solid var(--color-border)", borderRadius: 8, background: "#fff", fontSize: 13, cursor: "pointer", color: "#555", alignSelf: "flex-end" }}>
-              ✕ Limpiar filtros
+        </div>
+      </div>
+
+      {/* 2. Barra de Búsqueda y Filtros */}
+      <div className="p-4 rounded-2xl bg-surface border border-border-subtle shadow-xs flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+        {/* Buscador */}
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+          <input
+            type="text"
+            value={busqueda}
+            onChange={handleSearchChange}
+            placeholder="Buscar por nombre, código o descripción..."
+            className="w-full pl-10 pr-9 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-xs text-text-primary placeholder:text-text-muted focus:bg-surface focus:border-primary outline-hidden transition-all"
+          />
+          {busqueda && (
+            <button
+              onClick={handleClearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary p-0.5"
+              title="Limpiar búsqueda"
+            >
+              <X size={14} />
             </button>
           )}
         </div>
 
-        {/* Filtros activos */}
-        {filtrosActivos.length > 0 && (
-          <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 12, color: "var(--color-muted)" }}>Filtros activos:</span>
-            {filtrosActivos.map(f => (
-              <span key={f.label} style={{
-                padding: "2px 6px 2px 10px", borderRadius: 99, fontSize: 12,
-                background: "var(--color-primary-light)", color: "var(--color-primary)",
-                fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4,
-              }}>
-                {f.label}
-                <button onClick={f.onRemove} style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  color: "var(--color-primary)", fontSize: 13, lineHeight: 1, padding: "0 2px",
-                }}>✕</button>
-              </span>
-            ))}
+        {/* Filtros Dropdowns y Botón Actualizar */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Tipo */}
+          <div className="relative">
+            <select
+              value={filtroTipo}
+              onChange={(e) => setFiltroTipo(e.target.value)}
+              className="appearance-none pl-8 pr-8 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-xs font-semibold text-text-primary focus:bg-surface focus:border-primary outline-hidden cursor-pointer transition-all"
+            >
+              <option value="">Tipo: Todos</option>
+              <option value="reclamo">Reclamos</option>
+              <option value="comunicado">Comunicados</option>
+              <option value="ambos">Ambos</option>
+            </select>
+            <Filter size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+          </div>
+
+          {/* Estado */}
+          <div className="relative">
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              className="appearance-none pl-8 pr-8 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-xs font-semibold text-text-primary focus:bg-surface focus:border-primary outline-hidden cursor-pointer transition-all"
+            >
+              <option value="">Estado: Todos</option>
+              <option value="activo">Activas</option>
+              <option value="inactivo">Inactivas</option>
+            </select>
+            <Filter size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+          </div>
+
+          <Button
+            onClick={() => fetchCategorias(busqueda, filtroTipo, filtroEstado)}
+            variant="outline"
+            size="sm"
+            loading={loading}
+            leftIcon={<RefreshCw size={13} />}
+            title="Actualizar listado"
+          >
+            Actualizar
+          </Button>
+        </div>
+      </div>
+
+      {/* 3. Tabla de Categorías */}
+      <div className="bg-surface rounded-2xl border border-border-subtle shadow-xs overflow-hidden">
+        {error && (
+          <div className="p-6 text-center space-y-2">
+            <p className="text-xs text-rose-600 font-semibold m-0">{error}</p>
+            <Button
+              onClick={() => fetchCategorias(busqueda, filtroTipo, filtroEstado)}
+              variant="outline"
+              size="sm"
+            >
+              Reintentar
+            </Button>
+          </div>
+        )}
+
+        {loading && !error && (
+          <div className="py-20 flex flex-col items-center justify-center text-text-muted text-xs gap-2">
+            <Loader2 size={24} className="animate-spin text-primary" />
+            <span>Consultando categorías...</span>
+          </div>
+        )}
+
+        {!loading && !error && categorias.length === 0 && (
+          <div className="py-20 flex flex-col items-center justify-center text-center px-4">
+            <div className="w-12 h-12 rounded-2xl bg-surface-subtle border border-border-subtle flex items-center justify-center text-text-muted mb-3">
+              <Tag size={24} />
+            </div>
+            <h4 className="text-sm font-bold text-text-primary m-0">No se encontraron categorías</h4>
+            <p className="text-xs text-text-muted mt-1 max-w-sm m-0">
+              {busqueda || filtroTipo || filtroEstado
+                ? "No hay resultados para los criterios seleccionados."
+                : "Aún no hay categorías creadas en el sistema."}
+            </p>
+            <Button
+              onClick={() => router.push("/admin/categories/crear")}
+              variant="primary"
+              size="sm"
+              leftIcon={<Plus size={14} />}
+              className="mt-4"
+            >
+              Crear primera categoría
+            </Button>
+          </div>
+        )}
+
+        {!loading && !error && categorias.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-surface-subtle border-b border-border-subtle text-text-muted font-bold uppercase tracking-wider text-[11px]">
+                  <th className="py-3 px-4">Categoría</th>
+                  <th className="py-3 px-4">Descripción</th>
+                  <th className="py-3 px-4">Ámbito</th>
+                  <th className="py-3 px-4 text-center">Orden</th>
+                  <th className="py-3 px-4">Estado</th>
+                  <th className="py-3 px-4 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-subtle">
+                {categorias.map((cat) => {
+                  const CategoryIcon = getCategoryIcon(cat.codigo || cat.nombre, cat.nombre);
+                  const esActiva = cat.estado === "activo";
+                  const tipoInfo = TIPO_CONFIG[cat.tipo] || {
+                    label: cat.tipo,
+                    badgeCls: "bg-surface-subtle text-text-secondary border-border-subtle",
+                  };
+
+                  return (
+                    <tr key={cat.id} className="hover:bg-surface-subtle/50 transition-colors">
+                      {/* Código e Icono y Nombre */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+                            <CategoryIcon size={18} />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-text-primary m-0">
+                                {cat.nombre}
+                              </span>
+                              <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-surface-subtle text-text-muted border border-border-subtle">
+                                {cat.codigo || `CAT-${cat.id}`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Descripción */}
+                      <td className="py-3.5 px-4 text-text-secondary max-w-xs truncate">
+                        {cat.descripcion || <span className="text-text-muted italic">Sin descripción</span>}
+                      </td>
+
+                      {/* Ámbito / Tipo */}
+                      <td className="py-3.5 px-4">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${tipoInfo.badgeCls}`}>
+                          {tipoInfo.label}
+                        </span>
+                      </td>
+
+                      {/* Orden */}
+                      <td className="py-3.5 px-4 text-center font-mono font-bold text-text-secondary">
+                        {cat.orden ?? 0}
+                      </td>
+
+                      {/* Estado */}
+                      <td className="py-3.5 px-4">
+                        <StatusBadge
+                          status={esActiva ? "Activo" : "Inactivo"}
+                          label={esActiva ? "Activa" : "Inactiva"}
+                        />
+                      </td>
+
+                      {/* Acciones */}
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <Button
+                            onClick={() => router.push(`/admin/categories/editar/${cat.id}`)}
+                            variant="outline"
+                            size="sm"
+                            leftIcon={<Pencil size={13} />}
+                            title="Editar categoría"
+                          >
+                            Editar
+                          </Button>
+
+                          {esActiva ? (
+                            <Button
+                              onClick={() => setModalBaja(cat)}
+                              variant="danger-soft"
+                              size="sm"
+                              leftIcon={<PowerOff size={13} />}
+                              title="Desactivar (Baja lógica)"
+                            >
+                              Desactivar
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={() => setModalReactivar(cat)}
+                              variant="success"
+                              size="sm"
+                              leftIcon={<Power size={13} />}
+                              title="Reactivar categoría"
+                            >
+                              Activar
+                            </Button>
+                          )}
+
+                          <Button
+                            onClick={() => setModalEliminar(cat)}
+                            variant="outline"
+                            size="sm"
+                            leftIcon={<Trash2 size={13} className="text-rose-600" />}
+                            title="Eliminar categoría física (si no tiene reclamos asociados)"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
 
-      {/* Tabla */}
-      <div className="card" style={{ overflow: "hidden" }}>
+      {/* 4. Modal Baja Lógica */}
+      {modalBaja && (
+        <ConfirmModal
+          isOpen={true}
+          onClose={() => setModalBaja(null)}
+          onConfirm={handleConfirmBaja}
+          title="¿Desactivar categoría?"
+          description={`Estás por dar de baja lógica a "${modalBaja.nombre}". La categoría ya no podrá seleccionarse para nuevos reportes, pero se preservarán intactos los reclamos y comunicados existentes asociados.`}
+          variant="warning"
+          confirmText="Desactivar Categoría"
+          cancelText="Cancelar"
+          loading={procesando}
+          loadingText="Desactivando..."
+          icon={<PowerOff size={20} />}
+        />
+      )}
 
-        {/* Desktop */}
-        <div className="table-wrapper">
-          <table className="table">
-            <thead>
-              <tr style={{ background: "var(--color-bg)" }}>
-                <th>CÓDIGO</th>
-                <th>NOMBRE</th>
-                <th>TIPO</th>
-                <th>ESTADO</th>
-                <th>ORDEN</th>
-                <th style={{ textAlign: "center" }}>ACCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && (
-                <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", color: "var(--color-muted)" }}>Cargando categorías...</td></tr>
-              )}
-              {!loading && categoriasFiltradas.length === 0 && (
-                <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", color: "var(--color-muted)" }}>No hay categorías para mostrar.</td></tr>
-              )}
-              {!loading && categoriasVisibles.map((c, i) => (
-                <tr key={c.id} className={i % 2 === 0 ? "row" : "row alt"}>
-                  <td style={{ fontWeight: 600, color: "var(--color-primary)", fontSize: 13 }}>{c.codigo}</td>
-                  <td style={{ color: "#333" }}>{c.nombre}</td>
-                  <td>
-                    <span style={{
-                      padding: "3px 10px", borderRadius: 99, fontSize: 12, fontWeight: 700,
-                      background: tipoBadge[c.tipo]?.bg ?? "#eee",
-                      color: tipoBadge[c.tipo]?.color ?? "#555",
-                    }}>
-                      {tipoBadge[c.tipo]?.label ?? c.tipo}
-                    </span>
-                  </td>
-                  <td>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 12,
-                      padding: "3px 10px", borderRadius: 99,
-                      background: c.estado === "activo" ? "#dcfce7" : "#f3f4f6",
-                      color: c.estado === "activo" ? "var(--color-success)" : "var(--color-muted)"
-                    }}>
-                      <span style={{
-                        width: 7, height: 7, borderRadius: "50%",
-                        background: c.estado === "activo" ? "var(--color-success)" : "#9ca3af", display: "inline-block"
-                      }} />
-                      {c.estado === "activo" ? "Activo" : "Inactivo"}
-                    </span>
-                  </td>
-                  <td style={{ color: "#555", fontSize: 13 }}>{c.orden}</td>
-                  <td style={{ textAlign: "center" }}>
-                    <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                      {c.estado === "activo" && (
-                        <button onClick={() => setConfirmBaja(c)}
-                          title="Desactivar" style={{
-                            background: "none", border: "none", cursor: "pointer",
-                            color: "var(--color-muted)", padding: 4,
-                          }}>
-                          <MinusCircle size={18} />
-                        </button>
-                      )}
-                      <button onClick={() => router.push(`/admin/categories/editar/${c.id}`)}
-                        title="Editar" style={{
-                          background: "none", border: "none", cursor: "pointer",
-                          color: "var(--color-primary)", padding: 4,
-                        }}>
-                        <Pencil size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!loading && (
-            <div style={{
-              padding: "12px 20px", display: "flex", justifyContent: "space-between",
-              alignItems: "center", borderTop: "1px solid var(--color-border)", flexWrap: "wrap", gap: 10
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 13, color: "var(--color-muted)" }}>
-                  {porPagina === 0 || totalFiltradas === 0
-                    ? `Mostrando ${totalFiltradas} de ${categorias.length} categorías`
-                    : `Mostrando ${Math.min((pagina - 1) * porPagina + 1, totalFiltradas)} a ${Math.min(pagina * porPagina, totalFiltradas)} de ${totalFiltradas} categorías`}
-                </span>
-                <select value={porPagina} onChange={e => { setPorPagina(Number(e.target.value)); setPagina(1); }}
-                  style={{
-                    padding: "4px 8px", fontSize: 12, border: "1px solid var(--color-border)",
-                    borderRadius: 6, background: "#fff", cursor: "pointer", color: "var(--color-text)"
-                  }}>
-                  <option value={5}>5 por página</option>
-                  <option value={10}>10 por página</option>
-                  <option value={0}>Todas</option>
-                </select>
-              </div>
-              {porPagina > 0 && totalPaginas > 1 && (
-                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                  <button onClick={() => setPagina(p => Math.max(p - 1, 1))} disabled={pagina === 1}
-                    style={{
-                      padding: "5px 14px", border: "1px solid var(--color-border)", borderRadius: 6,
-                      background: "#fff", cursor: pagina === 1 ? "not-allowed" : "pointer",
-                      color: pagina === 1 ? "#bbb" : "var(--color-text)", fontSize: 13
-                    }}>
-                    Anterior
-                  </button>
-                  {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(n => (
-                    <button key={n} onClick={() => setPagina(n)}
-                      style={{
-                        padding: "5px 12px", border: "1px solid var(--color-border)", borderRadius: 6,
-                        background: n === pagina ? "var(--color-primary)" : "#fff",
-                        color: n === pagina ? "#fff" : "var(--color-text)",
-                        cursor: "pointer", fontSize: 13, fontWeight: n === pagina ? 700 : 400
-                      }}>
-                      {n}
-                    </button>
-                  ))}
-                  <button onClick={() => setPagina(p => Math.min(p + 1, totalPaginas))} disabled={pagina === totalPaginas}
-                    style={{
-                      padding: "5px 14px", border: "1px solid var(--color-border)", borderRadius: 6,
-                      background: "#fff", cursor: pagina === totalPaginas ? "not-allowed" : "pointer",
-                      color: pagina === totalPaginas ? "#bbb" : "var(--color-text)", fontSize: 13
-                    }}>
-                    Siguiente
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+      {/* 5. Modal Reactivar */}
+      {modalReactivar && (
+        <ConfirmModal
+          isOpen={true}
+          onClose={() => setModalReactivar(null)}
+          onConfirm={handleConfirmReactivar}
+          title="¿Reactivar categoría?"
+          description={`Al reactivar "${modalReactivar.nombre}", volverá a estar disponible inmediatamente en el selector para ciudadanos e instituciones.`}
+          variant="success"
+          confirmText="Reactivar Categoría"
+          cancelText="Cancelar"
+          loading={procesando}
+          loadingText="Reactivando..."
+          icon={<Power size={20} />}
+        />
+      )}
 
-        {/* Mobile cards */}
-        <div className="cards">
-          {loading && <p style={{ padding: 24, textAlign: "center", color: "var(--color-muted)" }}>Cargando...</p>}
-          {!loading && categoriasVisibles.map(c => (
-            <div key={c.id} className="card-user">
-              <div className="row-top">
-                <div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-primary)" }}>{c.codigo}</span>
-                  <p style={{ margin: "2px 0 0", fontWeight: 700, color: "#333", fontSize: 14 }}>{c.nombre}</p>
-                </div>
-                <span style={{
-                  display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 700, fontSize: 12,
-                  padding: "2px 8px", borderRadius: 99,
-                  background: c.estado === "activo" ? "#dcfce7" : "#f3f4f6",
-                  color: c.estado === "activo" ? "var(--color-success)" : "var(--color-muted)"
-                }}>
-                  <span style={{
-                    width: 7, height: 7, borderRadius: "50%",
-                    background: c.estado === "activo" ? "var(--color-success)" : "#9ca3af", display: "inline-block"
-                  }} />
-                  {c.estado === "activo" ? "Activo" : "Inactivo"}
-                </span>
-              </div>
-              <div className="row-bottom">
-                <span style={{
-                  padding: "3px 10px", borderRadius: 99, fontSize: 12, fontWeight: 700,
-                  background: tipoBadge[c.tipo]?.bg ?? "#eee",
-                  color: tipoBadge[c.tipo]?.color ?? "#555",
-                }}>
-                  {tipoBadge[c.tipo]?.label ?? c.tipo}
-                </span>
-                <span style={{ fontSize: 12, color: "var(--color-muted)" }}>Orden: {c.orden}</span>
-                <div className="actions">
-                  {c.estado === "activo" && (
-                    <button onClick={() => setConfirmBaja(c)} style={{
-                      background: "none", border: "none", cursor: "pointer", color: "var(--color-muted)", padding: 4,
-                    }}>
-                      <MinusCircle size={18} />
-                    </button>
-                  )}
-                  <button onClick={() => router.push(`/admin/categories/editar/${c.id}`)} style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    color: "var(--color-primary)", padding: 4,
-                  }}>
-                    <Pencil size={18} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* Paginación mobile */}
-          {!loading && (
-            <div style={{
-              padding: "12px 4px", display: "flex", flexDirection: "column",
-              gap: 10, borderTop: "1px solid var(--color-border)", marginTop: 4
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
-                  {porPagina === 0 || totalFiltradas === 0
-                    ? `${totalFiltradas} de ${categorias.length} categorías`
-                    : `${Math.min((pagina - 1) * porPagina + 1, totalFiltradas)}–${Math.min(pagina * porPagina, totalFiltradas)} de ${totalFiltradas}`}
-                </span>
-                <select value={porPagina} onChange={e => { setPorPagina(Number(e.target.value)); setPagina(1); }}
-                  style={{
-                    padding: "4px 8px", fontSize: 12, border: "1px solid var(--color-border)",
-                    borderRadius: 6, background: "#fff", cursor: "pointer", color: "var(--color-text)"
-                  }}>
-                  <option value={5}>5 por página</option>
-                  <option value={10}>10 por página</option>
-                  <option value={0}>Todas</option>
-                </select>
-              </div>
-              {porPagina > 0 && totalPaginas > 1 && (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
-                  <button onClick={() => setPagina(p => Math.max(p - 1, 1))} disabled={pagina === 1}
-                    style={{
-                      flex: 1, padding: "8px 0", border: "1px solid var(--color-border)", borderRadius: 6,
-                      background: "#fff", cursor: pagina === 1 ? "not-allowed" : "pointer",
-                      color: pagina === 1 ? "#bbb" : "var(--color-text)", fontSize: 13
-                    }}>
-                    ← Anterior
-                  </button>
-                  <span style={{ fontSize: 13, color: "var(--color-muted)", whiteSpace: "nowrap" }}>
-                    {pagina} / {totalPaginas}
-                  </span>
-                  <button onClick={() => setPagina(p => Math.min(p + 1, totalPaginas))} disabled={pagina === totalPaginas}
-                    style={{
-                      flex: 1, padding: "8px 0", border: "1px solid var(--color-border)", borderRadius: 6,
-                      background: "#fff", cursor: pagina === totalPaginas ? "not-allowed" : "pointer",
-                      color: pagina === totalPaginas ? "#bbb" : "var(--color-text)", fontSize: 13
-                    }}>
-                    Siguiente →
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-      </div>
+      {/* 6. Modal Eliminar */}
+      {modalEliminar && (
+        <ConfirmModal
+          isOpen={true}
+          onClose={() => setModalEliminar(null)}
+          onConfirm={handleConfirmEliminar}
+          title="¿Eliminar categoría definitivamente?"
+          description={`Esta acción intentará borrar permanentemente la categoría "${modalEliminar.nombre}". Si la categoría tiene reclamos, comunicados o asignaciones asociadas, el sistema rechazará la eliminación para preservar la integridad referencial.`}
+          variant="danger"
+          confirmText="Intentar Eliminación"
+          cancelText="Cancelar"
+          loading={procesando}
+          loadingText="Verificando..."
+          icon={<Trash2 size={20} />}
+        />
+      )}
     </div>
   );
 }
