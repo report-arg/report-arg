@@ -358,7 +358,10 @@ export default function UserForm({ usuarioId = null }) {
                 esMiCuenta || esInstitucion ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
               }`}
             >
-              {rolesOpciones.map((r) => (
+              {(isEdit
+                ? rolesOpciones
+                : rolesOpciones.filter((r) => r.value !== "institucion")
+              ).map((r) => (
                 <option key={r.value} value={r.value}>
                   {r.label}
                 </option>
@@ -373,6 +376,27 @@ export default function UserForm({ usuarioId = null }) {
               <p className="text-[10px] text-text-muted m-0">
                 Las cuentas institucionales no admiten cambio de rol directo para preservar la
                 trazabilidad de los reclamos asignados.
+              </p>
+            )}
+            {!isEdit && (
+              <p className="text-[10px] text-text-muted m-0 leading-relaxed">
+                El alta de instituciones se realiza mediante el{" "}
+                <a
+                  href="/register/institution"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:underline font-semibold"
+                >
+                  registro institucional
+                </a>{" "}
+                o la gestión de{" "}
+                <a
+                  href="/admin/solicitudes"
+                  className="text-primary hover:underline font-semibold"
+                >
+                  solicitudes
+                </a>{" "}
+                para asegurar su asignación territorial y datos requeridos.
               </p>
             )}
           </div>
