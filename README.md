@@ -63,10 +63,10 @@ El frontend de ReportARG está construido con tecnologías modernas para asegura
    ```env
    # URL base del backend (generalmente http://localhost:3001)
    NEXT_PUBLIC_API_URL=http://localhost:3001
-   
-   # Secret para firmar los JWT de NextAuth (cualquier string largo y seguro)
+
+   # Secret para firmar los JWT de NextAuth (obligatorio en todos los entornos, sin fallbacks inseguros en runtime. Generar con: openssl rand -base64 32)
    NEXTAUTH_SECRET=your_nextauth_secret_here
-   
+
    # URL del frontend (generalmente http://localhost:3000)
    NEXTAUTH_URL=http://localhost:3000
    

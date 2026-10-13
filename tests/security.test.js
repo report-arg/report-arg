@@ -127,4 +127,86 @@ describe('Seguridad y Manejo de Secretos (ADMIN-01 — Etapa 1)', () => {
       expect(res.status).toBe(200); // NextResponse.next()
     });
   });
+
+  describe('3. Coherencia ante revocación o expiración en cliente (apiClient)', () => {
+    let originalWindow;
+    let apiClient;
+
+    beforeAll(() => {
+      apiClient = require('@/services/apiClient').default;
+    });
+
+    beforeEach(() => {
+      originalWindow = global.window;
+    });
+
+    afterEach(() => {
+      global.window = originalWindow;
+    });
+
+    test('401 redirige a /login con SessionExpired si está en una ruta protegida', async () => {
+      global.window = {
+        location: {
+          pathname: '/admin/usuarios',
+          href: '',
+        },
+      };
+
+      const error = {
+        response: { status: 401, data: {} },
+      };
+
+      const rejectionHandler = apiClient.interceptors.response.handlers[0].rejected;
+      await expect(rejectionHandler(error)).rejects.toEqual(error);
+
+      expect(global.window.location.href).toContain('/login?error=SessionExpired');
+    });
+
+    test('403 con ROL_NO_AUTORIZADO mientras navega /admin redirige a /ciudadano', async () => {
+      global.window = {
+        location: {
+          pathname: '/admin/solicitudes',
+          href: '',
+        },
+      };
+
+      const error = {
+        response: {
+          status: 403,
+          data: {
+            codigo: 'ROL_NO_AUTORIZADO',
+            rolActual: 'ciudadano',
+          },
+        },
+      };
+
+      const rejectionHandler = apiClient.interceptors.response.handlers[0].rejected;
+      await expect(rejectionHandler(error)).rejects.toEqual(error);
+
+      expect(global.window.location.href).toBe('/ciudadano?motivo=rol_actualizado');
+    });
+
+    test('403 estándar sin ROL_NO_AUTORIZADO no altera la ubicación del usuario', async () => {
+      global.window = {
+        location: {
+          pathname: '/ciudadano/reclamos/10',
+          href: '',
+        },
+      };
+
+      const error = {
+        response: {
+          status: 403,
+          data: {
+            error: 'No tenés permisos para ver este reclamo privado',
+          },
+        },
+      };
+
+      const rejectionHandler = apiClient.interceptors.response.handlers[0].rejected;
+      await expect(rejectionHandler(error)).rejects.toEqual(error);
+
+      expect(global.window.location.href).toBe('');
+    });
+  });
 });
