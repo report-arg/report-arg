@@ -67,10 +67,40 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Si la sesión expiró o es inválida, limpiar cache
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const errorCode = error.response?.data?.codigo;
+
+    // 1. Sesión expirada, token inválido o usuario inhabilitado (401)
+    if (status === 401) {
       clearSessionCache();
+      if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname;
+        const isAuthRoute = currentPath.startsWith('/login') ||
+                            currentPath.startsWith('/register') ||
+                            currentPath.startsWith('/auth') ||
+                            currentPath.startsWith('/verify');
+        if (!isAuthRoute) {
+          window.location.href = `/login?error=SessionExpired&callbackUrl=${encodeURIComponent(currentPath)}`;
+        }
+      }
     }
+
+    // 2. Rol revocado o no coincidente con la BD (403 con ROL_NO_AUTORIZADO)
+    if (status === 403 && errorCode === 'ROL_NO_AUTORIZADO') {
+      clearSessionCache();
+      if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname;
+        const rolActual = error.response?.data?.rolActual || 'ciudadano';
+        const targetPath = rolActual === 'institucion' ? '/institucion' : '/ciudadano';
+
+        // Si el usuario navegaba el panel de administración pero perdió su rol administrativo
+        if (currentPath.startsWith('/admin')) {
+          console.warn(`[SEGURIDAD] Permisos administrativos revocados por la base de datos. Redirigiendo a ${targetPath}`);
+          window.location.href = `${targetPath}?motivo=rol_actualizado`;
+        }
+      }
+    }
+
     return Promise.reject(error);
   }
 );

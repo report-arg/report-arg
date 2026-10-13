@@ -90,7 +90,7 @@ const authOptions = {
 
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
@@ -99,6 +99,9 @@ const authOptions = {
         token.name = user.name || token.name;
         token.email = user.email || token.email;
         token.foto = user.foto || token.foto || null;
+      }
+      if (trigger === "update" && session?.role) {
+        token.role = session.role;
       }
       return token;
     },
@@ -119,8 +122,12 @@ const authOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env.NEXTAUTH_SECRET || "clave-secreta-desarrollo",
+  secret: process.env.NEXTAUTH_SECRET,
 };
+
+if (process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_SECRET) {
+  console.error("[SEGURIDAD CRÍTICA] NEXTAUTH_SECRET es obligatoria en entornos de producción.");
+}
 
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };

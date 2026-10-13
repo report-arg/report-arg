@@ -1,11 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import AdminSidebar from "./AdminSidebar";
 import AdminNavbar from "./AdminNavbar";
 
 export default function AdminShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  // Protección reactiva ante degradación o cambio de rol en la sesión
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.role && session.user.role !== "admin") {
+      const target = session.user.role === "institucion" ? "/institucion" : "/ciudadano";
+      router.replace(target);
+    }
+  }, [session, status, router]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans antialiased text-text-primary">
