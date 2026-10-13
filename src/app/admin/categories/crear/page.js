@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/admin/Sidebar";
-import Navbar from "@/components/admin/Navbar";
-import Breadcrumb from "@/components/admin/Breadcrumb";
+import { ArrowLeft } from "lucide-react";
+import PageHeader from "@/components/layout/PageHeader";
+import Button from "@/components/ui/Button";
 import apiClient from "@/services/apiClient";
 
 export default function CrearCategoriaPage() {
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -56,110 +55,128 @@ export default function CrearCategoriaPage() {
   }
 
   return (
-    <div className="admin-layout">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="admin-content">
-        <Navbar section="Categorías" onMenuClick={() => setSidebarOpen(true)} />
-        <main className="admin-main">
+    <div className="w-full">
+      <PageHeader
+        title="Crear Nueva Categoría"
+        description="Completá la información para registrar una nueva categoría en ReportARG."
+        action={
+          <Button
+            onClick={() => router.push("/admin/categories")}
+            variant="outline"
+            leftIcon={<ArrowLeft size={16} />}
+          >
+            Volver a categorías
+          </Button>
+        }
+      />
 
-          <div style={{ marginBottom: 28 }}>
-            <Breadcrumb items={[{ label: "ADMIN PANEL", href: "/admin" }, { label: "CATEGORÍAS", href: "/admin/categories" }, { label: "CREAR" }]} />
-            <h1 style={{ margin: "6px 0 4px", fontSize: 26, fontWeight: "bold", color: "var(--color-primary)" }}>
-              Crear nueva Categoría
-            </h1>
-            <p style={{ margin: 0, fontSize: 14, color: "var(--color-muted)" }}>
-              Completá la información para registrar una nueva categoría.
-            </p>
+      <div className="bg-surface rounded-2xl border border-border-subtle p-6 max-w-2xl shadow-xs">
+        {/* Nombre */}
+        <div className="mb-4">
+          <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
+            Nombre *
+          </label>
+          <input
+            name="nombre"
+            value={form.nombre}
+            onChange={handleChange}
+            placeholder="Ej: Alumbrado Público, Cloacas..."
+            className="w-full text-xs sm:text-sm py-2 px-3 rounded-xl border border-border-subtle bg-surface text-text-primary focus:border-primary outline-hidden"
+          />
+        </div>
+
+        {/* Descripción */}
+        <div className="mb-4">
+          <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
+            Descripción
+          </label>
+          <textarea
+            name="descripcion"
+            value={form.descripcion}
+            onChange={handleChange}
+            placeholder="Breve descripción del alcance de esta categoría..."
+            rows={3}
+            className="w-full text-xs sm:text-sm p-3 rounded-xl border border-border-subtle bg-surface text-text-primary focus:border-primary outline-hidden resize-y"
+          />
+        </div>
+
+        {/* Tipo y Orden */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
+              Tipo de Aplicación *
+            </label>
+            <select
+              name="tipo"
+              value={form.tipo}
+              onChange={handleChange}
+              className="w-full text-xs sm:text-sm py-2 px-3 rounded-xl border border-border-subtle bg-surface text-text-primary focus:border-primary outline-hidden"
+            >
+              <option value="">Seleccionar tipo...</option>
+              <option value="reclamo">Reclamo</option>
+              <option value="comunicado">Comunicado</option>
+              <option value="ambos">Ambos</option>
+            </select>
           </div>
 
-          <div className="card" style={{ padding: 24 }}>
-            <p style={{ margin: "0 0 20px", fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 1 }}>
-              NUEVA CATEGORÍA
-            </p>
-
-            {/*Nombre*/}
-              <div style={{ marginBottom: 16 }}>
-                <label className="form-label">NOMBRE</label>
-                <input name="nombre" value={form.nombre} onChange={handleChange}
-                  placeholder="Ej: Cortes de luz, Inundaciones..."
-                  className="input" style={{ display: "block", width: "100%", marginTop: 6, boxSizing: "border-box" }} />
-              </div>
-            
-
-            {/* Descripción */}
-            <div style={{ marginBottom: 16 }}>
-              <label className="form-label">DESCRIPCIÓN</label>
-              <textarea name="descripcion" value={form.descripcion} onChange={handleChange}
-                placeholder="Breve descripción de la categoría..."
-                rows={3} className="input"
-                style={{ display: "block", width: "100%", marginTop: 6, resize: "none", boxSizing: "border-box" }} />
-            </div>
-
-            {/* Tipo, Orden y Estado  */}
-            <div style={{ display: "flex", gap: 16, alignItems: "flex-end", flexWrap: "wrap" }}>
-              <div style={{ flex: 1, minWidth: 140 }}>
-                <label className="form-label">TIPO</label>
-                <select name="tipo" value={form.tipo} onChange={handleChange}
-                  className="select" style={{ display: "block", width: "100%", marginTop: 6, boxSizing: "border-box" }}>
-                  <option value="">Seleccionar tipo</option>
-                  <option value="reclamo">Reclamo</option>
-                  <option value="comunicado">Comunicado</option>
-                  <option value="ambos">Ambos</option>
-                </select>
-              </div>
-              <div style={{ minWidth: 100 }}>
-                <label className="form-label">ORDEN</label>
-                <input name="orden" type="number" value={form.orden} onChange={handleChange}
-                  className="input" style={{ display: "block", width: "100%", marginTop: 6, boxSizing: "border-box" }} />
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, paddingBottom: 4 }}>
-                <label className="cat-toggle">
-                  <input type="checkbox" name="estado" checked={form.estado === "activo"} onChange={handleChange} />
-                  <span className="cat-toggle-slider" />
-                </label>
-                <span style={{ fontSize: 13, fontWeight: 600, color: form.estado === "activo" ? "var(--color-success)" : "var(--color-muted)" }}>
-                  {form.estado === "activo" ? "ACTIVO" : "INACTIVO"}
-                </span>
-              </div>
-            </div>
-
-            {/* Mensajes */}
-            {success && (
-              <div className="cat-msg-success" style={{ marginTop: 20 }}>
-                ✓ {success}
-              </div>
-            )}
-            {error && (
-              <div className="cat-msg-error" style={{ marginTop: 20 }}>
-                ⚠ {error}
-              </div>
-            )}
-
-            {/* Botones */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24 }}>
-              <button onClick={() => router.push("/admin/categories")}
-                style={{
-                  padding: "10px 24px",
-                  border: "1px solid var(--color-primary)",
-                  borderRadius: 8, background: "#fff",
-                  color: "var(--color-primary)",
-                  fontSize: 14, cursor: "pointer",
-                  fontWeight: 600,
-                }}>
-                Cancelar
-              </button>
-              <button onClick={handleSubmit} disabled={saving}
-                style={{
-                  padding: "10px 24px", background: saving ? "#aaa" : "var(--color-primary)",
-                  color: "#fff", border: "none", borderRadius: 8,
-                  fontSize: 14, fontWeight: "bold", cursor: saving ? "not-allowed" : "pointer",
-                }}>
-                {saving ? "Guardando..." : "+ Agregar categoría"}
-              </button>
-            </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
+              Orden de Visualización
+            </label>
+            <input
+              type="number"
+              name="orden"
+              value={form.orden}
+              onChange={handleChange}
+              min={0}
+              className="w-full text-xs sm:text-sm py-2 px-3 rounded-xl border border-border-subtle bg-surface text-text-primary focus:border-primary outline-hidden"
+            />
           </div>
+        </div>
 
-        </main>
+        {/* Estado activo */}
+        <div className="flex items-center gap-3 pt-2 pb-4">
+          <input
+            type="checkbox"
+            id="cat-activo"
+            name="estado"
+            checked={form.estado === "activo"}
+            onChange={handleChange}
+            className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
+          />
+          <label htmlFor="cat-activo" className="text-xs font-medium text-text-primary cursor-pointer select-none">
+            Categoría activa (disponible para selección)
+          </label>
+        </div>
+
+        {/* Mensajes */}
+        {success && (
+          <div className="p-3 mb-4 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-medium border border-emerald-200">
+            ✓ {success}
+          </div>
+        )}
+        {error && (
+          <div className="p-3 mb-4 rounded-xl bg-rose-50 text-rose-800 text-xs font-medium border border-rose-200">
+            ⚠ {error}
+          </div>
+        )}
+
+        {/* Acciones */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
+          <Button
+            onClick={() => router.push("/admin/categories")}
+            variant="outline"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            loading={saving}
+            variant="primary"
+          >
+            Crear categoría
+          </Button>
+        </div>
       </div>
     </div>
   );

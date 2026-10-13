@@ -1,83 +1,81 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Sidebar from "@/components/admin/Sidebar";
-import Navbar from "@/components/admin/Navbar";
-import UserTable from "@/components/admin/UserTable";
-import Breadcrumb from "@/components/admin/Breadcrumb";
 import { useRouter } from "next/navigation";
+import { UserPlus, Users, UserCheck, UserX, Shield } from "lucide-react";
+import UserTable from "@/components/admin/UserTable";
+import PageHeader from "@/components/layout/PageHeader";
+import Button from "@/components/ui/Button";
 import apiClient from "@/services/apiClient";
 
 export default function UsersPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [stats, setStats] = useState({ total: 0, activos: 0, inactivos: 0, admins: 0 });
   const router = useRouter();
+  const [stats, setStats] = useState({ total: 0, activos: 0, inactivos: 0, admins: 0 });
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await apiClient.get('/admin/usuarios/stats');
-        const data = response.data;
-        if (data?.ok && data?.data) {
-          setStats(data.data);
+    let isMounted = true;
+    apiClient
+      .get("/admin/usuarios/stats")
+      .then((res) => {
+        if (isMounted && res.data?.ok && res.data?.data) {
+          setStats(res.data.data);
         }
-      } catch (error) {
+      })
+      .catch((error) => {
         console.error("No se pudieron cargar las estadísticas de usuarios", error);
-      }
-    };
+      });
 
-    fetchStats();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const statsCards = [
-    { label: "TOTAL USUARIOS", value: stats.total, sub: "——", subColor: "var(--color-success)" },
-    { label: "ACTIVOS", value: stats.activos, sub: "——", subColor: "var(--color-primary)" },
-    { label: "INACTIVOS", value: stats.inactivos, sub: "——", subColor: "var(--color-danger)" },
-    { label: "ADMINISTRADORES", value: stats.admins, sub: "——", subColor: "var(--color-warning)" },
+    { label: "Total Usuarios", value: stats.total, icon: Users, color: "text-primary" },
+    { label: "Activos", value: stats.activos, icon: UserCheck, color: "text-emerald-600" },
+    { label: "Inactivos", value: stats.inactivos, icon: UserX, color: "text-rose-600" },
+    { label: "Administradores", value: stats.admins, icon: Shield, color: "text-amber-600" },
   ];
 
   return (
-    <div className="admin-layout">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="admin-content">
-        <Navbar section="Usuarios" onMenuClick={() => setSidebarOpen(true)} />
-        <main className="admin-main">
+    <div className="w-full">
+      <PageHeader
+        title="Gestión de Usuarios"
+        description="Consultá y administrá las cuentas, roles y estados de los usuarios en ReportARG."
+        action={
+          <Button
+            onClick={() => router.push("/admin/users/new")}
+            variant="primary"
+            leftIcon={<UserPlus size={16} />}
+          >
+            Nuevo usuario
+          </Button>
+        }
+      />
 
-          {/* Encabezado */}
-          <div className="page-header users-page-header">
-            <div>
-              <Breadcrumb items={[{ label: "ADMIN PANEL", href: "/admin" }, { label: "USUARIOS" }]} />
-              <h1 className="users-title">
-                Gestión de Usuarios
-              </h1>
-              <p className="users-description">
-                Administrá las credenciales de acceso, roles y estados de los ciudadanos y personal administrativo del sistema ReportARG.
+      {/* Tarjetas de estadísticas */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        {statsCards.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.label}
+              className="p-4 rounded-2xl bg-surface border border-border-subtle shadow-xs"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-text-muted">{item.label}</span>
+                <Icon size={16} className={item.color} />
+              </div>
+              <p className="text-2xl font-bold text-text-primary m-0">
+                {Number(item.value || 0).toLocaleString("es-AR")}
               </p>
             </div>
-            <button
-              onClick={() => router.push("/admin/users/new")}
-              className="users-create-btn"
-            >
-              + Crear Usuario
-            </button>
-          </div>
-
-          {/* Stats */}
-          <div className="stats-grid">
-            {statsCards.map((stat) => (
-              <div key={stat.label} className="users-stat-card">
-                <p className="users-stat-label">{stat.label}</p>
-                <p className="users-stat-value">{Number(stat.value || 0).toLocaleString("es-AR")}</p>
-                <p className="users-stat-sub" style={{ color: stat.subColor }}>{stat.sub}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Tabla */}
-          <UserTable />
-
-        </main>
+          );
+        })}
       </div>
+
+      {/* Tabla de usuarios */}
+      <UserTable />
     </div>
   );
 }

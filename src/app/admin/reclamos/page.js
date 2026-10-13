@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Sidebar from "@/components/admin/Sidebar";
-import Navbar from "@/components/admin/Navbar";
-import Breadcrumb from "@/components/admin/Breadcrumb";
+import PageHeader from "@/components/layout/PageHeader";
 import { MapPin, Clock, Tag, ChevronLeft, ChevronRight, User } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import { toast } from "sonner";
@@ -100,21 +98,19 @@ export default function AdminReclamosPage() {
   }
 
   return (
-    <div className="admin-layout">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="admin-content">
-        <Navbar section="Reportes" onMenuClick={() => setSidebarOpen(true)} />
-        <main className="admin-main">
-
-          <div style={{ marginBottom: 20 }}>
-            <Breadcrumb items={[{ label: "ADMIN PANEL", href: "/admin" }, { label: "REPORTES" }]} />
-            <h1 style={{ margin: "6px 0 2px", fontSize: 26, fontWeight: "bold", color: "var(--color-primary)" }}>
-              Reportes
-            </h1>
-            <p style={{ margin: 0, fontSize: 13, color: "#666" }}>
-              {total} reporte{total !== 1 ? "s" : ""} en total
-            </p>
-          </div>
+    <div className="w-full">
+      <PageHeader
+        title="Supervisión de Reclamos"
+        description={`${total} reclamo${total !== 1 ? "s" : ""} registrados en el sistema. Consulta global y reasignación auditada.`}
+        action={
+          <button
+            onClick={() => window.location.href = "/admin/reclamos/nuevo"}
+            className="btn-primary-report cursor-pointer"
+          >
+            + Nuevo reclamo
+          </button>
+        }
+      />
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16, justifyContent: "space-between" }}>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -327,8 +323,6 @@ export default function AdminReclamosPage() {
             )}
 
           </div>
-        </main>
-      </div>
     </div>
   );
 }

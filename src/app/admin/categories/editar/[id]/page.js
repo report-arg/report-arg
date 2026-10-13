@@ -2,16 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Sidebar from "@/components/admin/Sidebar";
-import Navbar from "@/components/admin/Navbar";
-import Breadcrumb from "@/components/admin/Breadcrumb";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import PageHeader from "@/components/layout/PageHeader";
+import Button from "@/components/ui/Button";
 import apiClient from "@/services/apiClient";
-
 
 export default function EditarCategoriaPage() {
   const router = useRouter();
   const { id } = useParams();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -27,18 +25,20 @@ export default function EditarCategoriaPage() {
   });
 
   useEffect(() => {
+    let isMounted = true;
     async function fetchCategoria() {
       try {
         const res = await apiClient.get(`/admin/categorias/${id}`);
         const data = res.data;
-        if (data.ok) setForm(data.data);
+        if (isMounted && data.ok) setForm(data.data);
       } catch {
-        setError("Error al cargar la categoría");
+        if (isMounted) setError("Error al cargar la categoría");
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
     fetchCategoria();
+    return () => { isMounted = false; };
   }, [id]);
 
   function handleChange(e) {
@@ -76,124 +76,148 @@ export default function EditarCategoriaPage() {
     }
   }
 
-  if (loading) return (
-    <div className="admin-layout">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="admin-content">
-        <Navbar section="Categorías" onMenuClick={() => setSidebarOpen(true)} />
-        <main className="admin-main">
-          <p style={{ color: "var(--color-muted)", fontSize: 14 }}>Cargando categoría...</p>
-        </main>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-text-muted gap-2 text-sm">
+        <Loader2 size={18} className="animate-spin text-primary" />
+        <span>Cargando categoría...</span>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="admin-layout">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="admin-content">
-        <Navbar section="Categorías" onMenuClick={() => setSidebarOpen(true)} />
-        <main className="admin-main">
+    <div className="w-full">
+      <PageHeader
+        title={`Editar Categoría — ${form.codigo || ""}`}
+        description="Modificá el nombre, tipo de publicación, orden o estado de la categoría."
+        action={
+          <Button
+            onClick={() => router.push("/admin/categories")}
+            variant="outline"
+            leftIcon={<ArrowLeft size={16} />}
+          >
+            Volver a categorías
+          </Button>
+        }
+      />
 
-          <div style={{ marginBottom: 28 }}>
-            <Breadcrumb items={[{ label: "ADMIN PANEL", href: "/admin" }, { label: "CATEGORÍAS", href: "/admin/categories" }, { label: "EDITAR" }]} />
-            <h1 style={{ margin: "6px 0 4px", fontSize: 26, fontWeight: "bold", color: "var(--color-primary)" }}>
-              Editar Categoría
-            </h1>
-            <p style={{ margin: 0, fontSize: 14, color: "var(--color-muted)" }}>
-              Modificá los detalles de la categoría existente.
-            </p>
+      <div className="bg-surface rounded-2xl border border-border-subtle p-6 max-w-2xl shadow-xs">
+        {/* Código y Nombre */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
+              Código
+            </label>
+            <input
+              value={form.codigo || ""}
+              disabled
+              className="w-full text-xs sm:text-sm py-2 px-3 rounded-xl border border-border-subtle bg-surface-subtle text-text-muted font-mono cursor-not-allowed"
+            />
           </div>
 
-          <div className="card" style={{ padding: 24 }}>
-            <p style={{ margin: "0 0 20px", fontSize: 11, color: "var(--color-muted)", fontWeight: 600, letterSpacing: 1 }}>
-              EDITAR CATEGORÍA — {form.codigo}
-            </p>
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
+              Nombre *
+            </label>
+            <input
+              name="nombre"
+              value={form.nombre || ""}
+              onChange={handleChange}
+              className="w-full text-xs sm:text-sm py-2 px-3 rounded-xl border border-border-subtle bg-surface text-text-primary focus:border-primary outline-hidden"
+            />
+          </div>
+        </div>
 
-            {/* Código (no editable) y Nombre */}
-            <div style={{ display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
-              <div style={{ flex: 1, minWidth: 160 }}>
-                <label className="form-label">CÓDIGO</label>
-                <input value={form.codigo} disabled
-                  className="input"
-                  style={{ display: "block", width: "100%", marginTop: 6, boxSizing: "border-box", background: "#f0f0f0", color: "#888", cursor: "not-allowed" }} />
-              </div>
-              <div style={{ flex: 1, minWidth: 160 }}>
-                <label className="form-label">NOMBRE</label>
-                <input name="nombre" value={form.nombre} onChange={handleChange}
-                  className="input" style={{ display: "block", width: "100%", marginTop: 6, boxSizing: "border-box" }} />
-              </div>
-            </div>
+        {/* Descripción */}
+        <div className="mb-4">
+          <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
+            Descripción
+          </label>
+          <textarea
+            name="descripcion"
+            value={form.descripcion || ""}
+            onChange={handleChange}
+            rows={3}
+            className="w-full text-xs sm:text-sm p-3 rounded-xl border border-border-subtle bg-surface text-text-primary focus:border-primary outline-hidden resize-y"
+          />
+        </div>
 
-            {/* Descripción */}
-            <div style={{ marginBottom: 16 }}>
-              <label className="form-label">DESCRIPCIÓN</label>
-              <textarea name="descripcion" value={form.descripcion || ""} onChange={handleChange}
-                rows={3} className="input"
-                style={{ display: "block", width: "100%", marginTop: 6, resize: "none", boxSizing: "border-box" }} />
-            </div>
-
-            {/* Tipo, Orden y Estado */}
-            <div style={{ display: "flex", gap: 16, alignItems: "flex-end", flexWrap: "wrap" }}>
-              <div style={{ flex: 1, minWidth: 140 }}>
-                <label className="form-label">TIPO</label>
-                <select name="tipo" value={form.tipo} onChange={handleChange}
-                  className="select" style={{ display: "block", width: "100%", marginTop: 6, boxSizing: "border-box" }}>
-                  <option value="reclamo">Reclamo</option>
-                  <option value="comunicado">Comunicado</option>
-                  <option value="ambos">Ambos</option>
-                </select>
-              </div>
-              <div style={{ minWidth: 100 }}>
-                <label className="form-label">ORDEN</label>
-                <input name="orden" type="number" value={form.orden} onChange={handleChange}
-                  className="input" style={{ display: "block", width: "100%", marginTop: 6, boxSizing: "border-box" }} />
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, paddingBottom: 4 }}>
-                <label className="cat-toggle">
-                  <input type="checkbox" name="estado" checked={form.estado === "activo"} onChange={handleChange} />
-                  <span className="cat-toggle-slider" />
-                </label>
-                <span style={{ fontSize: 13, fontWeight: 600, color: form.estado === "activo" ? "var(--color-success)" : "var(--color-muted)" }}>
-                  {form.estado === "activo" ? "ACTIVO" : "INACTIVO"}
-                </span>
-              </div>
-            </div>
-
-            {/* Mensajes */}
-            {success && (
-              <div className="cat-msg-success" style={{ marginTop: 20 }}>
-                ✓ {success}
-              </div>
-            )}
-            {error && (
-              <div className="cat-msg-error" style={{ marginTop: 20 }}>
-                ⚠ {error}
-              </div>
-            )}
-
-            {/* Botones */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24 }}>
-              <button onClick={() => router.push("/admin/categories")}
-                style={{
-                  padding: "10px 24px", background: "#fff",
-                  color: "#555", border: "1px solid var(--color-border)",
-                  borderRadius: 8, fontSize: 14, cursor: "pointer",
-                }}>
-                Cancelar
-              </button>
-              <button onClick={handleSubmit} disabled={saving}
-                style={{
-                  padding: "10px 24px", background: saving ? "var(--color-muted)" : "var(--color-primary)",
-                  color: "#fff", border: "none", borderRadius: 8,
-                  fontSize: 14, fontWeight: "bold", cursor: saving ? "not-allowed" : "pointer",
-                }}>
-                {saving ? "Guardando..." : "Guardar Cambios"}
-              </button>
-            </div>
+        {/* Tipo y Orden */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
+              Tipo de Aplicación *
+            </label>
+            <select
+              name="tipo"
+              value={form.tipo || ""}
+              onChange={handleChange}
+              className="w-full text-xs sm:text-sm py-2 px-3 rounded-xl border border-border-subtle bg-surface text-text-primary focus:border-primary outline-hidden"
+            >
+              <option value="reclamo">Reclamo</option>
+              <option value="comunicado">Comunicado</option>
+              <option value="ambos">Ambos</option>
+            </select>
           </div>
 
-        </main>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
+              Orden de Visualización
+            </label>
+            <input
+              type="number"
+              name="orden"
+              value={form.orden ?? 0}
+              onChange={handleChange}
+              min={0}
+              className="w-full text-xs sm:text-sm py-2 px-3 rounded-xl border border-border-subtle bg-surface text-text-primary focus:border-primary outline-hidden"
+            />
+          </div>
+        </div>
+
+        {/* Estado activo */}
+        <div className="flex items-center gap-3 pt-2 pb-4">
+          <input
+            type="checkbox"
+            id="edit-cat-activo"
+            name="estado"
+            checked={form.estado === "activo"}
+            onChange={handleChange}
+            className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
+          />
+          <label htmlFor="edit-cat-activo" className="text-xs font-medium text-text-primary cursor-pointer select-none">
+            Categoría activa (disponible para selección)
+          </label>
+        </div>
+
+        {/* Mensajes */}
+        {success && (
+          <div className="p-3 mb-4 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-medium border border-emerald-200">
+            ✓ {success}
+          </div>
+        )}
+        {error && (
+          <div className="p-3 mb-4 rounded-xl bg-rose-50 text-rose-800 text-xs font-medium border border-rose-200">
+            ⚠ {error}
+          </div>
+        )}
+
+        {/* Acciones */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
+          <Button
+            onClick={() => router.push("/admin/categories")}
+            variant="outline"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            loading={saving}
+            variant="primary"
+          >
+            Guardar cambios
+          </Button>
+        </div>
       </div>
     </div>
   );
