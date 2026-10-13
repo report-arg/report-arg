@@ -27,11 +27,6 @@ export async function middleware(request) {
     return NextResponse.redirect(new URL("/institucion", request.url));
   }
 
-  // Redirigir a los admins que intenten entrar al feed ciudadano
-  if (request.nextUrl.pathname.startsWith("/ciudadano") && token.role === "admin") {
-    return NextResponse.redirect(new URL("/admin", request.url));
-  }
-
   return NextResponse.next();
 }
 

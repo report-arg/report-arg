@@ -235,16 +235,6 @@ export default function AdminNavbar({ onOpenSidebar = () => {} }) {
           )}
         </div>
 
-        {/* Acceso a la comunidad (Botón directo) */}
-        <Link
-          href="/ciudadano"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-text-secondary bg-surface border border-border-subtle hover:bg-surface-subtle hover:text-primary transition-colors no-underline cursor-pointer shadow-2xs"
-          title="Ver comunidad (Feed público, mapa y reportes ciudadanos)"
-        >
-          <Globe size={14} className="text-primary" />
-          <span className="hidden sm:inline">Ver comunidad</span>
-        </Link>
-
         {/* Campanita de notificaciones */}
         <div ref={notifRef} className="relative">
           <button

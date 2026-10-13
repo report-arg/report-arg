@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import AppShell from "@/components/layout/AppShell";
 import AppSidebar from "@/components/layout/AppSidebar";
 import AppNavbar from "@/components/layout/AppNavbar";
 import AppBottomNav from "@/components/layout/AppBottomNav";
-import { Home, Search, FileText, Map, Bell, PlusSquare } from "lucide-react";
+import { Home, Search, FileText, Map, Bell, PlusSquare, Shield } from "lucide-react";
 import { ReportProblemIcon } from "@/components/brand/icons";
 
 const CITIZEN_NAVIGATION = [
@@ -20,13 +21,20 @@ const CITIZEN_NAVIGATION = [
 export default function CiudadanoLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin";
+
+  const footerLinks = isAdmin
+    ? [{ href: "/admin", label: "Volver al Panel Admin", icon: Shield }]
+    : [];
 
   const sidebar = (
     <AppSidebar
       open={sidebarOpen}
       onClose={() => setSidebarOpen(false)}
       navigation={CITIZEN_NAVIGATION}
-      subtitle="EXPERIENCIA CIUDADANA"
+      footerLinks={footerLinks}
+      subtitle={isAdmin ? "VISTA COMUNITARIA (ADMIN)" : "EXPERIENCIA CIUDADANA"}
       logoHref="/ciudadano"
     />
   );
@@ -35,7 +43,7 @@ export default function CiudadanoLayout({ children }) {
     <AppNavbar
       onMenuClick={() => setSidebarOpen(true)}
       showLocation={true}
-      roleName="Ciudadano"
+      roleName={isAdmin ? "Administrador" : "Ciudadano"}
       profileLink="/profile"
       notificationsLink="/ciudadano/notificaciones"
     />

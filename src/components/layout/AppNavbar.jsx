@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Bell, MapPin, ChevronDown, Settings, LogOut, Menu, Sun, Moon } from "lucide-react";
+import { Bell, MapPin, ChevronDown, Settings, LogOut, Menu, Sun, Moon, Shield } from "lucide-react";
 import { useTheme } from "next-themes";
 import apiClient from "@/services/apiClient";
 import Image from "next/image";
@@ -45,7 +45,10 @@ export default function AppNavbar({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const nombreMostrado = perfil?.nombre || session?.user?.name || roleName;
+  const isAdmin = session?.user?.role === "admin";
+  const displayedRole = isAdmin ? "Administrador" : roleName;
+
+  const nombreMostrado = perfil?.nombre || session?.user?.name || displayedRole;
   const fotoUrl = perfil?.foto || session?.user?.foto || null;
   const iniciales = nombreMostrado
     .split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
@@ -68,6 +71,18 @@ export default function AppNavbar({
       </div>
 
       <div className="home-navbar-right">
+        {/* Botón destacado Volver al Admin si es Administrador */}
+        {isAdmin && (
+          <button
+            onClick={() => router.push("/admin")}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary-hover shadow-xs transition-colors cursor-pointer"
+            title="Volver al Panel de Administración"
+          >
+            <Shield size={14} />
+            <span className="hidden sm:inline">Panel Admin</span>
+          </button>
+        )}
+
         {/* Contexto Territorial Dinámico */}
         {showLocation && ubicacionTexto && (
           <div className="home-location-badge hidden sm:flex" title="Ubicación">
@@ -92,7 +107,7 @@ export default function AppNavbar({
                 {nombreMostrado}
               </p>
               <p style={{ margin: 0, fontSize: 11, color: "#60a5fa", fontWeight: 600 }}>
-                {roleName}
+                {displayedRole}
               </p>
             </div>
 
@@ -120,7 +135,16 @@ export default function AppNavbar({
               </div>
 
               <div className="home-profile-dropdown-body">
-{/* Apariencia switch temporarily removed because it is broken */}
+                {isAdmin && (
+                  <button
+                    onClick={() => { setProfileOpen(false); router.push("/admin"); }}
+                    className="home-profile-dropdown-item"
+                    style={{ color: "var(--home-primary)", fontWeight: 700 }}
+                  >
+                    <Shield size={15} />
+                    Panel de Administración
+                  </button>
+                )}
 
                 {profileLink && (
                   <button
