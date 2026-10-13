@@ -119,8 +119,12 @@ const authOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env.NEXTAUTH_SECRET || "clave-secreta-desarrollo",
+  secret: process.env.NEXTAUTH_SECRET,
 };
+
+if (process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_SECRET) {
+  console.error("[SEGURIDAD CRÍTICA] NEXTAUTH_SECRET es obligatoria en entornos de producción.");
+}
 
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
