@@ -1,5 +1,5 @@
-import CitizenRegister from '@/components/auth/CitizenRegister';
+import CiudadanoRegister from '@/components/auth/CiudadanoRegister';
 
 export default function RegisterCitizenPage() {
-  return <CitizenRegister />;
+  return <CiudadanoRegister />;
 }

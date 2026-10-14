@@ -8,11 +8,11 @@ import apiClient from "@/services/apiClient";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 
-import ClaimStatsCards from "@/components/admin/reclamos/ClaimStatsCards";
-import ClaimFilterBar from "@/components/admin/reclamos/ClaimFilterBar";
-import ClaimTable from "@/components/admin/reclamos/ClaimTable";
-import ClaimDetailModal from "@/components/admin/reclamos/ClaimDetailModal";
-import ClaimReassignModal from "@/components/admin/reclamos/ClaimReassignModal";
+import ReclamoStatsCards from "@/components/admin/reclamos/ReclamoStatsCards";
+import ReclamoFilterBar from "@/components/admin/reclamos/ReclamoFilterBar";
+import ReclamoTable from "@/components/admin/reclamos/ReclamoTable";
+import ReclamoDetailModal from "@/components/admin/reclamos/ReclamoDetailModal";
+import ReclamoReassignModal from "@/components/admin/reclamos/ReclamoReassignModal";
 
 export default function AdminReclamosPage() {
   // Lista y paginación
@@ -253,7 +253,7 @@ export default function AdminReclamosPage() {
       />
 
       {/* Tarjetas KPI de Estado */}
-      <ClaimStatsCards
+      <ReclamoStatsCards
         stats={stats}
         loading={loadingStats}
         filtroEstado={filtroEstado}
@@ -261,7 +261,7 @@ export default function AdminReclamosPage() {
       />
 
       {/* Controles de búsqueda y filtros */}
-      <ClaimFilterBar
+      <ReclamoFilterBar
         busqueda={busqueda}
         onBusquedaChange={setBusqueda}
         onLimpiarBusqueda={() => setBusqueda("")}
@@ -290,7 +290,7 @@ export default function AdminReclamosPage() {
       )}
 
       {/* Tabla y Cards */}
-      <ClaimTable
+      <ReclamoTable
         reclamos={reclamos}
         loading={loading}
         pagina={pagina}
@@ -301,7 +301,7 @@ export default function AdminReclamosPage() {
       />
 
       {/* MODAL 1: DETALLE COMPLETO Y SUPERVISIÓN */}
-      <ClaimDetailModal
+      <ReclamoDetailModal
         isOpen={Boolean(detalle)}
         onClose={() => setDetalle(null)}
         detalle={detalle}
@@ -309,7 +309,7 @@ export default function AdminReclamosPage() {
       />
 
       {/* MODAL 2: REASIGNACIÓN AUDITADA */}
-      <ClaimReassignModal
+      <ReclamoReassignModal
         isOpen={Boolean(modalReasignar)}
         onClose={() => setModalReasignar(null)}
         reclamo={modalReasignar}

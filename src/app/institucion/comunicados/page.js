@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { tiempoRelativo } from "@/utils/dateFormatters";
 import PageHeader from "@/components/layout/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
-import { CategoryDropdown } from "@/components/ui";
+import { CategoriaDropdown } from "@/components/ui";
 
 const ESTADO_CONFIG = {
   recibido: { label: "Publicado", cls: "inst-com-badge-publicado", icon: Eye },
@@ -207,7 +207,7 @@ export default function ComunicadosInstitucionPage() {
               <label className="block text-[11px] font-semibold text-text-muted mb-1">
                 Categoría
               </label>
-              <CategoryDropdown
+              <CategoriaDropdown
                 categorias={categorias}
                 value={filtroCategoria === "todas" ? null : Number(filtroCategoria)}
                 onChange={(catId) => setFiltroCategoria(catId ? String(catId) : "todas")}
@@ -376,7 +376,7 @@ export default function ComunicadosInstitucionPage() {
                 <label className="block text-xs font-bold text-text-primary mb-1">
                   Categoría <span className="text-rose-500">*</span>
                 </label>
-                <CategoryDropdown
+                <CategoriaDropdown
                   categorias={categorias}
                   value={editCategoriaId ? Number(editCategoriaId) : null}
                   onChange={(catId) => setEditCategoriaId(catId ? Number(catId) : "")}

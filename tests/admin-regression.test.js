@@ -5,11 +5,11 @@ import { toast } from "sonner";
 
 // Componentes y páginas
 import DashboardStats from "@/components/admin/dashboard/DashboardStats";
-import InstitutionTable from "@/components/admin/institutions/InstitutionTable";
+import InstitucionTable from "@/components/admin/instituciones/InstitucionTable";
 import SolicitudesPage from "@/app/admin/solicitudes/page";
-import UserTable from "@/components/admin/users/UserTable";
+import UsuarioTable from "@/components/admin/usuarios/UsuarioTable";
 import AdminReclamosPage from "@/app/admin/reclamos/page";
-import CategoriesPanel from "@/components/admin/categories/CategoriesPanel";
+import CategoriaPanel from "@/components/admin/categorias/CategoriaPanel";
 
 // Mock de apiClient y toast
 jest.mock("@/services/apiClient");
@@ -65,7 +65,7 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
       },
     ];
 
-    it("InstitutionTable: debe listar instituciones y permitir aprobar una entidad pendiente", async () => {
+    it("InstitucionTable: debe listar instituciones y permitir aprobar una entidad pendiente", async () => {
       apiClient.get.mockImplementation((url) => {
         if (url.includes("/admin/instituciones/stats")) {
           return Promise.resolve({ data: { ok: true, data: { total: 2, verificadas: 1, pendientes: 1 } } });
@@ -78,7 +78,7 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
 
       apiClient.put.mockResolvedValueOnce({ data: { ok: true } });
 
-      render(<InstitutionTable />);
+      render(<InstitucionTable />);
 
       // Verificar carga inicial de tarjetas y listado
       const itemsHospital = await screen.findAllByText("Hospital Central");
@@ -149,7 +149,7 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
       { id: 2, nombre: "Juan Pérez", email: "juan@test.com", rol: "ciudadano", estado: "activo" },
     ];
 
-    it("UserTable: debe listar usuarios, impedir auto-inhabilitación y permitir inhabilitar a otro usuario", async () => {
+    it("UsuarioTable: debe listar usuarios, impedir auto-inhabilitación y permitir inhabilitar a otro usuario", async () => {
       apiClient.get.mockImplementation((url) => {
         if (url.includes("/admin/usuarios")) {
           return Promise.resolve({ data: { ok: true, data: mockUsers, total: 2, totalPaginas: 1 } });
@@ -161,7 +161,7 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
 
       window.alert = jest.fn();
 
-      render(<UserTable />);
+      render(<UsuarioTable />);
 
       const usersJuan = await screen.findAllByText("Juan Pérez");
       expect(usersJuan[0]).toBeInTheDocument();
@@ -288,7 +288,7 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
       { id: 2, codigo: "AGUA", nombre: "Agua Corriente", tipo: "reclamo", estado: "inactivo", orden: 2 },
     ];
 
-    it("CategoriesPanel: debe permitir dar de baja lógica y reactivar categorías", async () => {
+    it("CategoriaPanel: debe permitir dar de baja lógica y reactivar categorías", async () => {
       apiClient.get.mockImplementation((url) => {
         if (url.includes("/admin/categorias")) {
           return Promise.resolve({ data: { ok: true, data: mockCategorias } });
@@ -297,7 +297,7 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
       });
       apiClient.patch.mockResolvedValue({ data: { ok: true } });
 
-      render(<CategoriesPanel />);
+      render(<CategoriaPanel />);
 
       expect(await screen.findByText("Alumbrado")).toBeInTheDocument();
       expect(screen.getByText("Agua Corriente")).toBeInTheDocument();

@@ -15,11 +15,11 @@ import {
 } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import Button from "@/components/ui/Button";
-import { useInstitutions } from "@/hooks/admin/useInstitutions";
-import InstitutionAvatar from "@/components/admin/institutions/InstitutionAvatar";
-import InstitutionDetailModal from "@/components/admin/institutions/InstitutionDetailModal";
-import InstitutionApproveModal from "@/components/admin/institutions/InstitutionApproveModal";
-import InstitutionRejectModal from "@/components/admin/institutions/InstitutionRejectModal";
+import { useInstituciones } from "@/hooks/admin/useInstituciones";
+import InstitucionAvatar from "@/components/admin/instituciones/InstitucionAvatar";
+import InstitucionDetailModal from "@/components/admin/instituciones/InstitucionDetailModal";
+import InstitucionApproveModal from "@/components/admin/instituciones/InstitucionApproveModal";
+import InstitucionRejectModal from "@/components/admin/instituciones/InstitucionRejectModal";
 
 export default function SolicitudesPage() {
   const {
@@ -36,7 +36,7 @@ export default function SolicitudesPage() {
     procesandoAccion,
     verificarInstitucion,
     rechazarInstitucion,
-  } = useInstitutions({ filtroInicialEstado: "pendiente", fetchStats: false });
+  } = useInstituciones({ filtroInicialEstado: "pendiente", fetchStats: false });
 
   return (
     <div className="w-full space-y-6">
@@ -124,7 +124,7 @@ export default function SolicitudesPage() {
                     {/* Institución */}
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2.5">
-                        <InstitutionAvatar
+                        <InstitucionAvatar
                           foto={inst.foto_perfil}
                           nombre={inst.nombre}
                           size="md"
@@ -218,7 +218,7 @@ export default function SolicitudesPage() {
       </div>
 
       {/* Modales Compartidos */}
-      <InstitutionDetailModal
+      <InstitucionDetailModal
         isOpen={Boolean(modalDetalle)}
         onClose={() => setModalDetalle(null)}
         institucion={modalDetalle}
@@ -226,7 +226,7 @@ export default function SolicitudesPage() {
         onRechazar={(inst) => setModalRechazar(inst)}
       />
 
-      <InstitutionApproveModal
+      <InstitucionApproveModal
         isOpen={Boolean(modalAprobar)}
         onClose={() => setModalAprobar(null)}
         onConfirm={() => verificarInstitucion(modalAprobar)}
@@ -234,7 +234,7 @@ export default function SolicitudesPage() {
         loading={procesandoAccion}
       />
 
-      <InstitutionRejectModal
+      <InstitucionRejectModal
         isOpen={Boolean(modalRechazar)}
         onClose={() => setModalRechazar(null)}
         onConfirm={(motivo) => rechazarInstitucion(modalRechazar, motivo)}

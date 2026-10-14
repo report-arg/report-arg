@@ -13,7 +13,7 @@ import { uploadImage } from "@/services/uploadService";
 import { getCategoryIcon } from "@/components/brand/icons";
 import { toast } from "sonner";
 import useCategorias from "@/hooks/useCategorias";
-import { CategoryDropdown } from "@/components/ui";
+import { CategoriaDropdown } from "@/components/ui";
 
 export default function NuevoReclamoPage() {
   const { data: session, status } = useSession();
@@ -384,13 +384,13 @@ export default function NuevoReclamoPage() {
             </div>
           </div>
 
-          {/* 4. Categoría (Componente modular y reutilizable CategoryDropdown) */}
+          {/* 4. Categoría (Componente modular y reutilizable CategoriaDropdown) */}
           <div ref={catContainerRef}>
             <label htmlFor="campo-categoria" className="block text-xs font-semibold text-text-primary mb-1.5">
               Categoría <span className="text-rose-500">*</span>
             </label>
 
-            <CategoryDropdown
+            <CategoriaDropdown
               id="campo-categoria"
               categorias={categorias}
               value={form.id_categoria}

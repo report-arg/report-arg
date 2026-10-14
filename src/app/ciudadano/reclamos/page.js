@@ -7,8 +7,8 @@ import Link from "next/link";
 import { MapPin, ChevronRight, Building2, Eye, ShieldAlert, Filter } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import StatusBadge from "@/components/ui/StatusBadge";
-import ClaimProgress from "@/components/reclamos/ClaimProgress";
-import ClaimFilters from "@/components/reclamos/ClaimFilters";
+import ReclamoProgress from "@/components/reclamos/ReclamoProgress";
+import ReclamoFilters from "@/components/reclamos/ReclamoFilters";
 import useCategorias from "@/hooks/useCategorias";
 import EmptyState from "@/components/ui/EmptyState";
 import { getCategoryIcon, ReportProblemIcon } from "@/components/brand/icons";
@@ -82,7 +82,7 @@ export default function MisReclamosPage() {
         }
       />
 
-      <ClaimFilters
+      <ReclamoFilters
         estado={estado}
         categoria={categoria}
         categorias={categorias}
@@ -218,7 +218,7 @@ export default function MisReclamosPage() {
                 <div className="pt-2.5 border-t border-border-subtle/70">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="w-full sm:max-w-xs">
-                      <ClaimProgress estado={r.estado} />
+                      <ReclamoProgress estado={r.estado} />
                     </div>
 
                     <div

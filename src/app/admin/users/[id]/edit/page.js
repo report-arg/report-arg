@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import UserForm from "@/components/admin/users/UserForm";
+import UsuarioForm from "@/components/admin/usuarios/UsuarioForm";
 import PageHeader from "@/components/layout/PageHeader";
 import Button from "@/components/ui/Button";
 
@@ -26,7 +26,7 @@ export default function EditUserPage() {
         }
       />
 
-      <UserForm usuarioId={id} />
+      <UsuarioForm usuarioId={id} />
     </div>
   );
 }

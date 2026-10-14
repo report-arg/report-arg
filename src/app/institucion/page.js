@@ -6,8 +6,8 @@ import { useSession } from "next-auth/react";
 import apiClient from "@/services/apiClient";
 import Link from "next/link";
 import { Clock, AlertTriangle, CheckCircle, Search, FileText } from "lucide-react";
-import ClaimTracking from "@/components/reclamos/ClaimTracking";
-import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
+import ReclamoTracking from "@/components/reclamos/ReclamoTracking";
+import ReclamoStatusBadge from "@/components/reclamos/ReclamoStatusBadge";
 import { tiempoRelativo } from "@/utils/dateFormatters";
 import PageHeader from "@/components/layout/PageHeader";
 
@@ -150,8 +150,8 @@ export default function InstitucionHome() {
                       <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted bg-surface-subtle px-2 py-1 rounded-md">
                         {reclamo.categoriaNombre}
                       </span>
-                      <ClaimTracking reclamo={reclamo} advertir />
-                      <ClaimStatusBadge estado={reclamo.estado} />
+                      <ReclamoTracking reclamo={reclamo} advertir />
+                      <ReclamoStatusBadge estado={reclamo.estado} />
                     </div>
                     
                     <h3 className="text-sm sm:text-base font-bold text-text-primary truncate mb-1">

@@ -1,7 +1,7 @@
 "use client";
 
-import CityMapView from "@/components/mapa/CityMapView";
+import CiudadMapaView from "@/components/mapa/CiudadMapaView";
 
 export default function MapaPage() {
-  return <CityMapView />;
+  return <CiudadMapaView />;
 }

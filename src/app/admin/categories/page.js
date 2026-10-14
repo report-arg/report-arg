@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
-import CategoriesPanel from "@/components/admin/categories/CategoriesPanel";
+import CategoriaPanel from "@/components/admin/categorias/CategoriaPanel";
 import PageHeader from "@/components/layout/PageHeader";
 import Button from "@/components/ui/Button";
 
@@ -25,7 +25,7 @@ export default function CategoriesPage() {
         }
       />
 
-      <CategoriesPanel />
+      <CategoriaPanel />
     </div>
   );
 }

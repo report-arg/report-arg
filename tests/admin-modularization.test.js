@@ -2,12 +2,12 @@ import React from "react";
 import { render, screen, fireEvent, act, renderHook } from "@testing-library/react";
 import apiClient from "@/services/apiClient";
 import useDebounce from "@/hooks/useDebounce";
-import useInstitutions from "@/hooks/admin/useInstitutions";
-import InstitutionRejectModal from "@/components/admin/institutions/InstitutionRejectModal";
-import InstitutionApproveModal from "@/components/admin/institutions/InstitutionApproveModal";
-import ClaimFilterBar from "@/components/admin/reclamos/ClaimFilterBar";
-import UserFilterBar from "@/components/admin/users/UserFilterBar";
-import CategoryFilterBar from "@/components/admin/categories/CategoryFilterBar";
+import useInstituciones from "@/hooks/admin/useInstituciones";
+import InstitucionRejectModal from "@/components/admin/instituciones/InstitucionRejectModal";
+import InstitucionApproveModal from "@/components/admin/instituciones/InstitucionApproveModal";
+import ReclamoFilterBar from "@/components/admin/reclamos/ReclamoFilterBar";
+import UsuarioFilterBar from "@/components/admin/usuarios/UsuarioFilterBar";
+import CategoriaFilterBar from "@/components/admin/categorias/CategoriaFilterBar";
 
 // Mock apiClient
 jest.mock("@/services/apiClient");
@@ -90,7 +90,7 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
     });
   });
 
-  describe("Concurrencia en useInstitutions: Prevención de condiciones de carrera", () => {
+  describe("Concurrencia en useInstituciones: Prevención de condiciones de carrera", () => {
     it("una búsqueda anterior lenta no debe sobreescribir los resultados de una búsqueda reciente rápida", async () => {
       let resolverPeticionLenta;
       const promesaLenta = new Promise((resolve) => {
@@ -114,7 +114,7 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
         return Promise.resolve({ data: { ok: true, data: [] } });
       });
 
-      const { result } = renderHook(() => useInstitutions({ fetchStats: false }));
+      const { result } = renderHook(() => useInstituciones({ fetchStats: false }));
 
       // Disparar búsqueda lenta
       act(() => {
@@ -155,12 +155,12 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
       tipo: "Emergencias",
     };
 
-    it("InstitutionRejectModal: debe impedir rechazo si el motivo está vacío mostrando error", () => {
+    it("InstitucionRejectModal: debe impedir rechazo si el motivo está vacío mostrando error", () => {
       const onConfirm = jest.fn();
       const onClose = jest.fn();
 
       render(
-        <InstitutionRejectModal
+        <InstitucionRejectModal
           isOpen={true}
           onClose={onClose}
           onConfirm={onConfirm}
@@ -182,12 +182,12 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
       ).toBeInTheDocument();
     });
 
-    it("InstitutionRejectModal: debe habilitar confirmación al ingresar un motivo válido y disparar onConfirm", () => {
+    it("InstitucionRejectModal: debe habilitar confirmación al ingresar un motivo válido y disparar onConfirm", () => {
       const onConfirm = jest.fn();
       const onClose = jest.fn();
 
       render(
-        <InstitutionRejectModal
+        <InstitucionRejectModal
           isOpen={true}
           onClose={onClose}
           onConfirm={onConfirm}
@@ -205,10 +205,10 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
       expect(onConfirm).toHaveBeenCalledWith("Documentación fiscal ilegible");
     });
 
-    it("InstitutionRejectModal: debe invocar onClose al cancelar", () => {
+    it("InstitucionRejectModal: debe invocar onClose al cancelar", () => {
       const onClose = jest.fn();
       render(
-        <InstitutionRejectModal
+        <InstitucionRejectModal
           isOpen={true}
           onClose={onClose}
           onConfirm={jest.fn()}
@@ -222,12 +222,12 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
       expect(onClose).toHaveBeenCalled();
     });
 
-    it("InstitutionApproveModal: debe renderizar detalles y confirmar la verificación", () => {
+    it("InstitucionApproveModal: debe renderizar detalles y confirmar la verificación", () => {
       const onConfirm = jest.fn();
       const onClose = jest.fn();
 
       render(
-        <InstitutionApproveModal
+        <InstitucionApproveModal
           isOpen={true}
           onClose={onClose}
           onConfirm={onConfirm}
@@ -250,13 +250,13 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
   });
 
   describe("Filtros y Búsqueda Modularizados", () => {
-    it("ClaimFilterBar: debe emitir cambios de estado y búsqueda", () => {
+    it("ReclamoFilterBar: debe emitir cambios de estado y búsqueda", () => {
       const onBusquedaChange = jest.fn();
       const onFiltroEstadoChange = jest.fn();
       const onLimpiarTodo = jest.fn();
 
       render(
-        <ClaimFilterBar
+        <ReclamoFilterBar
           busqueda=""
           onBusquedaChange={onBusquedaChange}
           onLimpiarBusqueda={jest.fn()}
@@ -277,14 +277,14 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
       expect(onFiltroEstadoChange).toHaveBeenCalledWith("Pendiente");
     });
 
-    it("UserFilterBar: debe emitir cambios en búsqueda, rol y estado de usuarios", () => {
+    it("UsuarioFilterBar: debe emitir cambios en búsqueda, rol y estado de usuarios", () => {
       const onBusquedaChange = jest.fn();
       const onFiltroRolChange = jest.fn();
       const onFiltroEstadoChange = jest.fn();
       const onLimpiarTodo = jest.fn();
 
       render(
-        <UserFilterBar
+        <UsuarioFilterBar
           busqueda=""
           onBusquedaChange={onBusquedaChange}
           onLimpiarBusqueda={jest.fn()}
@@ -310,14 +310,14 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
       expect(onFiltroEstadoChange).toHaveBeenCalledWith("activo");
     });
 
-    it("CategoryFilterBar: debe emitir cambios en búsqueda y tipo de categoría", () => {
+    it("CategoriaFilterBar: debe emitir cambios en búsqueda y tipo de categoría", () => {
       const onBusquedaChange = jest.fn();
       const onFiltroTipoChange = jest.fn();
       const onFiltroEstadoChange = jest.fn();
       const onRefresh = jest.fn();
 
       render(
-        <CategoryFilterBar
+        <CategoriaFilterBar
           busqueda=""
           onBusquedaChange={onBusquedaChange}
           onLimpiarBusqueda={jest.fn()}

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Search, X } from "lucide-react";
 import FeedCard from "@/components/feed/FeedCard";
-import { EmptyState, CategoryDropdown, StatusDropdown } from "@/components/ui";
+import { EmptyState, CategoriaDropdown, StatusDropdown } from "@/components/ui";
 import apiClient from "@/services/apiClient";
 import { toast } from "sonner";
 import useCategorias from "@/hooks/useCategorias";
@@ -164,7 +164,7 @@ export default function ExploreView() {
           )}
 
           {/* Filtro por Categoría */}
-          <CategoryDropdown
+          <CategoriaDropdown
             categorias={categorias}
             value={categoriaId}
             onChange={(id) => setCategoriaId(id)}
