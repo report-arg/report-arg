@@ -162,6 +162,7 @@ export default function DashboardStats() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <DashboardStatusDistribution
           statsReclamos={statsReclamos}
+          totalReclamos={totalReclamosCalculado}
           totalReclamosCalculado={totalReclamosCalculado}
         />
         <DashboardActivityChart actividad={actividad} />

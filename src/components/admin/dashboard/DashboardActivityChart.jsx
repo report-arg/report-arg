@@ -47,7 +47,7 @@ export default function DashboardActivityChart({ actividad = [] }) {
   const escalaY = calcularEscalaEntera(maxTotalActividad);
 
   return (
-    <div className="p-5 sm:p-6 rounded-2xl bg-surface border border-border-subtle shadow-xs">
+    <div className="lg:col-span-7 p-5 sm:p-6 rounded-2xl bg-surface border border-border-subtle shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-4">
         <div>
           <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted m-0">

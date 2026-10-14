@@ -14,9 +14,12 @@ const STATUS_CONFIG = [
 export default function DashboardStatusDistribution({
   statsReclamos = {},
   totalReclamos = 0,
+  totalReclamosCalculado = 0,
 }) {
+  const total = totalReclamosCalculado || totalReclamos || 0;
+
   return (
-    <div className="p-5 sm:p-6 rounded-2xl bg-surface border border-border-subtle shadow-xs flex flex-col justify-between">
+    <div className="lg:col-span-5 p-5 sm:p-6 rounded-2xl bg-surface border border-border-subtle shadow-xs flex flex-col justify-between">
       <div>
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -24,7 +27,7 @@ export default function DashboardStatusDistribution({
               Distribución por Estado
             </h3>
             <p className="text-xs text-text-secondary m-0 mt-0.5">
-              Proporción sobre {totalReclamos} reclamos registrados
+              Proporción sobre {total} reclamos registrados
             </p>
           </div>
           <Link
@@ -38,12 +41,12 @@ export default function DashboardStatusDistribution({
 
         {/* Barra segmentada compacta */}
         <div className="w-full h-3 rounded-full bg-surface-subtle overflow-hidden flex my-4 border border-border-subtle/50">
-          {totalReclamos === 0 ? (
+          {total === 0 ? (
             <div className="w-full h-full bg-border-subtle/40" />
           ) : (
             STATUS_CONFIG.map((cfg) => {
               const cant = Number(statsReclamos[cfg.key] || 0);
-              const pct = totalReclamos > 0 ? (cant / totalReclamos) * 100 : 0;
+              const pct = total > 0 ? (cant / total) * 100 : 0;
               if (pct === 0) return null;
               return (
                 <div
@@ -61,7 +64,7 @@ export default function DashboardStatusDistribution({
         <div className="space-y-2 mt-4">
           {STATUS_CONFIG.map((cfg) => {
             const cant = Number(statsReclamos[cfg.key] || 0);
-            const pct = totalReclamos > 0 ? ((cant / totalReclamos) * 100).toFixed(1) : "0.0";
+            const pct = total > 0 ? ((cant / total) * 100).toFixed(1) : "0.0";
 
             return (
               <Link
@@ -94,8 +97,8 @@ export default function DashboardStatusDistribution({
       <div className="pt-4 border-t border-border-subtle mt-4 text-[11px] text-text-muted flex justify-between">
         <span>Resolución global</span>
         <span className="font-bold text-emerald-600 dark:text-emerald-400">
-          {totalReclamos > 0
-            ? `${(((statsReclamos.resueltos || 0) / totalReclamos) * 100).toFixed(0)}% resueltos`
+          {total > 0
+            ? `${(((statsReclamos.resueltos || 0) / total) * 100).toFixed(0)}% resueltos`
             : "Sin datos"}
         </span>
       </div>
