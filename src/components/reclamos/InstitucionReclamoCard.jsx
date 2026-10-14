@@ -6,7 +6,7 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import { getCategoryIcon } from "@/components/brand/icons";
 import { tiempoRelativo, fechaExacta } from "@/utils/dateFormatters";
 
-export default function InstitutionClaimCard({ item }) {
+export default function InstitucionReclamoCard({ item }) {
   const CategoryIcon = getCategoryIcon(item.categoriaCodigo || item.categoriaNombre, item.categoriaNombre);
   const afectados = item.afectadosCount || 0;
   const fechaRef = item.fecha_ultimo_cambio_estado || item.fecha_creacion;

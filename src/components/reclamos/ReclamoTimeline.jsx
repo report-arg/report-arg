@@ -8,7 +8,7 @@ function getSegmentClass(segIdx, currentIdx, isTerminalResolved) {
   return "bg-border-subtle";
 }
 
-export default function ClaimTimeline({ 
+export default function ReclamoTimeline({ 
   estadoActual, 
   tiempoEnEstado = "",
   variant = "citizen", // "citizen" o "institution"

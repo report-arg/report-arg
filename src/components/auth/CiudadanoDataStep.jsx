@@ -1,7 +1,7 @@
 import { EnvelopeIcon, EyeIcon, EyeSlashIcon, LockClosedIcon, UserIcon } from '@heroicons/react/20/solid';
 import Link from 'next/link';
 
-export default function CitizenDataStep({
+export default function CiudadanoDataStep({
   register,
   errors,
   showPassword,

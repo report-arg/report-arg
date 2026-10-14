@@ -24,7 +24,7 @@ import { getCategoryIcon } from "@/components/brand/icons";
  * @param {string} [props.menuClassName=""] - Clases para el menú desplegable (por ej. 'right-0' o 'left-0')
  * @param {string} [props.id] - ID accesible para el botón disparador
  */
-const CategoryDropdown = forwardRef(function CategoryDropdown(
+const CategoriaDropdown = forwardRef(function CategoriaDropdown(
   {
     categorias = [],
     value = null,
@@ -197,4 +197,4 @@ const CategoryDropdown = forwardRef(function CategoryDropdown(
   );
 });
 
-export default CategoryDropdown;
+export default CategoriaDropdown;

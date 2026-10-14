@@ -1,6 +1,6 @@
-import { getEstadoConfig } from "@/utils/claimStatus";
+import { getEstadoConfig } from "@/utils/reclamoStatus";
 
-export default function ClaimStatusBadge({ estado, className = "" }) {
+export default function ReclamoStatusBadge({ estado, className = "" }) {
   const config = getEstadoConfig(estado);
 
   return (

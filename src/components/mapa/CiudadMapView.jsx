@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { MapPin, Loader2, X } from "lucide-react";
 import apiClient from "@/services/apiClient";
 
-import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
-import { CLAIM_STATUSES } from "@/utils/claimStatus";
+import ReclamoStatusBadge from "@/components/reclamos/ReclamoStatusBadge";
+import { CLAIM_STATUSES } from "@/utils/reclamoStatus";
 import PageHeader from "@/components/layout/PageHeader";
 
 const MapaReclamos = dynamic(
@@ -20,7 +20,7 @@ const FILTROS = [
   ...CLAIM_STATUSES.map(estado => ({ key: estado, label: estado }))
 ];
 
-export default function CityMapView() {
+export default function CiudadMapView() {
   const router = useRouter();
   const [reclamos, setReclamos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -115,7 +115,7 @@ export default function CityMapView() {
             )}
             
             <div className="mt-auto pt-4 border-t border-border-subtle flex items-center justify-between">
-              <ClaimStatusBadge estado={seleccionado.estado} />
+              <ReclamoStatusBadge estado={seleccionado.estado} />
               <button
                 onClick={() => router.push(`/ciudadano/reclamos/${seleccionado.id}`)}
                 className="text-xs font-semibold text-primary hover:underline cursor-pointer"

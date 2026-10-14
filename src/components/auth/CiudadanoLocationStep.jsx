@@ -1,6 +1,6 @@
 import { MapPinIcon } from '@heroicons/react/20/solid';
 
-export default function InstitutionLocationStep({
+export default function CiudadanoLocationStep({
   register,
   errors,
   isSubmitting,
@@ -58,34 +58,15 @@ export default function InstitutionLocationStep({
         {errors.zona && <p className="register-error">{errors.zona.message}</p>}
       </div>
 
-      <div className="form-group">
-        <label className="form-label" htmlFor="address">
-          DIRECCIÓN EXACTA
-        </label>
-        <div className="form-input-wrapper">
-          <input
-            type="text"
-            id="address"
-            className="form-input"
-            placeholder="Ej. Av. San Martín 123, Piso 2"
-            {...register('address')}
-          />
-          <div className="form-input-icon">
-            <MapPinIcon aria-hidden />
-          </div>
-        </div>
-        {errors.address && <p className="register-error">{errors.address.message}</p>}
-      </div>
-
       <div className="form-group register-checkbox mt-6">
         <label className="register-checkbox-label">
           <input
             type="checkbox"
-            {...register('termsAccepted')}
+            {...register('acceptTerms')}
           />
           <span>Acepto los términos de servicio y la política de privacidad.</span>
         </label>
-        {errors.termsAccepted && <p className="register-error">{errors.termsAccepted.message}</p>}
+        {errors.acceptTerms && <p className="register-error">{errors.acceptTerms.message}</p>}
       </div>
 
       <div className="flex gap-4 mt-6">

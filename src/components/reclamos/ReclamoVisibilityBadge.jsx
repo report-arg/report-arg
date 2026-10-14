@@ -6,7 +6,7 @@ import Badge from "@/components/ui/Badge";
  * Utiliza el componente base Badge para consistencia tipográfica,
  * de padding y de radios en toda la aplicación.
  */
-export default function ClaimVisibilityBadge({ visibilidad = "publico", size = "sm", className = "" }) {
+export default function ReclamoVisibilityBadge({ visibilidad = "publico", size = "sm", className = "" }) {
   const esPrivado = visibilidad === "privado";
 
   return (

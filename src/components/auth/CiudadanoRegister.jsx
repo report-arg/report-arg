@@ -33,7 +33,7 @@ const initialForm = {
   acceptTerms: false,
 };
 
-export default function CitizenRegister() {
+export default function CiudadanoRegister() {
   const [serverError, setServerError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);

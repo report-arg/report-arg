@@ -20,7 +20,7 @@ const institutionTypes = [
   { key: 'otra', label: 'Otra institución' },
 ];
 
-export default function InstitutionDataStep({
+export default function InstitucionDataStep({
   register,
   errors,
   showPassword,

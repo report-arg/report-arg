@@ -1,5 +1,5 @@
 import { AlertTriangle } from "lucide-react";
-export default function ClaimTracking({ reclamo, advertir = false }) {
+export default function ReclamoTracking({ reclamo, advertir = false }) {
   if (reclamo?.diasEnEstado === undefined || reclamo?.diasEnEstado === null) return null;
   return <span className="inline-flex flex-wrap items-center gap-2 text-xs text-text-secondary">
     <span>{reclamo.diasEnEstado === 0 ? "Menos de un día" : `${reclamo.diasEnEstado} día${reclamo.diasEnEstado === 1 ? "" : "s"}`} en {reclamo.estado}</span>

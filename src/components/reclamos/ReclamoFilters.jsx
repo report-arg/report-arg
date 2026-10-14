@@ -2,9 +2,9 @@
 
 import { useId } from "react";
 import { X } from "lucide-react";
-import { CategoryDropdown, StatusDropdown, SortDropdown } from "@/components/ui";
+import { CategoriaDropdown, StatusDropdown, SortDropdown } from "@/components/ui";
 
-export default function ClaimFilters({
+export default function ReclamoFilters({
   estado,
   categoria,
   categorias = [],
@@ -49,7 +49,7 @@ export default function ClaimFilters({
           >
             Categoría
           </label>
-          <CategoryDropdown
+          <CategoriaDropdown
             id={`${id}-categoria`}
             categorias={categorias}
             value={categoria === "Todas" || !categoria ? null : categoria}

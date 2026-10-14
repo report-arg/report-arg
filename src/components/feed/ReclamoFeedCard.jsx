@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, Share2, Building2, Eye, Users, MessageSquare, ChevronDown, ChevronUp, Loader2, X, User } from "lucide-react";
-import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
+import ReclamoStatusBadge from "@/components/reclamos/ReclamoStatusBadge";
 import { getCategoryIcon } from "@/components/brand/icons";
 import { tiempoRelativo, fechaExacta } from "@/utils/dateFormatters";
 import BaseFeedCard from "./BaseFeedCard";
@@ -34,7 +34,7 @@ async function compartirReclamo({ titulo, descripcion, id }) {
   }
 }
 
-export default function ClaimFeedCard({ item, priorityImage }) {
+export default function ReclamoFeedCard({ item, priorityImage }) {
   const router = useRouter();
   const { data: session } = useSession();
 
@@ -330,7 +330,7 @@ export default function ClaimFeedCard({ item, priorityImage }) {
       avatarFallback={iniciales(item.autorNombre)}
       title={authorDisplay}
       subtitle={Subtitle}
-      headerActions={<ClaimStatusBadge estado={item.estado} />}
+      headerActions={<ReclamoStatusBadge estado={item.estado} />}
       onClickBody={() => router.push(detalleUrl)}
       bodyTitle={item.titulo}
       bodyDescription={item.descripcion}

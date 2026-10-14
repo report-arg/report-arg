@@ -1,6 +1,6 @@
 "use client";
 
-import { getEstadoConfig } from "@/utils/claimStatus";
+import { getEstadoConfig } from "@/utils/reclamoStatus";
 import Badge from "./Badge";
 
 const STATUS_VARIANTS = {

@@ -11,7 +11,7 @@ export const DEFAULT_SORT_OPTIONS = [
 ];
 
 /**
- * Dropdown accesible y visualmente consistente con CategoryDropdown y StatusDropdown
+ * Dropdown accesible y visualmente consistente con CategoriaDropdown y StatusDropdown
  * para la selección de ordenamiento de reclamos y publicaciones.
  */
 const SortDropdown = forwardRef(function SortDropdown(

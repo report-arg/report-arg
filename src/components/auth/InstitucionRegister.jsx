@@ -51,7 +51,7 @@ const initialForm = {
   termsAccepted: false,
 };
 
-export default function InstitutionRegister() {
+export default function InstitucionRegister() {
   const {
     register,
     handleSubmit,

@@ -35,7 +35,7 @@ async function compartirComunicado({ titulo, descripcion, id }) {
   }
 }
 
-export default function CommunicationFeedCard({ item, priorityImage }) {
+export default function ComunicadoFeedCard({ item, priorityImage }) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [lightboxAbierto, setLightboxAbierto] = useState(false);
 

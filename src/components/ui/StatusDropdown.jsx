@@ -13,7 +13,7 @@ const DEFAULT_STATUS_OPTIONS = [
 ];
 
 /**
- * Dropdown accesible y visualmente consistente con CategoryDropdown
+ * Dropdown accesible y visualmente consistente con CategoriaDropdown
  * para la selección y filtrado por estado de reclamos.
  */
 const StatusDropdown = forwardRef(function StatusDropdown(

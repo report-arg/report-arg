@@ -9,7 +9,7 @@ const PASOS = [
   { key: "Resuelto", label: "Resuelto" },
 ];
 
-export default function ClaimProgress({ estado }) {
+export default function ReclamoProgress({ estado }) {
   if (estado === "Cancelado") {
     return (
       <div className="flex items-center gap-1.5 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
