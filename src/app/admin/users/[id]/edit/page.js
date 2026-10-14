@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import UserForm from "@/components/admin/UserForm";
+import UserForm from "@/components/admin/users/UserForm";
 import PageHeader from "@/components/layout/PageHeader";
 import Button from "@/components/ui/Button";
 

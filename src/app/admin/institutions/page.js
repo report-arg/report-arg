@@ -1,6 +1,6 @@
 "use client";
 
-import InstitutionTable from "@/components/admin/InstitutionTable";
+import InstitutionTable from "@/components/admin/institutions/InstitutionTable";
 import PageHeader from "@/components/layout/PageHeader";
 
 export default function InstitutionsPage() {

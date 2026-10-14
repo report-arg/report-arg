@@ -1,5 +1,5 @@
 import "@/styles/admin-dash.css";
-import AdminShell from "@/components/admin/AdminShell";
+import AdminShell from "@/components/admin/layout/AdminShell";
 
 export const metadata = {
   title: "Panel de Administración | ReportARG",

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Inbox,
@@ -13,99 +12,31 @@ import {
   Loader2,
   RefreshCw,
   Eye,
-  Calendar,
 } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import Button from "@/components/ui/Button";
-import ConfirmModal from "@/components/ui/ConfirmModal";
-import Modal from "@/components/ui/Modal";
-import StatusBadge from "@/components/ui/StatusBadge";
-import apiClient from "@/services/apiClient";
-import { toast } from "sonner";
-import { formatearFecha } from "@/utils/dateFormatters";
+import { useInstitutions } from "@/hooks/admin/useInstitutions";
+import InstitutionAvatar from "@/components/admin/institutions/InstitutionAvatar";
+import InstitutionDetailModal from "@/components/admin/institutions/InstitutionDetailModal";
+import InstitutionApproveModal from "@/components/admin/institutions/InstitutionApproveModal";
+import InstitutionRejectModal from "@/components/admin/institutions/InstitutionRejectModal";
 
 export default function SolicitudesPage() {
-  const [solicitudes, setSolicitudes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  // Modales de acción y detalle
-  const [modalDetalle, setModalDetalle] = useState(null);
-  const [modalAprobar, setModalAprobar] = useState(null);
-  const [modalRechazar, setModalRechazar] = useState(null);
-  const [motivoRechazo, setMotivoRechazo] = useState("");
-  const [motivoError, setMotivoError] = useState("");
-  const [procesando, setProcesando] = useState(false);
-
-  const cargarSolicitudes = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await apiClient.get("/admin/instituciones?estado=pendiente");
-      if (res.data?.ok) {
-        setSolicitudes(res.data.data || []);
-      } else {
-        setError("No se pudieron cargar las solicitudes pendientes.");
-      }
-    } catch (err) {
-      setError("Error al conectar con el servidor para consultar solicitudes.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    cargarSolicitudes();
-  }, []);
-
-  async function handleAprobar() {
-    if (!modalAprobar) return;
-    setProcesando(true);
-    try {
-      const res = await apiClient.put(`/admin/instituciones/${modalAprobar.id}/verificar`);
-      if (res.data?.ok) {
-        toast.success(`Institución "${modalAprobar.nombre}" verificada correctamente.`);
-        setModalAprobar(null);
-        if (modalDetalle?.id === modalAprobar.id) setModalDetalle(null);
-        await cargarSolicitudes();
-      } else {
-        toast.error(res.data?.mensaje || "Error al verificar institución.");
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.mensaje || "Error al verificar institución.");
-    } finally {
-      setProcesando(false);
-    }
-  }
-
-  async function handleRechazar() {
-    if (!modalRechazar) return;
-    if (!motivoRechazo.trim()) {
-      setMotivoError("El motivo de rechazo es obligatorio para notificar a la entidad.");
-      return;
-    }
-
-    setProcesando(true);
-    try {
-      const res = await apiClient.put(`/admin/instituciones/${modalRechazar.id}/rechazar`, {
-        motivo: motivoRechazo.trim(),
-      });
-      if (res.data?.ok) {
-        toast.success(`Solicitud de "${modalRechazar.nombre}" rechazada correctamente.`);
-        setModalRechazar(null);
-        setMotivoRechazo("");
-        setMotivoError("");
-        if (modalDetalle?.id === modalRechazar.id) setModalDetalle(null);
-        await cargarSolicitudes();
-      } else {
-        toast.error(res.data?.mensaje || "Error al rechazar solicitud.");
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.mensaje || "Error al rechazar solicitud.");
-    } finally {
-      setProcesando(false);
-    }
-  }
+  const {
+    instituciones: solicitudes,
+    loading,
+    error,
+    cargarInstituciones,
+    modalDetalle,
+    setModalDetalle,
+    modalAprobar,
+    setModalAprobar,
+    modalRechazar,
+    setModalRechazar,
+    procesandoAccion,
+    verificarInstitucion,
+    rechazarInstitucion,
+  } = useInstitutions({ filtroInicialEstado: "pendiente", fetchStats: false });
 
   return (
     <div className="w-full space-y-6">
@@ -120,7 +51,7 @@ export default function SolicitudesPage() {
               </Button>
             </Link>
             <Button
-              onClick={cargarSolicitudes}
+              onClick={() => cargarInstituciones()}
               variant="outline"
               size="sm"
               loading={loading}
@@ -145,6 +76,7 @@ export default function SolicitudesPage() {
           </div>
         </div>
 
+        {/* Loading */}
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center text-text-muted text-xs gap-2">
             <Loader2 size={24} className="animate-spin text-primary" />
@@ -153,7 +85,7 @@ export default function SolicitudesPage() {
         ) : error ? (
           <div className="py-12 px-4 text-center">
             <p className="text-xs text-rose-600 font-semibold mb-3">{error}</p>
-            <Button onClick={cargarSolicitudes} variant="outline" size="sm">
+            <Button onClick={() => cargarInstituciones()} variant="outline" size="sm">
               Reintentar
             </Button>
           </div>
@@ -192,17 +124,11 @@ export default function SolicitudesPage() {
                     {/* Institución */}
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2.5">
-                        {inst.foto_perfil ? (
-                          <img
-                            src={inst.foto_perfil}
-                            alt={inst.nombre}
-                            className="w-9 h-9 rounded-xl object-cover border border-border-subtle shrink-0"
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0 font-bold">
-                            <Building2 size={16} />
-                          </div>
-                        )}
+                        <InstitutionAvatar
+                          foto={inst.foto_perfil}
+                          nombre={inst.nombre}
+                          size="md"
+                        />
                         <div className="min-w-0">
                           <p className="font-bold text-text-primary m-0 truncate">
                             {inst.nombre}
@@ -274,11 +200,7 @@ export default function SolicitudesPage() {
                           Verificar
                         </Button>
                         <Button
-                          onClick={() => {
-                            setModalRechazar(inst);
-                            setMotivoRechazo("");
-                            setMotivoError("");
-                          }}
+                          onClick={() => setModalRechazar(inst)}
                           variant="danger-soft"
                           size="sm"
                           leftIcon={<XCircle size={13} />}
@@ -295,167 +217,30 @@ export default function SolicitudesPage() {
         )}
       </div>
 
-      {/* Modal Ver Detalle */}
-      {modalDetalle && (
-        <Modal
-          isOpen={true}
-          onClose={() => setModalDetalle(null)}
-          title="Ficha de Solicitud Institucional"
-          description={`Datos declarados por ${modalDetalle.nombre}`}
-          icon={<Building2 size={20} />}
-          maxWidth="md"
-        >
-          <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-surface-subtle border border-border-subtle flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
-                <Building2 size={24} />
-              </div>
-              <div className="min-w-0">
-                <h4 className="text-sm font-bold text-text-primary m-0 truncate">
-                  {modalDetalle.nombre}
-                </h4>
-                <p className="text-xs text-text-muted m-0 capitalize">
-                  Tipo: {modalDetalle.tipo || "Institución"}
-                </p>
-              </div>
-            </div>
+      {/* Modales Compartidos */}
+      <InstitutionDetailModal
+        isOpen={Boolean(modalDetalle)}
+        onClose={() => setModalDetalle(null)}
+        institucion={modalDetalle}
+        onAprobar={(inst) => setModalAprobar(inst)}
+        onRechazar={(inst) => setModalRechazar(inst)}
+      />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-surface border border-border-subtle">
-                <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider block mb-1">
-                  Ciudad Asociada
-                </span>
-                <p className="font-semibold text-text-primary m-0 flex items-center gap-1.5">
-                  <MapPin size={13} className="text-text-muted shrink-0" />
-                  {modalDetalle.ciudad_nombre
-                    ? `${modalDetalle.ciudad_nombre}${modalDetalle.provincia ? `, ${modalDetalle.provincia}` : ""}`
-                    : "Sin ciudad asignada"}
-                </p>
-              </div>
+      <InstitutionApproveModal
+        isOpen={Boolean(modalAprobar)}
+        onClose={() => setModalAprobar(null)}
+        onConfirm={() => verificarInstitucion(modalAprobar)}
+        institucion={modalAprobar}
+        loading={procesandoAccion}
+      />
 
-              <div className="p-3 rounded-xl bg-surface border border-border-subtle">
-                <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider block mb-1">
-                  Dirección
-                </span>
-                <p className="font-semibold text-text-primary m-0">
-                  {modalDetalle.direccion || "No especificada"}
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-surface border border-border-subtle">
-                <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider block mb-1">
-                  Email de Notificación
-                </span>
-                <p className="font-semibold text-text-primary m-0 flex items-center gap-1.5 truncate">
-                  <Mail size={13} className="text-text-muted shrink-0" />
-                  {modalDetalle.email || "Sin email"}
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-surface border border-border-subtle">
-                <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider block mb-1">
-                  Teléfono
-                </span>
-                <p className="font-semibold text-text-primary m-0 flex items-center gap-1.5">
-                  <Phone size={13} className="text-text-muted shrink-0" />
-                  {modalDetalle.telefono || "No especificado"}
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-2 flex items-center justify-end gap-2 border-t border-border-subtle">
-              <Button
-                onClick={() => setModalDetalle(null)}
-                variant="outline"
-                size="sm"
-              >
-                Cerrar
-              </Button>
-              <Button
-                onClick={() => {
-                  setModalAprobar(modalDetalle);
-                }}
-                variant="success"
-                size="sm"
-                leftIcon={<CheckCircle size={13} />}
-              >
-                Verificar
-              </Button>
-              <Button
-                onClick={() => {
-                  setModalRechazar(modalDetalle);
-                  setMotivoRechazo("");
-                  setMotivoError("");
-                }}
-                variant="danger-soft"
-                size="sm"
-                leftIcon={<XCircle size={13} />}
-              >
-                Rechazar
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Modal Confirmar Aprobación */}
-      {modalAprobar && (
-        <ConfirmModal
-          isOpen={true}
-          onClose={() => setModalAprobar(null)}
-          onConfirm={handleAprobar}
-          title="¿Verificar institución?"
-          description={`Estás por habilitar a "${modalAprobar.nombre}" (${modalAprobar.email}). Al verificarse, la entidad podrá responder reclamos y publicar comunicados oficiales.`}
-          variant="success"
-          confirmText="Verificar institución"
-          cancelText="Cancelar"
-          loading={procesando}
-          loadingText="Verificando..."
-          icon={<CheckCircle size={20} />}
-        />
-      )}
-
-      {/* Modal Confirmar Rechazo */}
-      {modalRechazar && (
-        <ConfirmModal
-          isOpen={true}
-          onClose={() => {
-            setModalRechazar(null);
-            setMotivoRechazo("");
-            setMotivoError("");
-          }}
-          onConfirm={handleRechazar}
-          title="Rechazar solicitud institucional"
-          description={`Indicá el motivo detallado de rechazo para "${modalRechazar.nombre}". Este texto será enviado formalmente por correo electrónico al solicitante.`}
-          variant="danger"
-          confirmText="Confirmar rechazo"
-          cancelText="Cancelar"
-          loading={procesando}
-          loadingText="Rechazando..."
-          icon={<XCircle size={20} />}
-        >
-          <div className="mt-3 text-left">
-            <label className="block text-xs font-bold text-text-primary mb-1">
-              Motivo del rechazo <span className="text-rose-500">*</span>
-            </label>
-            <textarea
-              value={motivoRechazo}
-              onChange={(e) => {
-                setMotivoRechazo(e.target.value);
-                setMotivoError("");
-              }}
-              placeholder="Ej. La documentación adjunta no coincide con el organismo público declarado..."
-              rows={3}
-              className={`w-full text-xs p-3 rounded-xl border ${
-                motivoError ? "border-rose-500" : "border-border-subtle"
-              } bg-surface text-text-primary focus:border-rose-500 outline-hidden resize-y transition-all`}
-            />
-            {motivoError && (
-              <p className="text-[11px] text-rose-600 mt-1 font-semibold m-0">{motivoError}</p>
-            )}
-          </div>
-        </ConfirmModal>
-      )}
+      <InstitutionRejectModal
+        isOpen={Boolean(modalRechazar)}
+        onClose={() => setModalRechazar(null)}
+        onConfirm={(motivo) => rechazarInstitucion(modalRechazar, motivo)}
+        institucion={modalRechazar}
+        loading={procesandoAccion}
+      />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserPlus, Users, UserCheck, UserX, Shield } from "lucide-react";
-import UserTable from "@/components/admin/UserTable";
+import UserTable from "@/components/admin/users/UserTable";
 import PageHeader from "@/components/layout/PageHeader";
 import Button from "@/components/ui/Button";
 import apiClient from "@/services/apiClient";
