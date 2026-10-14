@@ -13,15 +13,14 @@ import {
   LogOut,
   ChevronDown,
   X,
-  Check,
   Loader2,
   FileText,
   Tag,
   Users as UsersIcon,
-  Shield,
   ArrowRight,
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
+import useDebounce from "@/hooks/useDebounce";
 
 const SECTION_TITLES = {
   "/admin": "Dashboard General",
@@ -43,6 +42,7 @@ export default function AdminNavbar({ onOpenSidebar = () => {} }) {
 
   // Búsqueda global
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedQuery = useDebounce(searchQuery, 250);
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -75,44 +75,56 @@ export default function AdminNavbar({ onOpenSidebar = () => {} }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Búsqueda con debounce
+  // Búsqueda con debounce hook reutilizable
   useEffect(() => {
-    const term = searchQuery.trim();
+    const term = debouncedQuery.trim();
     if (!term) {
       setSearchResults([]);
       setSearchOpen(false);
       return;
     }
 
+    let active = true;
     setSearchLoading(true);
     setSearchOpen(true);
-    const timer = setTimeout(async () => {
-      try {
-        const res = await apiClient.get(`/admin/buscar?q=${encodeURIComponent(term)}`);
-        if (res.data?.ok) {
+
+    apiClient
+      .get(`/admin/buscar?q=${encodeURIComponent(term)}`)
+      .then((res) => {
+        if (active && res.data?.ok) {
           setSearchResults(res.data.data || []);
         }
-      } catch (err) {
-        setSearchResults([]);
-      } finally {
-        setSearchLoading(false);
-      }
-    }, 250);
+      })
+      .catch(() => {
+        if (active) setSearchResults([]);
+      })
+      .finally(() => {
+        if (active) setSearchLoading(false);
+      });
 
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+    return () => {
+      active = false;
+    };
+  }, [debouncedQuery]);
 
   // Cargar notificaciones al abrir panel
   useEffect(() => {
     if (!notifOpen) return;
+    let active = true;
     setNotifsLoading(true);
     apiClient
       .get("/admin/notificaciones")
       .then((res) => {
-        if (res.data?.ok) setNotifs(res.data.data || []);
+        if (active && res.data?.ok) setNotifs(res.data.data || []);
       })
       .catch(() => {})
-      .finally(() => setNotifsLoading(false));
+      .finally(() => {
+        if (active) setNotifsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [notifOpen]);
 
   async function marcarLeida(id) {
@@ -149,7 +161,7 @@ export default function AdminNavbar({ onOpenSidebar = () => {} }) {
           <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted m-0 hidden sm:block">
             Panel de Administración
           </p>
-          <h2 className="text-sm sm:text-base font-bold text-text-primary m-0 truncate">
+          <h2 className="text-sm sm:base font-bold text-text-primary m-0 truncate">
             {currentTitle}
           </h2>
         </div>
@@ -190,7 +202,7 @@ export default function AdminNavbar({ onOpenSidebar = () => {} }) {
                 </div>
               ) : searchResults.length === 0 ? (
                 <p className="py-4 text-center text-xs text-text-muted m-0">
-                  No se encontraron resultados para &quot;{searchQuery}&quot;
+                  No se encontraron resultados para &quot;{debouncedQuery}&quot;
                 </p>
               ) : (
                 <div className="space-y-1">

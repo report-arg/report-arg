@@ -1,23 +1,17 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-  User,
-  Mail,
-  Lock,
-  Shield,
-  Building2,
   CheckCircle2,
   AlertTriangle,
-  Camera,
   Loader2,
-  ArrowLeft,
   Save,
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import Button from "@/components/ui/Button";
+import UserPhotoUpload from "./UserPhotoUpload";
 
 const rolesOpciones = [
   { value: "ciudadano", label: "Ciudadano", desc: "Acceso comunitario regular (feed, mapas, reportes)" },
@@ -32,7 +26,6 @@ export default function UserForm({ usuarioId = null }) {
 
   const isEdit = Boolean(usuarioId);
   const esMiCuenta = isEdit && Number(usuarioId) === currentUserId;
-  const fileRef = useRef(null);
 
   const [form, setForm] = useState({
     nombre: "",
@@ -198,7 +191,6 @@ export default function UserForm({ usuarioId = null }) {
     }
   }
 
-  // Comprobar restricciones de edición
   const esInstitucion = isEdit && originalRol === "institucion";
 
   if (loadingData) {
@@ -234,45 +226,11 @@ export default function UserForm({ usuarioId = null }) {
       >
         {/* Cabecera visual del formulario con avatar */}
         <div className="flex flex-col sm:flex-row items-center gap-5 pb-6 border-b border-border-subtle">
-          <div className="relative group">
-            <div
-              onClick={() => !uploadingFoto && fileRef.current?.click()}
-              className="w-20 h-20 rounded-full overflow-hidden bg-surface-subtle border-2 border-border-subtle flex items-center justify-center cursor-pointer hover:border-primary transition-all relative"
-              title="Seleccionar foto de perfil"
-            >
-              {preview ? (
-                <img
-                  src={preview}
-                  alt="Vista previa"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User size={32} className="text-text-muted" />
-              )}
-              {uploadingFoto && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <Loader2 size={20} className="animate-spin text-white" />
-                </div>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={uploadingFoto}
-              className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-primary text-white shadow-xs hover:bg-primary-hover transition-colors cursor-pointer"
-              title="Cambiar imagen"
-            >
-              <Camera size={13} />
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFoto}
-            />
-          </div>
+          <UserPhotoUpload
+            preview={preview}
+            uploading={uploadingFoto}
+            onFileSelect={handleFoto}
+          />
 
           <div className="text-center sm:text-left min-w-0">
             <h2 className="text-base font-bold text-text-primary m-0">

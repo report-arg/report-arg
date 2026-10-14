@@ -1,30 +1,26 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   Tag,
-  Search,
-  X,
-  Filter,
   Plus,
   Pencil,
   PowerOff,
   Power,
   Trash2,
-  AlertTriangle,
   Loader2,
-  RefreshCw,
-  CheckCircle2,
-  Layers,
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import Button from "@/components/ui/Button";
-import ConfirmModal from "@/components/ui/ConfirmModal";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { getCategoryIcon } from "@/components/brand/icons";
 import { toast } from "sonner";
+import { useDebounce } from "@/hooks/useDebounce";
+
+import CategoryStatsCards from "./CategoryStatsCards";
+import CategoryFilterBar from "./CategoryFilterBar";
+import CategoryModals from "./CategoryModals";
 
 const TIPO_CONFIG = {
   reclamo: {
@@ -49,6 +45,7 @@ export default function CategoriesPanel() {
 
   // Filtros
   const [busqueda, setBusqueda] = useState("");
+  const debouncedBusqueda = useDebounce(busqueda, 350);
   const [filtroTipo, setFiltroTipo] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("");
 
@@ -58,52 +55,61 @@ export default function CategoriesPanel() {
   const [modalEliminar, setModalEliminar] = useState(null);
   const [procesando, setProcesando] = useState(false);
 
-  // Ref para debounce de búsqueda
-  const searchTimeoutRef = useRef(null);
-
-  const fetchCategorias = async (search = busqueda, tipo = filtroTipo, estado = filtroEstado) => {
-    setLoading(true);
-    setError("");
-    try {
-      const params = new URLSearchParams();
-      if (search.trim()) params.append("busqueda", search.trim());
-      if (tipo) params.append("tipo", tipo);
-      if (estado) params.append("estado", estado);
-
-      const res = await apiClient.get(`/admin/categorias?${params.toString()}`);
-      if (res.data?.ok) {
-        setCategorias(res.data.data || []);
-      } else {
-        setError(res.data?.mensaje || "Error al cargar categorías");
-      }
-    } catch (err) {
-      setError(
-        err.response?.data?.mensaje ||
-          "No se pudo conectar con el servidor para consultar categorías."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Salvaguardas de ciclo de vida y condiciones de carrera
+  const isMountedRef = useRef(true);
+  const reqIdRef = useRef(0);
 
   useEffect(() => {
-    fetchCategorias(busqueda, filtroTipo, filtroEstado);
-  }, [filtroTipo, filtroEstado]);
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
-  const handleSearchChange = (e) => {
-    const val = e.target.value;
-    setBusqueda(val);
+  const fetchCategorias = useCallback(
+    async (search = debouncedBusqueda, tipo = filtroTipo, estado = filtroEstado) => {
+      const currentReqId = ++reqIdRef.current;
+      setLoading(true);
+      setError("");
+      try {
+        const params = new URLSearchParams();
+        if (search && search.trim()) params.append("busqueda", search.trim());
+        if (tipo) params.append("tipo", tipo);
+        if (estado) params.append("estado", estado);
 
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    searchTimeoutRef.current = setTimeout(() => {
-      fetchCategorias(val, filtroTipo, filtroEstado);
-    }, 350);
-  };
+        const res = await apiClient.get(`/admin/categorias?${params.toString()}`);
 
-  const handleClearSearch = () => {
-    setBusqueda("");
-    fetchCategorias("", filtroTipo, filtroEstado);
-  };
+        if (!isMountedRef.current || currentReqId !== reqIdRef.current) return;
+
+        if (res.data?.ok) {
+          setCategorias(res.data.data || []);
+        } else {
+          setError(res.data?.mensaje || "Error al cargar categorías");
+        }
+      } catch (err) {
+        if (!isMountedRef.current || currentReqId !== reqIdRef.current) return;
+        setError(
+          err.response?.data?.mensaje ||
+            "No se pudo conectar con el servidor para consultar categorías."
+        );
+      } finally {
+        if (isMountedRef.current && currentReqId === reqIdRef.current) {
+          setLoading(false);
+        }
+      }
+    },
+    [debouncedBusqueda, filtroTipo, filtroEstado]
+  );
+
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      fetchCategorias(debouncedBusqueda, filtroTipo, filtroEstado);
+      return;
+    }
+    fetchCategorias(debouncedBusqueda, filtroTipo, filtroEstado);
+  }, [debouncedBusqueda, filtroTipo, filtroEstado, fetchCategorias]);
 
   // Métricas
   const totalCategorias = categorias.length;
@@ -118,7 +124,7 @@ export default function CategoriesPanel() {
       const res = await apiClient.patch(`/admin/categorias/${modalBaja.id}/baja`);
       if (res.data?.ok) {
         toast.success(`Categoría "${modalBaja.nombre}" desactivada correctamente.`);
-        setModalBaja(null);
+        if (isMountedRef.current) setModalBaja(null);
         await fetchCategorias();
       } else {
         toast.error(res.data?.mensaje || "Error al desactivar categoría.");
@@ -126,7 +132,7 @@ export default function CategoriesPanel() {
     } catch (err) {
       toast.error(err.response?.data?.mensaje || "Error al desactivar categoría.");
     } finally {
-      setProcesando(false);
+      if (isMountedRef.current) setProcesando(false);
     }
   }
 
@@ -137,7 +143,7 @@ export default function CategoriesPanel() {
       const res = await apiClient.patch(`/admin/categorias/${modalReactivar.id}/reactivar`);
       if (res.data?.ok) {
         toast.success(`Categoría "${modalReactivar.nombre}" activada correctamente.`);
-        setModalReactivar(null);
+        if (isMountedRef.current) setModalReactivar(null);
         await fetchCategorias();
       } else {
         toast.error(res.data?.mensaje || "Error al activar categoría.");
@@ -145,7 +151,7 @@ export default function CategoriesPanel() {
     } catch (err) {
       toast.error(err.response?.data?.mensaje || "Error al activar categoría.");
     } finally {
-      setProcesando(false);
+      if (isMountedRef.current) setProcesando(false);
     }
   }
 
@@ -156,7 +162,7 @@ export default function CategoriesPanel() {
       const res = await apiClient.delete(`/admin/categorias/${modalEliminar.id}`);
       if (res.data?.ok) {
         toast.success(`Categoría "${modalEliminar.nombre}" eliminada correctamente.`);
-        setModalEliminar(null);
+        if (isMountedRef.current) setModalEliminar(null);
         await fetchCategorias();
       } else {
         toast.error(res.data?.mensaje || "Error al eliminar categoría.");
@@ -164,134 +170,36 @@ export default function CategoriesPanel() {
     } catch (err) {
       const msg = err.response?.data?.mensaje || "Error al eliminar categoría.";
       toast.error(msg, { duration: 5000 });
-      setModalEliminar(null);
+      if (isMountedRef.current) setModalEliminar(null);
     } finally {
-      setProcesando(false);
+      if (isMountedRef.current) setProcesando(false);
     }
   }
 
   return (
     <div className="space-y-6">
       {/* 1. Tarjetas KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 sm:p-5 rounded-2xl bg-surface border border-border-subtle shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-text-muted m-0">Total Categorías</p>
-            <h3 className="text-2xl font-black text-text-primary mt-1 m-0">
-              {loading ? <Loader2 size={20} className="animate-spin text-text-muted mt-1" /> : totalCategorias}
-            </h3>
-            <p className="text-[11px] text-text-secondary mt-1 m-0">Clasificaciones del sistema</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
-            <Layers size={24} />
-          </div>
-        </div>
-
-        <div
-          onClick={() => setFiltroEstado(filtroEstado === "activo" ? "" : "activo")}
-          className={`p-4 sm:p-5 rounded-2xl bg-surface border shadow-xs flex items-center justify-between cursor-pointer transition-all hover:border-emerald-400 ${
-            filtroEstado === "activo" ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-border-subtle"
-          }`}
-          title="Click para filtrar solo activas"
-        >
-          <div>
-            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 m-0">Activas</p>
-            <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 m-0">
-              {loading ? <Loader2 size={20} className="animate-spin text-text-muted mt-1" /> : activasCount}
-            </h3>
-            <p className="text-[11px] text-text-secondary mt-1 m-0">Disponibles para reportes</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-            <CheckCircle2 size={24} />
-          </div>
-        </div>
-
-        <div
-          onClick={() => setFiltroEstado(filtroEstado === "inactivo" ? "" : "inactivo")}
-          className={`p-4 sm:p-5 rounded-2xl bg-surface border shadow-xs flex items-center justify-between cursor-pointer transition-all hover:border-amber-400 ${
-            filtroEstado === "inactivo" ? "border-amber-500 ring-2 ring-amber-500/20" : "border-border-subtle"
-          }`}
-          title="Click para filtrar solo inactivas"
-        >
-          <div>
-            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 m-0">Inactivas</p>
-            <h3 className="text-2xl font-black text-amber-700 dark:text-amber-400 mt-1 m-0">
-              {loading ? <Loader2 size={20} className="animate-spin text-text-muted mt-1" /> : inactivasCount}
-            </h3>
-            <p className="text-[11px] text-text-secondary mt-1 m-0">Dadas de baja lógica</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-            <PowerOff size={24} />
-          </div>
-        </div>
-      </div>
+      <CategoryStatsCards
+        total={totalCategorias}
+        activas={activasCount}
+        inactivas={inactivasCount}
+        loading={loading}
+        filtroEstado={filtroEstado}
+        onFiltroEstadoChange={setFiltroEstado}
+      />
 
       {/* 2. Barra de Búsqueda y Filtros */}
-      <div className="p-4 rounded-2xl bg-surface border border-border-subtle shadow-xs flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-        {/* Buscador */}
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
-          <input
-            type="text"
-            value={busqueda}
-            onChange={handleSearchChange}
-            placeholder="Buscar por nombre, código o descripción..."
-            className="w-full pl-10 pr-9 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-xs text-text-primary placeholder:text-text-muted focus:bg-surface focus:border-primary outline-hidden transition-all"
-          />
-          {busqueda && (
-            <button
-              onClick={handleClearSearch}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary p-0.5"
-              title="Limpiar búsqueda"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-
-        {/* Filtros Dropdowns y Botón Actualizar */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Tipo */}
-          <div className="relative">
-            <select
-              value={filtroTipo}
-              onChange={(e) => setFiltroTipo(e.target.value)}
-              className="appearance-none pl-8 pr-8 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-xs font-semibold text-text-primary focus:bg-surface focus:border-primary outline-hidden cursor-pointer transition-all"
-            >
-              <option value="">Tipo: Todos</option>
-              <option value="reclamo">Reclamos</option>
-              <option value="comunicado">Comunicados</option>
-              <option value="ambos">Ambos</option>
-            </select>
-            <Filter size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
-          </div>
-
-          {/* Estado */}
-          <div className="relative">
-            <select
-              value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value)}
-              className="appearance-none pl-8 pr-8 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-xs font-semibold text-text-primary focus:bg-surface focus:border-primary outline-hidden cursor-pointer transition-all"
-            >
-              <option value="">Estado: Todos</option>
-              <option value="activo">Activas</option>
-              <option value="inactivo">Inactivas</option>
-            </select>
-            <Filter size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
-          </div>
-
-          <Button
-            onClick={() => fetchCategorias(busqueda, filtroTipo, filtroEstado)}
-            variant="outline"
-            size="sm"
-            loading={loading}
-            leftIcon={<RefreshCw size={13} />}
-            title="Actualizar listado"
-          >
-            Actualizar
-          </Button>
-        </div>
-      </div>
+      <CategoryFilterBar
+        busqueda={busqueda}
+        onBusquedaChange={setBusqueda}
+        onLimpiarBusqueda={() => setBusqueda("")}
+        filtroTipo={filtroTipo}
+        onFiltroTipoChange={setFiltroTipo}
+        filtroEstado={filtroEstado}
+        onFiltroEstadoChange={setFiltroEstado}
+        onRefresh={() => fetchCategorias()}
+        loading={loading}
+      />
 
       {/* 3. Tabla de Categorías */}
       <div className="bg-surface rounded-2xl border border-border-subtle shadow-xs overflow-hidden">
@@ -299,7 +207,7 @@ export default function CategoriesPanel() {
           <div className="p-6 text-center space-y-2">
             <p className="text-xs text-rose-600 font-semibold m-0">{error}</p>
             <Button
-              onClick={() => fetchCategorias(busqueda, filtroTipo, filtroEstado)}
+              onClick={() => fetchCategorias()}
               variant="outline"
               size="sm"
             >
@@ -459,56 +367,19 @@ export default function CategoriesPanel() {
         )}
       </div>
 
-      {/* 4. Modal Baja Lógica */}
-      {modalBaja && (
-        <ConfirmModal
-          isOpen={true}
-          onClose={() => setModalBaja(null)}
-          onConfirm={handleConfirmBaja}
-          title="¿Desactivar categoría?"
-          description={`Estás por dar de baja lógica a "${modalBaja.nombre}". La categoría ya no podrá seleccionarse para nuevos reportes, pero se preservarán intactos los reclamos y comunicados existentes asociados.`}
-          variant="warning"
-          confirmText="Desactivar Categoría"
-          cancelText="Cancelar"
-          loading={procesando}
-          loadingText="Desactivando..."
-          icon={<PowerOff size={20} />}
-        />
-      )}
-
-      {/* 5. Modal Reactivar */}
-      {modalReactivar && (
-        <ConfirmModal
-          isOpen={true}
-          onClose={() => setModalReactivar(null)}
-          onConfirm={handleConfirmReactivar}
-          title="¿Reactivar categoría?"
-          description={`Al reactivar "${modalReactivar.nombre}", volverá a estar disponible inmediatamente en el selector para ciudadanos e instituciones.`}
-          variant="success"
-          confirmText="Reactivar Categoría"
-          cancelText="Cancelar"
-          loading={procesando}
-          loadingText="Reactivando..."
-          icon={<Power size={20} />}
-        />
-      )}
-
-      {/* 6. Modal Eliminar */}
-      {modalEliminar && (
-        <ConfirmModal
-          isOpen={true}
-          onClose={() => setModalEliminar(null)}
-          onConfirm={handleConfirmEliminar}
-          title="¿Eliminar categoría definitivamente?"
-          description={`Esta acción intentará borrar permanentemente la categoría "${modalEliminar.nombre}". Si la categoría tiene reclamos, comunicados o asignaciones asociadas, el sistema rechazará la eliminación para preservar la integridad referencial.`}
-          variant="danger"
-          confirmText="Intentar Eliminación"
-          cancelText="Cancelar"
-          loading={procesando}
-          loadingText="Verificando..."
-          icon={<Trash2 size={20} />}
-        />
-      )}
+      {/* 4. Modales */}
+      <CategoryModals
+        modalBaja={modalBaja}
+        onCloseBaja={() => setModalBaja(null)}
+        onConfirmBaja={handleConfirmBaja}
+        modalReactivar={modalReactivar}
+        onCloseReactivar={() => setModalReactivar(null)}
+        onConfirmReactivar={handleConfirmReactivar}
+        modalEliminar={modalEliminar}
+        onCloseEliminar={() => setModalEliminar(null)}
+        onConfirmEliminar={handleConfirmEliminar}
+        procesando={procesando}
+      />
     </div>
   );
 }
