@@ -1,26 +1,6 @@
 /* ─────────────────────────────────────────
-   VARIABLES ADMIN / TOKENS
-───────────────────────────────────────── */
-
-:root {
-  --color-primary: #2D3A8C;
-  --color-primary-light: #f0f6ff;
-  --color-primary-border: #c8dff7;
-  --color-accent: #5BAAE8;
-  --color-warning: #F5C842;
-  --color-danger: #C0392B;
-  --color-danger-bg: #fee2e2;
-  --color-danger-border: #fecaca;
-  --color-success: #1A7A3C;
-  --color-border: #c8d4e8;
-  --color-bg: #f7faff;
-  --color-text: #1f2937;
-  --color-muted: #526174;
-  --color-label: #5a6778;
-}
-
-/* ─────────────────────────────────────────
-   PROFILE PAGE
+   PROFILE PAGE (Layout y Responsive)
+   Mantenido para compatibilidad con /profile
 ───────────────────────────────────────── */
 
 .profile-main-row {
