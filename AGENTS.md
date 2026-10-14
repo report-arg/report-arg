@@ -33,7 +33,7 @@ Reglas breves:
 3. Seguí las convenciones del área que editás. Reutilizá componentes existentes, evitá la duplicación de código, y **no crees componentes gigantes llenos de flags** para manejar distintos roles. Extraé las lógicas condicionales excesivas. Reutilizá `apiClient` para toda comunicación con el backend.
 4. Usá endpoints y campos confirmados en el backend. No inventes respuestas, cifras ni permisos. Los ejemplos de la página de catálogo deben quedar señalados como muestras.
 5. Mantené separados los reclamos ciudadanos y los comunicados institucionales. No presentes acciones o estados de uno como si pertenecieran al otro.
-6. Para reclamos, respetá los estados actuales (`Pendiente`, `En revisión`, `En proceso`, `Resuelto`, `Cancelado`) y el control de visibilidad público/privado. Revisá `src/utils/claimStatus.js` y el backend antes de modificar transiciones o textos de negocio.
+6. Para reclamos, respetá los estados actuales (`Pendiente`, `En revisión`, `En proceso`, `Resuelto`, `Cancelado`) y el control de visibilidad público/privado. Revisá `src/utils/reclamoStatus.js` y el backend antes de modificar transiciones o textos de negocio.
 7. No tomes IDs de usuario o ciudad enviados desde el navegador como autoridad para operaciones protegidas. El backend debe derivarlos de la autenticación.
 8. Las categorías son datos administrables. Resolvé su icono por código estable cuando esté disponible y usá el icono general para códigos nuevos o desconocidos; no dependas exclusivamente del nombre visible.
 9. Conservá los tokens visuales y el contraste. Usá los iconos propios para elementos distintivos de ReportARG y Lucide para acciones universales. No introduzcas emojis como iconografía de la interfaz.
@@ -130,10 +130,44 @@ Toda la interfaz debe mantener consistencia visual, accesible y responsive. Ante
    - Componentes base universales para etiquetas, roles, categorías y estados (con indicador dot).
    - Variantes semánticas: `'default'`, `'neutral'`, `'primary'`, `'success'`, `'danger'`, `'warning'`, `'info'`, `'outline'`.
    - Tamaños: `'sm'`, `'md'`, `'lg'`.
-   - Los componentes de dominio `ClaimStatusBadge` y `ClaimVisibilityBadge` implementan este estándar para los reclamos.
+   - Los componentes de dominio `ReclamoStatusBadge` y `ReclamoVisibilityBadge` implementan este estándar para los reclamos.
 
 6. **`ImageViewer` (`src/components/ui/ImageViewer.jsx`)**:
    - Visor lightbox modal para evidencias fotográficas y adjuntos sin recorte de imagen, con zoom natural y control por teclado.
 
 7. **`Select` (`src/components/ui/Select.jsx`)**:
-   - Selector desplegable accesible que sustituye los selectores rígidos nativos por menús flotantes estilizados con bordes redondeados (`rounded-2xl`), soporte para tema claro/oscuro, ícono indicador `ChevronDown` animado, navegación completa por teclado (Escape, Flechas, Enter, Espacio) y cierre por click exterior.
+   - Selector desplegable accesible que sustituye los selectores rígidos nativos por menús flotantes estilizados con bordes redondeados (`rounded-2xl`), soporte para tema claro/oscuro, ícono indicador `ChevronDown` animado, navegación completa por teclado (Escape, Flechas, Enter, Espacio) y cierre por click exterior.
+
+## Convención oficial de nomenclatura
+
+Para garantizar coherencia y evitar fragmentación idiomática en todo ReportARG, se establece la siguiente convención obligatoria:
+
+1. **Conceptos de negocio en español obligatorio:**
+   - Todas las entidades y conceptos del dominio deben nombrarse en español: `Reclamo`, `Institucion`, `Ciudadano`, `Usuario`, `Categoria`, `Comunicado`, `Solicitud`, `Ciudad`, `Notificacion`, `Comentario`.
+   - **Prohibición estricta:** No introduzcas variantes nuevas en inglés como `Claim`, `Institution`, `Citizen` o `Category` cuando te refieras a conceptos o entidades del dominio de ReportARG.
+2. **Patrones técnicos en inglés permitidos:**
+   - Se conservan en inglés los términos técnicos habituales de la industria, frameworks y librerías: `Modal`, `Table`, `Card`, `Form`, `FilterBar`, `Dashboard`, `Layout`, `Shell`, `Provider`, `Auth`, `Dropdown`, `Badge`, `Avatar`, `Step`, `StatsCards`.
+3. **Estructura y nomenclatura de componentes React:**
+   - Patrón: `[Entidad][Modificador][PatronTecnico]` en **PascalCase**.
+   - Ejemplos canónicos del proyecto:
+     - `ReclamoTable`, `ReclamoDetailModal`, `ReclamoFilterBar`, `ReclamoTimeline`, `ReclamoProgress`, `ReclamoStatsCards`, `ReclamoReassignModal`, `ReclamoFeedCard`.
+     - `InstitucionTable`, `InstitucionDetailModal`, `InstitucionApproveModal`, `InstitucionRejectModal`, `InstitucionAvatar`, `InstitucionFilterBar`, `InstitucionStatsCards`, `InstitucionReclamoCard`, `InstitucionRegister`.
+     - `UsuarioTable`, `UsuarioForm`, `UsuarioFilterBar`, `UsuarioAvatar`, `UsuarioPhotoUpload`, `UsuarioStatusModal`.
+     - `CategoriaPanel`, `CategoriaFilterBar`, `CategoriaModals`, `CategoriaStatsCards`, `CategoriaDropdown`.
+     - `ComunicadoFeedCard`.
+     - `CiudadMapView`.
+4. **Funciones, variables y hooks:**
+   - Nomenclatura en **camelCase**.
+   - Sin tildes ni caracteres especiales en nombres de archivos o identificadores.
+   - Ejemplos: `useInstituciones`, `useCategorias`, `useDebounce`, `reclamoStatus`.
+5. **Carpetas internas y de dominio:**
+   - Carpetas de dominio en español: `src/components/admin/instituciones/`, `src/components/admin/usuarios/`, `src/components/admin/categorias/`, `src/components/admin/reclamos/`, `src/components/reclamos/`.
+   - Carpetas técnicas o genéricas en inglés: `layout/`, `dashboard/`, `services/`, `hooks/`, `ui/`.
+6. **Rutas públicas del App Router (`src/app/`):**
+   - **Prohibición:** NO alterar los nombres de carpetas en `src/app/` que determinen URLs públicas del navegador (`/admin/users`, `/admin/institutions`, `/admin/categories`, `/register/citizen`, `/register/institution`). Las URLs públicas deben conservarse intactas para mantener compatibilidad y enlaces externos.
+7. **Contratos externos y persistencia:**
+   - **Prohibición:** No modificar contratos externos, endpoints REST (`/api/admin/usuarios`, `/api/instituciones`, etc.), métodos HTTP, parámetros de query o body, estructuras de respuesta JSON, columnas o tablas SQL, roles canónicos ni `ROLE_ALIASES` únicamente por motivos de nomenclatura interna.
+   - No eliminar aliases de compatibilidad (`usuario`, `citizen`, `institution`) ni migrar valores en base de datos sin una tarea de migración expresamente aprobada.
+8. **Mantenimiento y refactorizaciones:**
+   - **Obligación:** Reutilizá componentes y utilidades existentes antes de crear nuevos.
+   - **Obligación:** Al renombrar un archivo o componente, actualizá inmediatamente todos sus imports, exports, tests unitarios y referencias en documentación. No dejes archivos puente, duplicados ni código muerto.
