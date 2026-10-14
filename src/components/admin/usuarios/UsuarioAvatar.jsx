@@ -1,6 +1,6 @@
 "use client";
 
-export default function UserAvatar({ nombre, foto, email, rol }) {
+export default function UsuarioAvatar({ nombre, foto, email, rol }) {
   if (foto) {
     return (
       /* eslint-disable-next-line @next/next/no-img-element */

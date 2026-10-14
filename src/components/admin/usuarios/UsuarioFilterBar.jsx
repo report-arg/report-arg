@@ -3,7 +3,7 @@
 import { Search, X, Filter } from "lucide-react";
 import Button from "@/components/ui/Button";
 
-export default function UserFilterBar({
+export default function UsuarioFilterBar({
   busqueda = "",
   onBusquedaChange,
   onLimpiarBusqueda,

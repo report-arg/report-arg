@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { ArrowRight, ExternalLink } from "lucide-react";
-import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
+import ReclamoStatusBadge from "@/components/reclamos/ReclamoStatusBadge";
 import { tiempoRelativo } from "@/utils/dateFormatters";
 
-export default function DashboardRecentClaims({ ultimos = [] }) {
+export default function DashboardRecentReclamos({ ultimos = [] }) {
   return (
     <div className="p-5 sm:p-6 rounded-2xl bg-surface border border-border-subtle shadow-xs">
       <div className="flex items-center justify-between mb-4">
@@ -68,7 +68,7 @@ export default function DashboardRecentClaims({ ultimos = [] }) {
               </div>
 
               <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
-                <ClaimStatusBadge estado={r.estado} />
+                <ReclamoStatusBadge estado={r.estado} />
                 <Link
                   href="/admin/reclamos"
                   className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"

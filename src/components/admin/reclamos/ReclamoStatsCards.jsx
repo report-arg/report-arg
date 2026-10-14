@@ -2,7 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 
-export default function ClaimStatsCards({
+export default function ReclamoStatsCards({
   stats = {},
   loading = false,
   filtroEstado = "",

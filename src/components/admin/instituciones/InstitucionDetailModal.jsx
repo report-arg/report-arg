@@ -13,10 +13,10 @@ import {
 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
-import InstitutionAvatar from "./InstitutionAvatar";
+import InstitucionAvatar from "./InstitucionAvatar";
 import { formatearFecha } from "@/utils/dateFormatters";
 
-export default function InstitutionDetailModal({
+export default function InstitucionDetailModal({
   isOpen = false,
   onClose,
   institucion,
@@ -40,7 +40,7 @@ export default function InstitutionDetailModal({
       <div className="space-y-4">
         {/* Cabecera entidad */}
         <div className="p-4 rounded-xl bg-surface-subtle border border-border-subtle flex items-center gap-3">
-          <InstitutionAvatar
+          <InstitucionAvatar
             foto={institucion.foto_perfil}
             nombre={institucion.nombre}
             size="lg"

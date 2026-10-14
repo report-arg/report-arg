@@ -3,7 +3,7 @@
 import { CheckCircle } from "lucide-react";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
-export default function InstitutionApproveModal({
+export default function InstitucionApproveModal({
   isOpen = false,
   onClose,
   onConfirm,

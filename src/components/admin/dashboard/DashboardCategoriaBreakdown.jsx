@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
-export default function DashboardCategoryBreakdown({
+export default function DashboardCategoriaBreakdown({
   porCategoria = [],
   maxCategoriaCantidad = 1,
   totalReclamosCalculado = 0,

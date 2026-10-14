@@ -10,7 +10,7 @@ const ESTADOS = [
   { key: "rechazada", label: "Rechazadas" },
 ];
 
-export default function InstitutionFilterBar({
+export default function InstitucionFilterBar({
   busqueda = "",
   onBusquedaChange,
   onLimpiarBusqueda,

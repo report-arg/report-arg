@@ -2,7 +2,7 @@
 
 import { Layers, CheckCircle2, PowerOff, Loader2 } from "lucide-react";
 
-export default function CategoryStatsCards({
+export default function CategoriaStatsCards({
   total = 0,
   activas = 0,
   inactivas = 0,

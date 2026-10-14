@@ -3,7 +3,7 @@
 import { AlertTriangle, UserCheck, UserX } from "lucide-react";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
-export default function UserStatusModal({
+export default function UsuarioStatusModal({
   isOpen = false,
   onClose,
   onConfirm,

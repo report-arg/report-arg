@@ -3,7 +3,7 @@
 import { PowerOff, Power, Trash2 } from "lucide-react";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
-export default function CategoryModals({
+export default function CategoriaModals({
   modalBaja,
   onCloseBaja,
   onConfirmBaja,

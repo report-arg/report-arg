@@ -2,14 +2,14 @@
 
 import { Search, X, Filter } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { CLAIM_STATUSES } from "@/utils/claimStatus";
+import { CLAIM_STATUSES } from "@/utils/reclamoStatus";
 
 const ESTADOS_FILTRO = [
   { key: "", label: "Todos los estados" },
   ...CLAIM_STATUSES.map((s) => ({ key: s, label: s })),
 ];
 
-export default function ClaimFilterBar({
+export default function ReclamoFilterBar({
   busqueda = "",
   onBusquedaChange,
   onLimpiarBusqueda,

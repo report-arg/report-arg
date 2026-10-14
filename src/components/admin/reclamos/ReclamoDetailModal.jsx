@@ -12,11 +12,11 @@ import {
 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
-import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
-import ClaimTracking from "@/components/reclamos/ClaimTracking";
+import ReclamoStatusBadge from "@/components/reclamos/ReclamoStatusBadge";
+import ReclamoTracking from "@/components/reclamos/ReclamoTracking";
 import { formatearFecha } from "@/utils/dateFormatters";
 
-export default function ClaimDetailModal({
+export default function ReclamoDetailModal({
   isOpen = false,
   onClose,
   detalle,
@@ -50,8 +50,8 @@ export default function ClaimDetailModal({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-surface border border-border-subtle">
           <div>
             <div className="flex items-center gap-2">
-              <ClaimStatusBadge estado={detalle.estado} />
-              <ClaimTracking reclamo={detalle} advertir={true} />
+              <ReclamoStatusBadge estado={detalle.estado} />
+              <ReclamoTracking reclamo={detalle} advertir={true} />
             </div>
             <h3 className="text-base font-bold text-text-primary mt-2 m-0">
               {detalle.titulo}

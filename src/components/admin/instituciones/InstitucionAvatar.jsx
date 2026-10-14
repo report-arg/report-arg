@@ -2,7 +2,7 @@
 
 import { Building2 } from "lucide-react";
 
-export default function InstitutionAvatar({
+export default function InstitucionAvatar({
   foto = null,
   nombre = "",
   size = "md",

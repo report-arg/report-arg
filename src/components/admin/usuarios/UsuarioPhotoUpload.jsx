@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { User, Camera, Loader2 } from "lucide-react";
 
-export default function UserPhotoUpload({
+export default function UsuarioPhotoUpload({
   preview = null,
   uploading = false,
   onFileSelect,

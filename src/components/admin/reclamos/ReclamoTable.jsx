@@ -13,11 +13,11 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
-import ClaimStatusBadge from "@/components/reclamos/ClaimStatusBadge";
+import ReclamoStatusBadge from "@/components/reclamos/ReclamoStatusBadge";
 import { getCategoryIcon } from "@/components/brand/icons";
 import { tiempoRelativo } from "@/utils/dateFormatters";
 
-export default function ClaimTable({
+export default function ReclamoTable({
   reclamos = [],
   loading = false,
   pagina = 1,
@@ -122,7 +122,7 @@ export default function ClaimTable({
 
                   {/* Estado */}
                   <td className="py-3.5 px-4 whitespace-nowrap">
-                    <ClaimStatusBadge estado={r.estado} />
+                    <ReclamoStatusBadge estado={r.estado} />
                   </td>
 
                   {/* Acciones */}
@@ -166,7 +166,7 @@ export default function ClaimTable({
                 <span className="font-mono text-xs font-bold text-text-muted">
                   #{String(r.id).padStart(4, "0")}
                 </span>
-                <ClaimStatusBadge estado={r.estado} />
+                <ReclamoStatusBadge estado={r.estado} />
               </div>
 
               <h4 className="font-semibold text-text-primary text-sm m-0">

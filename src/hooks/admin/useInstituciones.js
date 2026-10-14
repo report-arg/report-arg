@@ -15,7 +15,7 @@ import { useDebounce } from "@/hooks/useDebounce";
  * @param {boolean} [options.fetchStats=true] - Si debe consultar las estadísticas globales
  * @param {number} [options.limite=15] - Cantidad de registros por página
  */
-export function useInstitutions({
+export function useInstituciones({
   filtroInicialEstado = "todos",
   fetchStats = true,
   limite = 15,
@@ -239,4 +239,4 @@ export function useInstitutions({
   };
 }
 
-export default useInstitutions;
+export default useInstituciones;

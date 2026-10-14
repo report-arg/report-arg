@@ -3,7 +3,7 @@
 import { Search, X, Filter, RefreshCw } from "lucide-react";
 import Button from "@/components/ui/Button";
 
-export default function CategoryFilterBar({
+export default function CategoriaFilterBar({
   busqueda = "",
   onBusquedaChange,
   onLimpiarBusqueda,

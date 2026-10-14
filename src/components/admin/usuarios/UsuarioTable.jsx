@@ -18,9 +18,9 @@ import {
 import apiClient from "@/services/apiClient";
 import Button from "@/components/ui/Button";
 import { useDebounce } from "@/hooks/useDebounce";
-import UserAvatar from "./UserAvatar";
-import UserFilterBar from "./UserFilterBar";
-import UserStatusModal from "./UserStatusModal";
+import UsuarioAvatar from "./UsuarioAvatar";
+import UsuarioFilterBar from "./UsuarioFilterBar";
+import UsuarioStatusModal from "./UsuarioStatusModal";
 
 const ROL_CONFIG = {
   admin: {
@@ -40,7 +40,7 @@ const ROL_CONFIG = {
   },
 };
 
-export default function UserTable() {
+export default function UsuarioTable() {
   const router = useRouter();
   const { data: session } = useSession();
   const currentUserId = Number(session?.user?.id || 0);
@@ -223,7 +223,7 @@ export default function UserTable() {
   return (
     <div className="space-y-4">
       {/* 1. Barra de Filtros y Búsqueda */}
-      <UserFilterBar
+      <UsuarioFilterBar
         busqueda={busqueda}
         onBusquedaChange={handleBusquedaChange}
         onLimpiarBusqueda={handleLimpiarBusqueda}
@@ -306,7 +306,7 @@ export default function UserTable() {
                         {/* Usuario */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
-                            <UserAvatar
+                            <UsuarioAvatar
                               nombre={u.nombre}
                               foto={u.foto}
                               email={u.email}
@@ -412,7 +412,7 @@ export default function UserTable() {
                   <div key={u.id} className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <UserAvatar
+                        <UsuarioAvatar
                           nombre={u.nombre}
                           foto={u.foto}
                           email={u.email}
@@ -515,7 +515,7 @@ export default function UserTable() {
       </div>
 
       {/* 3. Modal de Inhabilitación / Rehabilitación */}
-      <UserStatusModal
+      <UsuarioStatusModal
         isOpen={modalAccion.isOpen}
         onClose={() => setModalAccion((prev) => ({ ...prev, isOpen: false }))}
         onConfirm={confirmarCambioEstado}

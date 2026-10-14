@@ -18,9 +18,9 @@ import { getCategoryIcon } from "@/components/brand/icons";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 
-import CategoryStatsCards from "./CategoryStatsCards";
-import CategoryFilterBar from "./CategoryFilterBar";
-import CategoryModals from "./CategoryModals";
+import CategoriaStatsCards from "./CategoriaStatsCards";
+import CategoriaFilterBar from "./CategoriaFilterBar";
+import CategoriaModals from "./CategoriaModals";
 
 const TIPO_CONFIG = {
   reclamo: {
@@ -37,7 +37,7 @@ const TIPO_CONFIG = {
   },
 };
 
-export default function CategoriesPanel() {
+export default function CategoriaPanel() {
   const router = useRouter();
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -179,7 +179,7 @@ export default function CategoriesPanel() {
   return (
     <div className="space-y-6">
       {/* 1. Tarjetas KPI */}
-      <CategoryStatsCards
+      <CategoriaStatsCards
         total={totalCategorias}
         activas={activasCount}
         inactivas={inactivasCount}
@@ -189,7 +189,7 @@ export default function CategoriesPanel() {
       />
 
       {/* 2. Barra de Búsqueda y Filtros */}
-      <CategoryFilterBar
+      <CategoriaFilterBar
         busqueda={busqueda}
         onBusquedaChange={setBusqueda}
         onLimpiarBusqueda={() => setBusqueda("")}
@@ -368,7 +368,7 @@ export default function CategoriesPanel() {
       </div>
 
       {/* 4. Modales */}
-      <CategoryModals
+      <CategoriaModals
         modalBaja={modalBaja}
         onCloseBaja={() => setModalBaja(null)}
         onConfirmBaja={handleConfirmBaja}

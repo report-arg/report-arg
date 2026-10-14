@@ -2,7 +2,7 @@
 
 import { Building2, CheckCircle2, Clock } from "lucide-react";
 
-export default function InstitutionStatsCards({ stats = {}, loading = false }) {
+export default function InstitucionStatsCards({ stats = {}, loading = false }) {
   const cards = [
     {
       label: "TOTAL REGISTRADAS",

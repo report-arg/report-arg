@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import Button from "@/components/ui/Button";
-import UserPhotoUpload from "./UserPhotoUpload";
+import UsuarioPhotoUpload from "./UsuarioPhotoUpload";
 
 const rolesOpciones = [
   { value: "ciudadano", label: "Ciudadano", desc: "Acceso comunitario regular (feed, mapas, reportes)" },
@@ -19,7 +19,7 @@ const rolesOpciones = [
   { value: "admin", label: "Administrador", desc: "Acceso total de supervisión y gestión de plataforma" },
 ];
 
-export default function UserForm({ usuarioId = null }) {
+export default function UsuarioForm({ usuarioId = null }) {
   const router = useRouter();
   const { data: session } = useSession();
   const currentUserId = Number(session?.user?.id || 0);
@@ -226,7 +226,7 @@ export default function UserForm({ usuarioId = null }) {
       >
         {/* Cabecera visual del formulario con avatar */}
         <div className="flex flex-col sm:flex-row items-center gap-5 pb-6 border-b border-border-subtle">
-          <UserPhotoUpload
+          <UsuarioPhotoUpload
             preview={preview}
             uploading={uploadingFoto}
             onFileSelect={handleFoto}

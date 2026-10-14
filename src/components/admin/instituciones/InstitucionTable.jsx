@@ -13,15 +13,15 @@ import {
   Loader2,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { useInstitutions } from "@/hooks/admin/useInstitutions";
-import InstitutionAvatar from "./InstitutionAvatar";
-import InstitutionStatsCards from "./InstitutionStatsCards";
-import InstitutionFilterBar from "./InstitutionFilterBar";
-import InstitutionDetailModal from "./InstitutionDetailModal";
-import InstitutionApproveModal from "./InstitutionApproveModal";
-import InstitutionRejectModal from "./InstitutionRejectModal";
+import { useInstituciones } from "@/hooks/admin/useInstituciones";
+import InstitucionAvatar from "./InstitucionAvatar";
+import InstitucionStatsCards from "./InstitucionStatsCards";
+import InstitucionFilterBar from "./InstitucionFilterBar";
+import InstitucionDetailModal from "./InstitucionDetailModal";
+import InstitucionApproveModal from "./InstitucionApproveModal";
+import InstitucionRejectModal from "./InstitucionRejectModal";
 
-export default function InstitutionTable() {
+export default function InstitucionTable() {
   const {
     instituciones,
     stats,
@@ -48,15 +48,15 @@ export default function InstitutionTable() {
     procesandoAccion,
     verificarInstitucion,
     rechazarInstitucion,
-  } = useInstitutions({ filtroInicialEstado: "todos", fetchStats: true });
+  } = useInstituciones({ filtroInicialEstado: "todos", fetchStats: true });
 
   return (
     <div className="space-y-6">
       {/* 1. Tarjetas de Métricas Institucionales */}
-      <InstitutionStatsCards stats={stats} loading={loadingStats} />
+      <InstitucionStatsCards stats={stats} loading={loadingStats} />
 
       {/* 2. Barra de Búsqueda y Filtros */}
-      <InstitutionFilterBar
+      <InstitucionFilterBar
         busqueda={busqueda}
         onBusquedaChange={setBusqueda}
         onLimpiarBusqueda={limpiarBusqueda}
@@ -145,7 +145,7 @@ export default function InstitutionTable() {
                         {/* Institución */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
-                            <InstitutionAvatar
+                            <InstitucionAvatar
                               foto={inst.foto_perfil}
                               nombre={inst.nombre}
                               size="md"
@@ -259,7 +259,7 @@ export default function InstitutionTable() {
                   <div key={inst.id} className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <InstitutionAvatar
+                        <InstitucionAvatar
                           foto={inst.foto_perfil}
                           nombre={inst.nombre}
                           size="md"
@@ -371,7 +371,7 @@ export default function InstitutionTable() {
       </div>
 
       {/* 4. Modales Compartidos */}
-      <InstitutionDetailModal
+      <InstitucionDetailModal
         isOpen={Boolean(modalDetalle)}
         onClose={() => setModalDetalle(null)}
         institucion={modalDetalle}
@@ -383,7 +383,7 @@ export default function InstitutionTable() {
         }}
       />
 
-      <InstitutionApproveModal
+      <InstitucionApproveModal
         isOpen={Boolean(modalAprobar)}
         onClose={() => setModalAprobar(null)}
         onConfirm={() => verificarInstitucion(modalAprobar)}
@@ -391,7 +391,7 @@ export default function InstitutionTable() {
         loading={procesandoAccion}
       />
 
-      <InstitutionRejectModal
+      <InstitucionRejectModal
         isOpen={Boolean(modalRechazar)}
         onClose={() => setModalRechazar(null)}
         onConfirm={(motivo) => rechazarInstitucion(modalRechazar, motivo)}

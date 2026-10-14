@@ -4,7 +4,7 @@ import { ArrowRightLeft, Loader2, AlertTriangle } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 
-export default function ClaimReassignModal({
+export default function ReclamoReassignModal({
   isOpen = false,
   onClose,
   reclamo,

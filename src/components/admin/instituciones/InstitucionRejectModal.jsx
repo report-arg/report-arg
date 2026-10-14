@@ -4,7 +4,7 @@ import { useState } from "react";
 import { XCircle } from "lucide-react";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
-export default function InstitutionRejectModal({
+export default function InstitucionRejectModal({
   isOpen = false,
   onClose,
   onConfirm,
