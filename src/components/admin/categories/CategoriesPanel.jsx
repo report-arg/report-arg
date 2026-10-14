@@ -55,8 +55,20 @@ export default function CategoriesPanel() {
   const [modalEliminar, setModalEliminar] = useState(null);
   const [procesando, setProcesando] = useState(false);
 
+  // Salvaguardas de ciclo de vida y condiciones de carrera
+  const isMountedRef = useRef(true);
+  const reqIdRef = useRef(0);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const fetchCategorias = useCallback(
     async (search = debouncedBusqueda, tipo = filtroTipo, estado = filtroEstado) => {
+      const currentReqId = ++reqIdRef.current;
       setLoading(true);
       setError("");
       try {
@@ -66,18 +78,24 @@ export default function CategoriesPanel() {
         if (estado) params.append("estado", estado);
 
         const res = await apiClient.get(`/admin/categorias?${params.toString()}`);
+
+        if (!isMountedRef.current || currentReqId !== reqIdRef.current) return;
+
         if (res.data?.ok) {
           setCategorias(res.data.data || []);
         } else {
           setError(res.data?.mensaje || "Error al cargar categorías");
         }
       } catch (err) {
+        if (!isMountedRef.current || currentReqId !== reqIdRef.current) return;
         setError(
           err.response?.data?.mensaje ||
             "No se pudo conectar con el servidor para consultar categorías."
         );
       } finally {
-        setLoading(false);
+        if (isMountedRef.current && currentReqId === reqIdRef.current) {
+          setLoading(false);
+        }
       }
     },
     [debouncedBusqueda, filtroTipo, filtroEstado]
@@ -106,7 +124,7 @@ export default function CategoriesPanel() {
       const res = await apiClient.patch(`/admin/categorias/${modalBaja.id}/baja`);
       if (res.data?.ok) {
         toast.success(`Categoría "${modalBaja.nombre}" desactivada correctamente.`);
-        setModalBaja(null);
+        if (isMountedRef.current) setModalBaja(null);
         await fetchCategorias();
       } else {
         toast.error(res.data?.mensaje || "Error al desactivar categoría.");
@@ -114,7 +132,7 @@ export default function CategoriesPanel() {
     } catch (err) {
       toast.error(err.response?.data?.mensaje || "Error al desactivar categoría.");
     } finally {
-      setProcesando(false);
+      if (isMountedRef.current) setProcesando(false);
     }
   }
 
@@ -125,7 +143,7 @@ export default function CategoriesPanel() {
       const res = await apiClient.patch(`/admin/categorias/${modalReactivar.id}/reactivar`);
       if (res.data?.ok) {
         toast.success(`Categoría "${modalReactivar.nombre}" activada correctamente.`);
-        setModalReactivar(null);
+        if (isMountedRef.current) setModalReactivar(null);
         await fetchCategorias();
       } else {
         toast.error(res.data?.mensaje || "Error al activar categoría.");
@@ -133,7 +151,7 @@ export default function CategoriesPanel() {
     } catch (err) {
       toast.error(err.response?.data?.mensaje || "Error al activar categoría.");
     } finally {
-      setProcesando(false);
+      if (isMountedRef.current) setProcesando(false);
     }
   }
 
@@ -144,7 +162,7 @@ export default function CategoriesPanel() {
       const res = await apiClient.delete(`/admin/categorias/${modalEliminar.id}`);
       if (res.data?.ok) {
         toast.success(`Categoría "${modalEliminar.nombre}" eliminada correctamente.`);
-        setModalEliminar(null);
+        if (isMountedRef.current) setModalEliminar(null);
         await fetchCategorias();
       } else {
         toast.error(res.data?.mensaje || "Error al eliminar categoría.");
@@ -152,9 +170,9 @@ export default function CategoriesPanel() {
     } catch (err) {
       const msg = err.response?.data?.mensaje || "Error al eliminar categoría.";
       toast.error(msg, { duration: 5000 });
-      setModalEliminar(null);
+      if (isMountedRef.current) setModalEliminar(null);
     } finally {
-      setProcesando(false);
+      if (isMountedRef.current) setProcesando(false);
     }
   }
 

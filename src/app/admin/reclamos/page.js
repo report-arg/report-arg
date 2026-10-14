@@ -48,24 +48,38 @@ export default function AdminReclamosPage() {
   const [errorReasignacion, setErrorReasignacion] = useState("");
   const [guardandoReasignacion, setGuardandoReasignacion] = useState(false);
 
+  // Salvaguardas de ciclo de vida y condiciones de carrera
+  const isMountedRef = useRef(true);
+  const reqIdRef = useRef(0);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Cargar estadísticas
   const fetchStats = useCallback(async () => {
     setLoadingStats(true);
     try {
       const res = await apiClient.get("/admin/reclamos/stats");
-      if (res.data?.ok) {
+      if (isMountedRef.current && res.data?.ok) {
         setStats(res.data.data);
       }
     } catch {
       // stats fallback silencioso
     } finally {
-      setLoadingStats(false);
+      if (isMountedRef.current) {
+        setLoadingStats(false);
+      }
     }
   }, []);
 
-  // Cargar reclamos paginados
+  // Cargar reclamos paginados con protección contra carreras
   const fetchReclamos = useCallback(
-    async (page = pagina, estado = filtroEstado, search = debouncedBusqueda) => {
+    async (page = 1, estado = filtroEstado, search = debouncedBusqueda) => {
+      const currentReqId = ++reqIdRef.current;
       setLoading(true);
       setError("");
       try {
@@ -77,23 +91,30 @@ export default function AdminReclamosPage() {
         if (search && search.trim()) params.set("busqueda", search.trim());
 
         const res = await apiClient.get(`/admin/reclamos/lista?${params.toString()}`);
+
+        if (!isMountedRef.current || currentReqId !== reqIdRef.current) return;
+
         if (res.data?.ok) {
           setReclamos(res.data.data || []);
           setTotal(res.data.total || 0);
           setTotalPag(res.data.totalPaginas || 1);
+          setPagina(page);
         } else {
           setError(res.data?.mensaje || "Error al cargar la lista de reclamos.");
         }
       } catch (err) {
+        if (!isMountedRef.current || currentReqId !== reqIdRef.current) return;
         setError(
           err.response?.data?.mensaje ||
             "No se pudo conectar con el servidor para consultar los reclamos."
         );
       } finally {
-        setLoading(false);
+        if (isMountedRef.current && currentReqId === reqIdRef.current) {
+          setLoading(false);
+        }
       }
     },
-    [pagina, filtroEstado, debouncedBusqueda]
+    [filtroEstado, debouncedBusqueda]
   );
 
   // Cargar instituciones verificadas para reasignación
@@ -102,13 +123,15 @@ export default function AdminReclamosPage() {
     setLoadingInstituciones(true);
     try {
       const res = await apiClient.get("/admin/instituciones?estado=verificada");
-      if (res.data?.ok) {
+      if (isMountedRef.current && res.data?.ok) {
         setInstituciones(res.data.data || []);
       }
     } catch {
       toast.error("Error al cargar lista de instituciones para reasignar.");
     } finally {
-      setLoadingInstituciones(false);
+      if (isMountedRef.current) {
+        setLoadingInstituciones(false);
+      }
     }
   };
 
@@ -140,13 +163,15 @@ export default function AdminReclamosPage() {
   const abrirDetalle = async (id) => {
     try {
       const res = await apiClient.get(`/admin/reclamos/${id}`);
-      if (res.data?.ok) {
+      if (isMountedRef.current && res.data?.ok) {
         setDetalle(res.data.data);
-      } else {
+      } else if (isMountedRef.current) {
         toast.error(res.data?.mensaje || "Error al cargar el detalle del reclamo.");
       }
     } catch (err) {
-      toast.error(err.response?.data?.mensaje || "No se pudo consultar el detalle.");
+      if (isMountedRef.current) {
+        toast.error(err.response?.data?.mensaje || "No se pudo consultar el detalle.");
+      }
     }
   };
 
@@ -183,21 +208,27 @@ export default function AdminReclamosPage() {
       if (res.data?.ok) {
         toast.success("Reclamo reasignado exitosamente con registro en el historial.");
         const recId = modalReasignar.id;
-        setModalReasignar(null);
+        if (isMountedRef.current) {
+          setModalReasignar(null);
+        }
         if (detalle && detalle.id === recId) {
           await abrirDetalle(recId);
         }
         await fetchReclamos(pagina, filtroEstado, debouncedBusqueda);
         await fetchStats();
-      } else {
+      } else if (isMountedRef.current) {
         setErrorReasignacion(res.data?.mensaje || "Error al reasignar institución.");
       }
     } catch (err) {
-      setErrorReasignacion(
-        err.response?.data?.mensaje || "Error al procesar la reasignación."
-      );
+      if (isMountedRef.current) {
+        setErrorReasignacion(
+          err.response?.data?.mensaje || "Error al procesar la reasignación."
+        );
+      }
     } finally {
-      setGuardandoReasignacion(false);
+      if (isMountedRef.current) {
+        setGuardandoReasignacion(false);
+      }
     }
   };
 

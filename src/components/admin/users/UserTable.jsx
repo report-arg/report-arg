@@ -68,70 +68,100 @@ export default function UserTable() {
     error: "",
   });
 
-  const fetchUsuarios = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const params = new URLSearchParams();
-      if (debouncedBusqueda) params.append("busqueda", debouncedBusqueda);
-      if (filtroRol !== "Todos") params.append("rol", filtroRol);
-      if (filtroEstado !== "Todos") params.append("estado", filtroEstado);
-      params.append("pagina", String(pagina));
-      params.append("limite", String(limite));
+  // Salvaguardas de ciclo de vida y condiciones de carrera
+  const isMountedRef = useRef(true);
+  const reqIdRef = useRef(0);
 
-      const res = await apiClient.get(`/admin/usuarios?${params.toString()}`);
-      const data = res.data;
-      if (data?.ok) {
-        setUsuarios(data.data || []);
-        setTotal(Number(data.total || 0));
-        setTotalPaginas(Number(data.totalPaginas || 1));
-      } else {
-        setError(data?.mensaje || "Error al cargar la lista de usuarios.");
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const fetchUsuarios = useCallback(
+    async (
+      p = 1,
+      search = debouncedBusqueda,
+      rol = filtroRol,
+      estado = filtroEstado
+    ) => {
+      const currentReqId = ++reqIdRef.current;
+      setLoading(true);
+      setError("");
+      try {
+        const params = new URLSearchParams();
+        if (search && search.trim()) params.append("busqueda", search.trim());
+        if (rol !== "Todos") params.append("rol", rol);
+        if (estado !== "Todos") params.append("estado", estado);
+        params.append("pagina", String(p));
+        params.append("limite", String(limite));
+
+        const res = await apiClient.get(`/admin/usuarios?${params.toString()}`);
+
+        if (!isMountedRef.current || currentReqId !== reqIdRef.current) return;
+
+        const data = res.data;
+        if (data?.ok) {
+          setUsuarios(data.data || []);
+          setTotal(Number(data.total || 0));
+          setTotalPaginas(Number(data.totalPaginas || 1));
+          setPagina(p);
+        } else {
+          setError(data?.mensaje || "Error al cargar la lista de usuarios.");
+        }
+      } catch {
+        if (!isMountedRef.current || currentReqId !== reqIdRef.current) return;
+        setError("No se pudo conectar con el servidor para consultar usuarios.");
+      } finally {
+        if (isMountedRef.current && currentReqId === reqIdRef.current) {
+          setLoading(false);
+        }
       }
-    } catch (err) {
-      setError("No se pudo conectar con el servidor para consultar usuarios.");
-    } finally {
-      setLoading(false);
-    }
-  }, [debouncedBusqueda, filtroRol, filtroEstado, pagina, limite]);
+    },
+    [debouncedBusqueda, filtroRol, filtroEstado, limite]
+  );
 
   // Efecto cuando cambian los filtros
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
-      fetchUsuarios();
+      fetchUsuarios(1, debouncedBusqueda, filtroRol, filtroEstado);
       return;
     }
-    fetchUsuarios();
-  }, [debouncedBusqueda, filtroRol, filtroEstado, pagina, fetchUsuarios]);
+    setPagina(1);
+    fetchUsuarios(1, debouncedBusqueda, filtroRol, filtroEstado);
+  }, [debouncedBusqueda, filtroRol, filtroEstado, fetchUsuarios]);
 
   // Manejar búsqueda y filtros reseteando página
   const handleBusquedaChange = (val) => {
     setBusqueda(val);
-    setPagina(1);
   };
 
   const handleLimpiarBusqueda = () => {
     setBusqueda("");
-    setPagina(1);
   };
 
   const handleFiltroRolChange = (val) => {
     setFiltroRol(val);
-    setPagina(1);
   };
 
   const handleFiltroEstadoChange = (val) => {
     setFiltroEstado(val);
-    setPagina(1);
   };
 
   const handleLimpiarTodo = () => {
     setBusqueda("");
     setFiltroRol("Todos");
     setFiltroEstado("Todos");
-    setPagina(1);
+  };
+
+  // Manejar cambio de página
+  const handleCambiarPagina = (nuevaPag) => {
+    const clamped = Math.max(1, Math.min(nuevaPag, totalPaginas));
+    setPagina(clamped);
+    fetchUsuarios(clamped, debouncedBusqueda, filtroRol, filtroEstado);
   };
 
   // Abrir modal de confirmación con salvaguarda de auto-inhabilitación
@@ -163,11 +193,13 @@ export default function UserTable() {
       });
 
       if (res.data?.ok) {
-        setUsuarios((prev) =>
-          prev.map((u) => (u.id === usuario.id ? { ...u, estado: nuevoEstado } : u))
-        );
-        setModalAccion({ isOpen: false, usuario: null, tipo: "inhabilitar", loading: false, error: "" });
-      } else {
+        if (isMountedRef.current) {
+          setUsuarios((prev) =>
+            prev.map((u) => (u.id === usuario.id ? { ...u, estado: nuevoEstado } : u))
+          );
+          setModalAccion({ isOpen: false, usuario: null, tipo: "inhabilitar", loading: false, error: "" });
+        }
+      } else if (isMountedRef.current) {
         setModalAccion((prev) => ({
           ...prev,
           loading: false,
@@ -175,11 +207,13 @@ export default function UserTable() {
         }));
       }
     } catch (err) {
-      setModalAccion((prev) => ({
-        ...prev,
-        loading: false,
-        error: err.response?.data?.mensaje || "Ocurrió un error al procesar la solicitud.",
-      }));
+      if (isMountedRef.current) {
+        setModalAccion((prev) => ({
+          ...prev,
+          loading: false,
+          error: err.response?.data?.mensaje || "Ocurrió un error al procesar la solicitud.",
+        }));
+      }
     }
   }
 
@@ -456,7 +490,7 @@ export default function UserTable() {
                 </span>
                 <div className="flex items-center gap-1.5">
                   <Button
-                    onClick={() => setPagina((p) => Math.max(p - 1, 1))}
+                    onClick={() => handleCambiarPagina(pagina - 1)}
                     disabled={pagina <= 1}
                     variant="outline"
                     size="sm"
@@ -465,7 +499,7 @@ export default function UserTable() {
                     Anterior
                   </Button>
                   <Button
-                    onClick={() => setPagina((p) => Math.min(p + 1, totalPaginas))}
+                    onClick={() => handleCambiarPagina(pagina + 1)}
                     disabled={pagina >= totalPaginas}
                     variant="outline"
                     size="sm"

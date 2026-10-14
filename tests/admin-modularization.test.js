@@ -1,11 +1,16 @@
 import React from "react";
 import { render, screen, fireEvent, act, renderHook } from "@testing-library/react";
+import apiClient from "@/services/apiClient";
 import useDebounce from "@/hooks/useDebounce";
+import useInstitutions from "@/hooks/admin/useInstitutions";
 import InstitutionRejectModal from "@/components/admin/institutions/InstitutionRejectModal";
 import InstitutionApproveModal from "@/components/admin/institutions/InstitutionApproveModal";
 import ClaimFilterBar from "@/components/admin/reclamos/ClaimFilterBar";
 import UserFilterBar from "@/components/admin/users/UserFilterBar";
 import CategoryFilterBar from "@/components/admin/categories/CategoryFilterBar";
+
+// Mock apiClient
+jest.mock("@/services/apiClient");
 
 // Mock next/navigation
 jest.mock("next/navigation", () => ({
@@ -17,10 +22,13 @@ jest.mock("next/navigation", () => ({
 describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades", () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    jest.clearAllMocks();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
     jest.useRealTimers();
   });
 
@@ -79,6 +87,62 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
         jest.advanceTimersByTime(150);
       });
       expect(result.current).toBe("v2");
+    });
+  });
+
+  describe("Concurrencia en useInstitutions: Prevención de condiciones de carrera", () => {
+    it("una búsqueda anterior lenta no debe sobreescribir los resultados de una búsqueda reciente rápida", async () => {
+      let resolverPeticionLenta;
+      const promesaLenta = new Promise((resolve) => {
+        resolverPeticionLenta = resolve;
+      });
+
+      apiClient.get.mockImplementation((url) => {
+        if (url.includes("busqueda=lenta")) {
+          return promesaLenta;
+        }
+        if (url.includes("busqueda=rapida")) {
+          return Promise.resolve({
+            data: {
+              ok: true,
+              data: [{ id: 99, nombre: "Institución Rápida" }],
+              total: 1,
+              totalPaginas: 1,
+            },
+          });
+        }
+        return Promise.resolve({ data: { ok: true, data: [] } });
+      });
+
+      const { result } = renderHook(() => useInstitutions({ fetchStats: false }));
+
+      // Disparar búsqueda lenta
+      act(() => {
+        result.current.cargarInstituciones(1, "lenta", "todos");
+      });
+
+      // Disparar búsqueda rápida que resuelve antes
+      await act(async () => {
+        await result.current.cargarInstituciones(1, "rapida", "todos");
+      });
+
+      // El resultado debe reflejar la búsqueda rápida
+      expect(result.current.instituciones).toEqual([{ id: 99, nombre: "Institución Rápida" }]);
+
+      // Ahora resuelve la petición lenta anterior tardía
+      await act(async () => {
+        resolverPeticionLenta({
+          data: {
+            ok: true,
+            data: [{ id: 1, nombre: "Institución Vieja Lenta" }],
+            total: 1,
+            totalPaginas: 1,
+          },
+        });
+      });
+
+      // El resultado NO debe haber sido sobreescrito por la petición lenta anterior
+      expect(result.current.instituciones).toEqual([{ id: 99, nombre: "Institución Rápida" }]);
     });
   });
 

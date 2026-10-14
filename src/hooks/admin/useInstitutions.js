@@ -40,25 +40,39 @@ export function useInstitutions({
   const [modalRechazar, setModalRechazar] = useState(null);
   const [procesandoAccion, setProcesandoAccion] = useState(false);
 
+  // Salvaguardas de ciclo de vida y condiciones de carrera
+  const isMountedRef = useRef(true);
+  const reqIdRef = useRef(0);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Cargar estadísticas globales
   const cargarStats = useCallback(async () => {
     if (!fetchStats) return;
     try {
       setLoadingStats(true);
       const res = await apiClient.get("/admin/instituciones/stats");
-      if (res.data?.ok && res.data?.data) {
+      if (isMountedRef.current && res.data?.ok && res.data?.data) {
         setStats(res.data.data);
       }
     } catch {
       // Error silencioso en estadísticas secundarias
     } finally {
-      setLoadingStats(false);
+      if (isMountedRef.current) {
+        setLoadingStats(false);
+      }
     }
   }, [fetchStats]);
 
-  // Cargar listado de instituciones
+  // Cargar listado de instituciones con control estricto de concurrencia
   const cargarInstituciones = useCallback(
-    async (p = pagina, search = debouncedBusqueda, estado = filtroEstado) => {
+    async (p = 1, search = debouncedBusqueda, estado = filtroEstado) => {
+      const currentReqId = ++reqIdRef.current;
       setLoading(true);
       setError("");
       try {
@@ -69,6 +83,10 @@ export function useInstitutions({
         params.append("limite", String(limite));
 
         const res = await apiClient.get(`/admin/instituciones?${params.toString()}`);
+
+        // Si la petición quedó desactualizada o el componente se desmontó, descartar
+        if (!isMountedRef.current || currentReqId !== reqIdRef.current) return;
+
         if (res.data?.ok) {
           setInstituciones(res.data.data || []);
           setTotalPaginas(res.data.totalPaginas || 1);
@@ -78,18 +96,21 @@ export function useInstitutions({
           setError(res.data?.mensaje || "Error al cargar las instituciones.");
         }
       } catch (err) {
+        if (!isMountedRef.current || currentReqId !== reqIdRef.current) return;
         setError(
           err.response?.data?.mensaje ||
             "No se pudo conectar con el servidor para consultar las instituciones."
         );
       } finally {
-        setLoading(false);
+        if (isMountedRef.current && currentReqId === reqIdRef.current) {
+          setLoading(false);
+        }
       }
     },
-    [pagina, debouncedBusqueda, filtroEstado, limite]
+    [limite, debouncedBusqueda, filtroEstado]
   );
 
-  // Efecto cuando cambia la búsqueda debounced o el filtro de estado
+  // Efecto cuando cambia la búsqueda debounced o el filtro de estado: reinicia a página 1
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) {
@@ -122,11 +143,13 @@ export function useInstitutions({
       const res = await apiClient.put(`/admin/instituciones/${institucion.id}/verificar`);
       if (res.data?.ok) {
         toast.success(`Institución "${institucion.nombre}" verificada correctamente.`);
-        setModalAprobar(null);
-        if (modalDetalle?.id === institucion.id) {
-          setModalDetalle((prev) =>
-            prev ? { ...prev, verificada: 1, fecha_verificacion: new Date().toISOString() } : null
-          );
+        if (isMountedRef.current) {
+          setModalAprobar(null);
+          if (modalDetalle?.id === institucion.id) {
+            setModalDetalle((prev) =>
+              prev ? { ...prev, verificada: 1, fecha_verificacion: new Date().toISOString() } : null
+            );
+          }
         }
         await cargarInstituciones(pagina, debouncedBusqueda, filtroEstado);
         await cargarStats();
@@ -139,7 +162,9 @@ export function useInstitutions({
       toast.error(err.response?.data?.mensaje || "Error al procesar la verificación.");
       return false;
     } finally {
-      setProcesandoAccion(false);
+      if (isMountedRef.current) {
+        setProcesandoAccion(false);
+      }
     }
   };
 
@@ -157,11 +182,13 @@ export function useInstitutions({
       });
       if (res.data?.ok) {
         toast.success(`Solicitud de "${institucion.nombre}" rechazada correctamente.`);
-        setModalRechazar(null);
-        if (modalDetalle?.id === institucion.id) {
-          setModalDetalle((prev) =>
-            prev ? { ...prev, verificada: 0, fecha_verificacion: null } : null
-          );
+        if (isMountedRef.current) {
+          setModalRechazar(null);
+          if (modalDetalle?.id === institucion.id) {
+            setModalDetalle((prev) =>
+              prev ? { ...prev, verificada: 0, fecha_verificacion: null } : null
+            );
+          }
         }
         await cargarInstituciones(pagina, debouncedBusqueda, filtroEstado);
         await cargarStats();
@@ -176,7 +203,9 @@ export function useInstitutions({
       toast.error(msg);
       return { ok: false, error: msg };
     } finally {
-      setProcesandoAccion(false);
+      if (isMountedRef.current) {
+        setProcesandoAccion(false);
+      }
     }
   };
 

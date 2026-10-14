@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { RefreshCw } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import DashboardKpis from "./DashboardKpis";
@@ -22,6 +22,15 @@ export default function DashboardStats() {
   const [ultimos, setUltimos] = useState([]);
   const [porCategoria, setPorCategoria] = useState([]);
   const [actividad, setActividad] = useState([]);
+  // Salvaguarda contra actualizaciones en componente desmontado
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const cargarDatos = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -38,6 +47,8 @@ export default function DashboardStats() {
         apiClient.get("/admin/reclamos/actividad-mensual").catch(() => ({ data: { ok: false } })),
       ]);
 
+      if (!isMountedRef.current) return;
+
       if (uRes.data?.ok) setStatsUsuarios(uRes.data.data);
       if (rRes.data?.ok) setStatsReclamos(rRes.data.data);
       if (iRes.data?.ok) setStatsInstituciones(iRes.data.data);
@@ -46,10 +57,14 @@ export default function DashboardStats() {
       if (actRes.data?.ok) setActividad(actRes.data.data || []);
     } catch (err) {
       console.error("Error al cargar datos del dashboard:", err);
-      setError("No se pudieron cargar todos los indicadores del dashboard.");
+      if (isMountedRef.current) {
+        setError("No se pudieron cargar todos los indicadores del dashboard.");
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, []);
 
