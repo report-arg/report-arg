@@ -9,7 +9,7 @@ import {
   Image as ImageIcon, User
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
-import ClaimVisibilityBadge from "@/components/reclamos/ClaimVisibilityBadge";
+import ReclamoVisibilityBadge from "@/components/reclamos/ReclamoVisibilityBadge";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import ImageViewer from "@/components/ui/ImageViewer";
 import { getCategoryIcon } from "@/components/brand/icons";
@@ -21,7 +21,7 @@ import {
   formatearDetalleHistorial 
 } from "@/utils/claimTimelineUtils";
 
-import ClaimTimeline from "@/components/reclamos/ClaimTimeline";
+import ReclamoTimeline from "@/components/reclamos/ReclamoTimeline";
 
 const NOMBRES_EVENTO = {
   CANCELACION: "CANCELACIÓN",
@@ -350,7 +350,7 @@ export default function InstitucionReclamoDetallePage() {
                   <CategoryIcon size={14} className="text-primary" /> {reclamo.categoriaNombre}
                 </span>
               )}
-              <ClaimVisibilityBadge visibilidad={reclamo.visibilidad} />
+              <ReclamoVisibilityBadge visibilidad={reclamo.visibilidad} />
               {reclamo.direccion && (
                 <span className="inline-flex items-center gap-1">
                   <MapPin size={14} className="text-text-muted" /> {reclamo.direccion}
@@ -420,7 +420,7 @@ export default function InstitucionReclamoDetallePage() {
               </div>
             ) : (
               <div>
-                <ClaimTimeline 
+                <ReclamoTimeline 
                   estadoActual={reclamo.estado}
                   variant="institution"
                   onStepClick={handlePasoClick}

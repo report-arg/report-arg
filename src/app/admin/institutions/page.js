@@ -1,6 +1,6 @@
 "use client";
 
-import InstitutionTable from "@/components/admin/institutions/InstitutionTable";
+import InstitucionTable from "@/components/admin/instituciones/InstitucionTable";
 import PageHeader from "@/components/layout/PageHeader";
 
 export default function InstitutionsPage() {
@@ -11,7 +11,7 @@ export default function InstitutionsPage() {
         description="Consultá y administrá las instituciones del sistema, su estado de verificación y datos de contacto."
       />
 
-      <InstitutionTable />
+      <InstitucionTable />
     </div>
   );
 }

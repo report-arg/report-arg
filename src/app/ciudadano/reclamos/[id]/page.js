@@ -28,7 +28,7 @@ import {
   getNodeStyle, 
   renderContenidoEvento 
 } from "@/utils/claimTimelineUtils";
-import ClaimTimeline from "@/components/reclamos/ClaimTimeline";
+import ReclamoTimeline from "@/components/reclamos/ReclamoTimeline";
 
 function getExplicacionEstado(estado) {
   switch (estado) {
@@ -440,7 +440,7 @@ export default function ReclamoDetallePage() {
             Seguimiento
           </h2>
 
-          <ClaimTimeline 
+          <ReclamoTimeline 
             estadoActual={reclamo.estado}
             tiempoEnEstado={tiempoEnEstado}
             variant="citizen"

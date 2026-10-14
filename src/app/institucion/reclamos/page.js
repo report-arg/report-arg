@@ -4,10 +4,10 @@ import { useState, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import apiClient from "@/services/apiClient";
 import EmptyState from "@/components/ui/EmptyState";
-import InstitutionClaimCard from "@/components/reclamos/InstitutionClaimCard";
+import InstitucionReclamoCard from "@/components/reclamos/InstitucionReclamoCard";
 import { Loader2, Filter, Inbox } from "lucide-react";
-import ClaimFilters from "@/components/reclamos/ClaimFilters";
-import { CLAIM_STATUSES } from "@/utils/claimStatus";
+import ReclamoFilters from "@/components/reclamos/ReclamoFilters";
+import { CLAIM_STATUSES } from "@/utils/reclamoStatus";
 import useCategorias from "@/hooks/useCategorias";
 import PageHeader from "@/components/layout/PageHeader";
 
@@ -67,7 +67,7 @@ function BandejaReclamos() {
         description="Gestioná y priorizá los reclamos asignados a tu institución."
       />
 
-      <ClaimFilters
+      <ReclamoFilters
         estado={estado}
         categoria={categoria}
         categorias={categorias}
@@ -106,7 +106,7 @@ function BandejaReclamos() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {reclamos.map((r) => (
-            <InstitutionClaimCard key={r.id} item={r} />
+            <InstitucionReclamoCard key={r.id} item={r} />
           ))}
         </div>
       )}

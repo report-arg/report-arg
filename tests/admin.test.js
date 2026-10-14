@@ -1,5 +1,5 @@
 import { getCategoryIcon, CategoryFallbackIcon } from '@/components/brand/icons';
-import { CLAIM_STATUSES, getEstadoConfig } from '@/utils/claimStatus';
+import { CLAIM_STATUSES, getEstadoConfig } from '@/utils/reclamoStatus';
 
 describe('Admin - Categorías y Supervisión de Reclamos', () => {
   describe('Categorías', () => {

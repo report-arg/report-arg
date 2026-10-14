@@ -1,5 +1,5 @@
-import InstitutionRegister from '@/components/auth/InstitutionRegister';
+import InstitucionRegister from '@/components/auth/InstitucionRegister';
 
 export default function RegisterInstitutionPage() {
-  return <InstitutionRegister />;
+  return <InstitucionRegister />;
 }

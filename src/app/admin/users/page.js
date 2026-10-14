@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserPlus, Users, UserCheck, UserX, Shield } from "lucide-react";
-import UserTable from "@/components/admin/users/UserTable";
+import UsuarioTable from "@/components/admin/usuarios/UsuarioTable";
 import PageHeader from "@/components/layout/PageHeader";
 import Button from "@/components/ui/Button";
 import apiClient from "@/services/apiClient";
@@ -75,7 +75,7 @@ export default function UsersPage() {
       </div>
 
       {/* Tabla de usuarios */}
-      <UserTable />
+      <UsuarioTable />
     </div>
   );
 }
