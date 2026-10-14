@@ -20,7 +20,7 @@ const FILTROS = [
   ...CLAIM_STATUSES.map(estado => ({ key: estado, label: estado }))
 ];
 
-export default function CiudadMapView() {
+export default function CiudadMapaView() {
   const router = useRouter();
   const [reclamos, setReclamos] = useState([]);
   const [loading, setLoading] = useState(true);

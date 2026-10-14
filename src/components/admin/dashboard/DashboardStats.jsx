@@ -7,9 +7,9 @@ import DashboardKpis from "./DashboardKpis";
 import DashboardAttentionBanner from "./DashboardAttentionBanner";
 import DashboardStatusDistribution from "./DashboardStatusDistribution";
 import DashboardActivityChart from "./DashboardActivityChart";
-import DashboardCategoriaBreakdown from "./DashboardCategoriaBreakdown";
+import DashboardCategoriaDistribucion from "./DashboardCategoriaDistribucion";
 import DashboardQuickShortcuts from "./DashboardQuickShortcuts";
-import DashboardRecentReclamos from "./DashboardRecentReclamos";
+import DashboardReclamosRecientes from "./DashboardReclamosRecientes";
 
 export default function DashboardStats() {
   const [loading, setLoading] = useState(true);
@@ -169,7 +169,7 @@ export default function DashboardStats() {
 
       {/* 4. DOS COLUMNAS: DISTRIBUCIÓN POR CATEGORÍA + ACCESOS RÁPIDOS */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <DashboardCategoriaBreakdown
+        <DashboardCategoriaDistribucion
           porCategoria={porCategoria}
           maxCategoriaCantidad={maxCategoriaCantidad}
           totalReclamosCalculado={totalReclamosCalculado}
@@ -178,7 +178,7 @@ export default function DashboardStats() {
       </div>
 
       {/* 5. ÚLTIMOS RECLAMOS: Supervisión Directa */}
-      <DashboardRecentReclamos ultimos={ultimos} />
+      <DashboardReclamosRecientes ultimos={ultimos} />
     </div>
   );
 }

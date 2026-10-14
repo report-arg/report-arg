@@ -155,7 +155,8 @@ Para garantizar coherencia y evitar fragmentación idiomática en todo ReportARG
      - `UsuarioTable`, `UsuarioForm`, `UsuarioFilterBar`, `UsuarioAvatar`, `UsuarioPhotoUpload`, `UsuarioStatusModal`.
      - `CategoriaPanel`, `CategoriaFilterBar`, `CategoriaModals`, `CategoriaStatsCards`, `CategoriaDropdown`.
      - `ComunicadoFeedCard`.
-     - `CiudadMapView`.
+     - `CiudadMapaView`.
+     - `DashboardReclamosRecientes`, `DashboardCategoriaDistribucion`.
 4. **Funciones, variables y hooks:**
    - Nomenclatura en **camelCase**.
    - Sin tildes ni caracteres especiales en nombres de archivos o identificadores.

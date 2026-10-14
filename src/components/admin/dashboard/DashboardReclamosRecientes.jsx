@@ -5,7 +5,7 @@ import { ArrowRight, ExternalLink } from "lucide-react";
 import ReclamoStatusBadge from "@/components/reclamos/ReclamoStatusBadge";
 import { tiempoRelativo } from "@/utils/dateFormatters";
 
-export default function DashboardRecentReclamos({ ultimos = [] }) {
+export default function DashboardReclamosRecientes({ ultimos = [] }) {
   return (
     <div className="p-5 sm:p-6 rounded-2xl bg-surface border border-border-subtle shadow-xs">
       <div className="flex items-center justify-between mb-4">
