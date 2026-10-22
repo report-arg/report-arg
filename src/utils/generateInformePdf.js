@@ -4,8 +4,25 @@ function asText(value) {
   return value === null || value === undefined ? 'Sin datos' : String(value);
 }
 
+async function loadLogo() {
+  try {
+    const response = await fetch('/logo.png');
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 export async function generateInformePdf({ informe, institucion }) {
   const { jsPDF } = await import('jspdf');
+  const logo = await loadLogo();
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -18,50 +35,50 @@ export async function generateInformePdf({ informe, institucion }) {
     y = 18;
   };
   const section = (title) => {
-    nextPage(15);
+    nextPage(18);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
     doc.setTextColor(15, 35, 66);
     doc.text(title, margin, y);
-    y += 8;
+    y += 11;
   };
   const rows = (items) => {
     items.forEach(([label, value]) => {
-      nextPage(8);
+      nextPage(13);
       doc.setFillColor(248, 250, 252);
-      doc.roundedRect(margin, y, pageWidth - margin * 2, 8, 1.5, 1.5, 'F');
+      doc.roundedRect(margin, y, pageWidth - margin * 2, 10, 1.5, 1.5, 'F');
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(71, 85, 105);
-      doc.text(label, margin + 3, y + 5.2);
+      doc.text(label, margin + 4, y + 6.4);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(15, 35, 66);
-      doc.text(asText(value), pageWidth - margin - 3, y + 5.2, { align: 'right' });
-      y += 10;
+      doc.text(asText(value), pageWidth - margin - 4, y + 6.4, { align: 'right' });
+      y += 14;
     });
   };
   const distribution = (title, items) => {
     section(title);
     const max = Math.max(...items.map((item) => item.cantidad), 1);
     items.forEach((item, index) => {
-      nextPage(12);
+      nextPage(21);
       const width = ((pageWidth - margin * 2 - 56) * item.cantidad) / max;
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(51, 65, 85);
-      doc.text(item.nombre, margin, y + 3);
+      doc.text(item.nombre, margin, y + 4);
       doc.setFillColor(226, 232, 240);
-      doc.roundedRect(margin + 52, y, pageWidth - margin * 2 - 56, 6, 1.5, 1.5, 'F');
+      doc.roundedRect(margin + 52, y, pageWidth - margin * 2 - 56, 7, 1.5, 1.5, 'F');
       doc.setFillColor(...COLORS[index % COLORS.length]);
-      doc.roundedRect(margin + 52, y, Math.max(width, 2), 6, 1.5, 1.5, 'F');
+      doc.roundedRect(margin + 52, y, Math.max(width, 2), 7, 1.5, 1.5, 'F');
       doc.setFont('helvetica', 'bold');
-      doc.text(String(item.cantidad), pageWidth - margin, y + 4.2, { align: 'right' });
-      y += 10;
+      doc.text(String(item.cantidad), pageWidth - margin, y + 5, { align: 'right' });
+      y += 14;
     });
   };
 
   doc.setFillColor(30, 58, 100);
-  doc.rect(0, 0, pageWidth, 34, 'F');
+  doc.rect(0, 0, pageWidth, 42, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
@@ -69,11 +86,16 @@ export async function generateInformePdf({ informe, institucion }) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.text(institucion || 'Institución', margin, 25);
-  y = 44;
+  if (logo) {
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(pageWidth - 54, 8, 38, 22, 3, 3, 'F');
+    doc.addImage(logo, 'PNG', pageWidth - 51, 11, 32, 16);
+  }
+  y = 54;
   doc.setTextColor(51, 65, 85);
   doc.setFontSize(10);
   doc.text(`Período analizado: ${informe.periodo.desde} al ${informe.periodo.hasta}`, margin, y);
-  y += 10;
+  y += 15;
 
   section('Indicadores principales');
   rows([
@@ -93,11 +115,12 @@ export async function generateInformePdf({ informe, institucion }) {
       nextPage(15);
       doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(15, 35, 66);
       const title = `${index + 1}. ${reclamo.titulo || 'Reclamo sin título'}`;
-      doc.text(doc.splitTextToSize(title, pageWidth - margin * 2), margin, y);
-      y += 5;
+      const titleLines = doc.splitTextToSize(title, pageWidth - margin * 2);
+      doc.text(titleLines, margin, y);
+      y += titleLines.length * 4.5 + 2;
       doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(71, 85, 105);
       doc.text(`${reclamo.categoriaNombre || 'Sin categoría'} - ${reclamo.estado} - ${reclamo.afectadosCount} afectados`, margin, y);
-      y += 8;
+      y += 12;
     });
   }
   const pageCount = doc.getNumberOfPages();
