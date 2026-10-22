@@ -54,6 +54,7 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({ nombre: "", apellido: "", email: "", provincia: "", ciudad: "", zona: "", telefono: "", direccion: "", tipo: "", foto: null });
   const [msg, setMsg] = useState({ type: "", text: "" });
+  const [confirmSave, setConfirmSave] = useState(false);
 
   const [pwdModal, setPwdModal] = useState(false);
   const [pwd, setPwd] = useState({ actual: "", nueva: "", confirmar: "" });
@@ -110,7 +111,7 @@ export default function ProfilePage() {
     }
   }
 
-  async function handleGuardar(e) {
+  function handleGuardar(e) {
     e.preventDefault();
     const formNormalizado = normalizarPerfil(form);
     const errorValidacion = validarPerfil(formNormalizado, perfil?.rol === "institucion");
@@ -118,7 +119,17 @@ export default function ProfilePage() {
       setMsg({ type: "error", text: errorValidacion });
       return;
     }
+    setConfirmSave(true);
+  }
 
+  async function confirmarGuardado() {
+    const formNormalizado = normalizarPerfil(form);
+    const errorValidacion = validarPerfil(formNormalizado, perfil?.rol === "institucion");
+    if (errorValidacion) {
+      setConfirmSave(false);
+      setMsg({ type: "error", text: errorValidacion });
+      return;
+    }
     setSaving(true);
     setMsg({ type: "", text: "" });
     try {
@@ -152,6 +163,7 @@ export default function ProfilePage() {
       setMsg({ type: "error", text: "Error de conexión" });
     } finally {
       setSaving(false);
+      setConfirmSave(false);
     }
   }
 
@@ -363,6 +375,22 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {confirmSave && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }} role="dialog" aria-modal="true" aria-labelledby="confirmar-guardado-perfil">
+          <div style={{ background: "#fff", borderRadius: 12, width: "100%", maxWidth: 420, padding: 28, boxShadow: "0 20px 50px rgba(15,23,42,0.2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+              <h3 id="confirmar-guardado-perfil" style={{ margin: 0, fontSize: 17, color: "#1a1a2e" }}>¿Guardar cambios?</h3>
+              <button type="button" onClick={() => setConfirmSave(false)} disabled={saving} aria-label="Cerrar confirmación" style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer" }}><X size={18} /></button>
+            </div>
+            <p style={{ margin: "12px 0 22px", color: "#64748b", fontSize: 13, lineHeight: 1.5 }}>Se actualizarán los datos de tu perfil. Podés revisarlos antes de confirmar.</p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button type="button" onClick={() => setConfirmSave(false)} disabled={saving} style={{ padding: "9px 16px", borderRadius: 8, border: "1px solid #e5e9f5", background: "#fff", color: "#334155", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
+              <button type="button" onClick={confirmarGuardado} disabled={saving} style={{ padding: "9px 16px", borderRadius: 8, border: "none", background: saving ? "#94a3b8" : "#2D3A8C", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}>{saving ? "Guardando..." : "Sí, guardar"}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal cambiar contraseña */}
       {pwdModal && (

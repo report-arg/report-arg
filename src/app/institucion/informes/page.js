@@ -11,6 +11,7 @@ import KpiCard from "@/components/informes/KpiCard";
 import StatusDonutChart from "@/components/informes/StatusDonutChart";
 import ClaimTrendChart from "@/components/informes/ClaimTrendChart";
 import CategoryDistributionChart from "@/components/informes/CategoryDistributionChart";
+import InformePdfPreviewModal from "@/components/informes/InformePdfPreviewModal";
 import { generateInformePdf } from "@/utils/generateInformePdf";
 
 const PERIODOS = [
@@ -34,6 +35,7 @@ export default function InformesInstitucionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -68,12 +70,15 @@ export default function InformesInstitucionPage() {
   const downloadPdf = async () => {
     if (!informe || exporting) return;
     setExporting(true);
-    try { await generateInformePdf({ informe, institucion: session?.user?.name }); }
+    try {
+      await generateInformePdf({ informe, institucion: session?.user?.name });
+      setShowPdfPreview(false);
+    }
     finally { setExporting(false); }
   };
   return (
     <div className="w-full">
-      <PageHeader title="Informes" description="Analizá la gestión de reclamos de tu institución para el período seleccionado." action={<button type="button" onClick={downloadPdf} disabled={!informe || loading || exporting} className="btn-primary-report shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"><Download size={16} /><span>{exporting ? "Generando PDF…" : "Descargar PDF"}</span></button>} />
+      <PageHeader title="Informes" description="Analizá la gestión de reclamos de tu institución para el período seleccionado." action={<button type="button" onClick={() => setShowPdfPreview(true)} disabled={!informe || loading} className="btn-primary-report shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"><Download size={16} /><span>Vista previa PDF</span></button>} />
 
       <section className="mb-6 rounded-xl border border-border-subtle bg-surface p-4" aria-label="Período de análisis">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -109,7 +114,7 @@ export default function InformesInstitucionPage() {
 
           <section className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
             <section className="rounded-xl border border-border-subtle bg-surface p-4 sm:p-5"><h2 className="m-0 text-base font-bold text-text-primary">Distribución por estado</h2><p className="mb-0 mt-1 text-xs text-text-secondary">Seleccioná un estado para ver sus reclamos.</p><StatusDonutChart items={informe.porEstado} onSelect={(item) => openBandeja({ estado: item.nombre })} /></section>
-            <section className="rounded-xl border border-border-subtle bg-surface p-4 sm:p-5"><h2 className="m-0 text-base font-bold text-text-primary">Distribución por categoría</h2><p className="mb-0 mt-1 text-xs text-text-secondary">Seleccioná una categoría para ver sus reclamos.</p><CategoryDistributionChart items={informe.porCategoria} onSelect={(item) => openBandeja({ categoria: String(item.id) })} /></section>
+            <section className="rounded-xl border border-border-subtle bg-surface p-4 sm:p-5"><div className="flex items-start justify-between gap-3"><div><h2 className="m-0 text-base font-bold text-text-primary">Reclamos por categoría</h2><p className="mb-0 mt-1 text-xs text-text-secondary">Cantidad de reclamos recibidos</p></div><p className="m-0 hidden text-right text-[11px] font-medium text-primary sm:block">Seleccioná una categoría<br />para ver sus reclamos</p></div><CategoryDistributionChart items={informe.porCategoria} onSelect={(item) => openBandeja({ categoria: String(item.id) })} /></section>
           </section>
 
           <section className="mt-6 rounded-xl border border-border-subtle bg-surface p-4 sm:p-5"><h2 className="m-0 text-base font-bold text-text-primary">Evolución de reclamos recibidos</h2><p className="mb-0 mt-1 text-xs text-text-secondary">Cantidad de reclamos creados por día dentro del período seleccionado.</p><ClaimTrendChart data={informe.porDia} /></section>
@@ -124,6 +129,8 @@ export default function InformesInstitucionPage() {
           </section>
         </>
       ) : null}
+
+      {showPdfPreview && informe && <InformePdfPreviewModal informe={informe} institucion={session?.user?.name} exporting={exporting} onClose={() => setShowPdfPreview(false)} onDownload={downloadPdf} />}
     </div>
   );
 }

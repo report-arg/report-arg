@@ -20,7 +20,7 @@ async function loadLogo() {
   }
 }
 
-export async function generateInformePdf({ informe, institucion }) {
+export async function createInformePdf({ informe, institucion }) {
   const { jsPDF } = await import('jspdf');
   const logo = await loadLogo();
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -133,5 +133,10 @@ export async function generateInformePdf({ informe, institucion }) {
     doc.setPage(page); doc.setFontSize(8); doc.setTextColor(100, 116, 139);
     doc.text(`ReportARG - Informe institucional - Página ${page} de ${pageCount}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
   }
+  return doc;
+}
+
+export async function generateInformePdf({ informe, institucion }) {
+  const doc = await createInformePdf({ informe, institucion });
   doc.save(`informe-gestion-${informe.periodo.desde}-${informe.periodo.hasta}.pdf`);
 }
