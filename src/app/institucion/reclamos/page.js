@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import apiClient from "@/services/apiClient";
 import EmptyState from "@/components/ui/EmptyState";
-import InstitucionReclamoCard from "@/components/reclamos/InstitucionReclamoCard";
+import InstitucionReclamoTable from "@/components/reclamos/InstitucionReclamoTable";
 import { Loader2, Filter, Inbox } from "lucide-react";
 import ReclamoFilters from "@/components/reclamos/ReclamoFilters";
 import { CLAIM_STATUSES } from "@/utils/reclamoStatus";
@@ -110,11 +110,7 @@ function BandejaReclamos() {
           />
         )
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {reclamos.map((r) => (
-            <InstitucionReclamoCard key={r.id} item={r} />
-          ))}
-        </div>
+        <InstitucionReclamoTable reclamos={reclamos} />
       )}
     </div>
   );
