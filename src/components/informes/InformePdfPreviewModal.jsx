@@ -37,7 +37,9 @@ export default function InformePdfPreviewModal({ informe, institucion, exporting
           const canvas = document.createElement("canvas");
           canvas.width = viewport.width;
           canvas.height = viewport.height;
-          canvas.className = "block w-full rounded-sm bg-white shadow-md";
+          // Cada página se ajusta por alto y ancho disponibles para que se vea
+          // completa antes de que la persona decida descargarla.
+          canvas.className = "block h-auto max-h-[calc(100dvh-10rem)] w-auto max-w-full rounded-sm bg-white shadow-md";
           container.appendChild(canvas);
           await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
         }
@@ -68,7 +70,7 @@ export default function InformePdfPreviewModal({ informe, institucion, exporting
 
         <div className="relative min-h-0 flex-1 overflow-auto bg-slate-200 p-3 sm:p-5">
           {loading && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-slate-200/90 text-sm text-text-muted"><Loader2 size={28} className="animate-spin text-primary" />Generando vista previa…</div>}
-          {error ? <p role="alert" className="mx-auto max-w-md rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</p> : <div ref={pagesRef} className="mx-auto flex w-full max-w-[620px] flex-col gap-4" />}
+          {error ? <p role="alert" className="mx-auto max-w-md rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</p> : <div ref={pagesRef} className="mx-auto flex min-h-full w-full flex-col items-center gap-4" />}
         </div>
 
         <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-200 bg-white px-3 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
