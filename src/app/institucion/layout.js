@@ -6,12 +6,13 @@ import AppShell from "@/components/layout/AppShell";
 import AppSidebar from "@/components/layout/AppSidebar";
 import AppNavbar from "@/components/layout/AppNavbar";
 import AppBottomNav from "@/components/layout/AppBottomNav";
-import { Home, FileText, Megaphone, Bell, PlusSquare, Search, Map } from "lucide-react";
+import { Home, FileText, Megaphone, Bell, Search, Map, BarChart3 } from "lucide-react";
 
 const INSTITUCION_NAVIGATION = [
   { href: "/institucion",              label: "Inicio",         icon: Home },
   { href: "/institucion/explorar",     label: "Explorar",       icon: Search },
   { href: "/institucion/reclamos",     label: "Reclamos",       icon: FileText },
+  { href: "/institucion/informes",     label: "Informes",       icon: BarChart3 },
   { href: "/institucion/comunicados",  label: "Comunicados",    icon: Megaphone },
   { href: "/institucion/mapa",         label: "Mapa",           icon: Map },
   { href: "/institucion/notificaciones",label: "Notificaciones",icon: Bell },
@@ -48,6 +49,7 @@ export default function InstitucionLayout({ children }) {
         { href: "/institucion",              label: "Inicio",         icon: Home },
         { href: "/institucion/explorar",     label: "Explorar",       icon: Search },
         { href: "/institucion/reclamos",     label: "Reclamos",       icon: FileText },
+        { href: "/institucion/informes",     label: "Informes",       icon: BarChart3 },
         { href: "/institucion/comunicados",  label: "Comunicados",    icon: Megaphone },
         { href: "/institucion/mapa",         label: "Mapa",           icon: Map },
         { href: "/institucion/notificaciones",label: "Alertas",       icon: Bell },
