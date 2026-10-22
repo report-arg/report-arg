@@ -9,6 +9,39 @@ import { Camera, User, Mail, MapPin, Lock, LogOut, Save, X, Eye, EyeOff, ArrowLe
 import apiClient from "@/services/apiClient";
 import { uploadImage } from "@/services/uploadService";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PERSON_NAME_REGEX = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$/;
+
+function normalizarPerfil(form) {
+  return Object.fromEntries(
+    Object.entries(form).map(([key, value]) => [
+      key,
+      typeof value === "string" ? value.trim().replace(/\s{2,}/g, " ") : value,
+    ])
+  );
+}
+
+function validarPerfil(form, esInstitucion) {
+  const etiquetaNombre = esInstitucion ? "El nombre de la institución" : "El nombre";
+  if (form.nombre.length < 2 || form.nombre.length > 100) return `${etiquetaNombre} debe tener entre 2 y 100 caracteres.`;
+  if (!esInstitucion && !PERSON_NAME_REGEX.test(form.nombre)) return "El nombre solo puede contener letras, espacios, apóstrofes o guiones.";
+  if (!esInstitucion && (form.apellido.length < 2 || form.apellido.length > 100 || !PERSON_NAME_REGEX.test(form.apellido))) {
+    return "El apellido debe tener entre 2 y 100 caracteres y solo contener letras, espacios, apóstrofes o guiones.";
+  }
+  if (!EMAIL_REGEX.test(form.email)) return "Ingresá un correo electrónico válido.";
+
+  for (const [campo, etiqueta] of [["provincia", "La provincia"], ["ciudad", "La ciudad"], ["zona", "La zona o barrio"]]) {
+    if (form[campo].length < 2 || form[campo].length > 100) return `${etiqueta} debe tener entre 2 y 100 caracteres.`;
+  }
+
+  if (esInstitucion) {
+    if (form.tipo.length < 2 || form.tipo.length > 100) return "El tipo de institución debe tener entre 2 y 100 caracteres.";
+    if (!/^[0-9+() -]{7,25}$/.test(form.telefono)) return "Ingresá un teléfono válido (entre 7 y 25 caracteres).";
+    if (form.direccion.length < 5 || form.direccion.length > 160) return "La dirección debe tener entre 5 y 160 caracteres.";
+  }
+  return null;
+}
+
 export default function ProfilePage() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
@@ -79,26 +112,34 @@ export default function ProfilePage() {
 
   async function handleGuardar(e) {
     e.preventDefault();
+    const formNormalizado = normalizarPerfil(form);
+    const errorValidacion = validarPerfil(formNormalizado, perfil?.rol === "institucion");
+    if (errorValidacion) {
+      setMsg({ type: "error", text: errorValidacion });
+      return;
+    }
+
     setSaving(true);
     setMsg({ type: "", text: "" });
     try {
-      const res = await apiClient.patch("/auth/me/perfil", form);
+      const res = await apiClient.patch("/auth/me/perfil", formNormalizado);
       const data = res.data;
       if (data.ok) {
         const nombreActualizado = perfil?.rol === "institucion"
-          ? form.nombre
-          : `${form.nombre} ${form.apellido}`.trim();
+          ? formNormalizado.nombre
+          : `${formNormalizado.nombre} ${formNormalizado.apellido}`.trim();
 
         setMsg({ type: "ok", text: "Perfil actualizado correctamente" });
-        setPerfil(prev => ({ ...prev, ...form, nombre: nombreActualizado }));
+        setForm(formNormalizado);
+        setPerfil(prev => ({ ...prev, ...formNormalizado, nombre: nombreActualizado }));
 
         // Actualiza la sesión que consume la barra de navegación sin requerir
         // cerrar sesión ni recargar la página.
         try {
           await update({
             name: nombreActualizado,
-            email: form.email,
-            foto: form.foto,
+            email: formNormalizado.email,
+            foto: formNormalizado.foto,
           });
         } catch {
           // El perfil ya quedó persistido. En la próxima carga se consulta
@@ -401,7 +442,7 @@ export default function ProfilePage() {
   );
 }
 
-function FormField({ label, icon, value, onChange, type = "text" }) {
+function FormField({ label, icon, value, onChange, type = "text", inputMode, maxLength }) {
   return (
     <div>
       <label style={{ fontSize: 11, color: "#888", letterSpacing: 0.5, display: "block", marginBottom: 4 }}>
@@ -413,6 +454,9 @@ function FormField({ label, icon, value, onChange, type = "text" }) {
         </span>
         <input
           type={type}
+          required
+          inputMode={inputMode}
+          maxLength={maxLength}
           value={value}
           onChange={e => onChange(e.target.value)}
           style={{
