@@ -19,7 +19,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [form, setForm] = useState({ nombre: "", apellido: "", email: "", provincia: "", ciudad: "", zona: "", foto: null });
+  const [form, setForm] = useState({ nombre: "", apellido: "", email: "", provincia: "", ciudad: "", zona: "", telefono: "", direccion: "", tipo: "", foto: null });
   const [msg, setMsg] = useState({ type: "", text: "" });
 
   const [pwdModal, setPwdModal] = useState(false);
@@ -32,7 +32,7 @@ export default function ProfilePage() {
     if (status === "loading") return;
     if (!session?.user?.id) { router.push("/login"); return; }
 
-    apiClient.get(`/admin/usuarios/${session.user.id}`)
+    apiClient.get("/auth/me")
       .then(r => r.data)
       .then(d => {
         if (d.ok) {
@@ -43,9 +43,12 @@ export default function ProfilePage() {
             nombre: u.nombre_ciudadano || u.nombre?.split(" ")[0] || "",
             apellido: u.apellido || u.nombre?.split(" ").slice(1).join(" ") || "",
             email: u.email || "",
-            provincia: u.provincia || "",
-            ciudad: u.ciudad || "",
+            provincia: u.provincia || u.provincia_declarada || "",
+            ciudad: u.ciudad || u.ciudad_declarada || "",
             zona: u.zona || "",
+            telefono: u.telefono || "",
+            direccion: u.direccion || "",
+            tipo: u.tipo || "",
             foto: u.foto || null,
           });
         }
@@ -79,11 +82,11 @@ export default function ProfilePage() {
     setSaving(true);
     setMsg({ type: "", text: "" });
     try {
-      const res = await apiClient.patch(`/admin/usuarios/${session.user.id}/perfil`, form);
+      const res = await apiClient.patch("/auth/me/perfil", form);
       const data = res.data;
       if (data.ok) {
         setMsg({ type: "ok", text: "Perfil actualizado correctamente" });
-        setPerfil(prev => ({ ...prev, nombre: `${form.nombre} ${form.apellido}`.trim(), email: form.email, foto: form.foto }));
+        setPerfil(prev => ({ ...prev, ...form, nombre: perfil?.rol === "institucion" ? form.nombre : `${form.nombre} ${form.apellido}`.trim() }));
       } else {
         setMsg({ type: "error", text: data.mensaje || "Error al guardar" });
       }
@@ -100,9 +103,12 @@ export default function ProfilePage() {
       nombre: perfil.nombre_ciudadano || perfil.nombre?.split(" ")[0] || "",
       apellido: perfil.apellido || perfil.nombre?.split(" ").slice(1).join(" ") || "",
       email: perfil.email || "",
-      provincia: perfil.provincia || "",
-      ciudad: perfil.ciudad || "",
+      provincia: perfil.provincia || perfil.provincia_declarada || "",
+      ciudad: perfil.ciudad || perfil.ciudad_declarada || "",
       zona: perfil.zona || "",
+      telefono: perfil.telefono || "",
+      direccion: perfil.direccion || "",
+      tipo: perfil.tipo || "",
       foto: perfil.foto || null,
     });
     setPreview(perfil.foto || null);
@@ -118,7 +124,7 @@ export default function ProfilePage() {
       return setPwdMsg({ type: "error", text: "La nueva contraseña debe tener al menos 8 caracteres" });
     setPwdSaving(true);
     try {
-      const res = await apiClient.post(`/admin/usuarios/${session.user.id}/cambiar-password`, { passwordActual: pwd.actual, passwordNueva: pwd.nueva });
+      const res = await apiClient.post("/auth/me/cambiar-password", { passwordActual: pwd.actual, passwordNueva: pwd.nueva });
       const data = res.data;
       if (data.ok) {
         setPwdMsg({ type: "ok", text: "Contraseña actualizada correctamente" });
@@ -136,6 +142,7 @@ export default function ProfilePage() {
 
   const iniciales = (`${form.nombre} ${form.apellido}`.trim() || "?").split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
   const idFormateado = perfil ? `ARG-${String(perfil.id).padStart(5, "0")}` : "—";
+  const esInstitucion = perfil?.rol === "institucion";
 
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
@@ -203,12 +210,15 @@ export default function ProfilePage() {
               {/* Formulario */}
               <div className="profile-form-col">
                 <div className="profile-form-grid">
-                  <FormField label="NOMBRE" icon={<User size={14} />} value={form.nombre} onChange={v => setForm(p => ({ ...p, nombre: v }))} />
-                  <FormField label="APELLIDO" icon={<User size={14} />} value={form.apellido} onChange={v => setForm(p => ({ ...p, apellido: v }))} />
+                  <FormField label={esInstitucion ? "NOMBRE DE LA INSTITUCIÓN" : "NOMBRE"} icon={<User size={14} />} value={form.nombre} onChange={v => setForm(p => ({ ...p, nombre: v }))} />
+                  {!esInstitucion && <FormField label="APELLIDO" icon={<User size={14} />} value={form.apellido} onChange={v => setForm(p => ({ ...p, apellido: v }))} />}
                   <FormField label="EMAIL" icon={<Mail size={14} />} value={form.email} onChange={v => setForm(p => ({ ...p, email: v }))} type="email" />
+                  {esInstitucion && <FormField label="TIPO DE INSTITUCIÓN" icon={<User size={14} />} value={form.tipo} onChange={v => setForm(p => ({ ...p, tipo: v }))} />}
+                  {esInstitucion && <FormField label="TELÉFONO" icon={<Mail size={14} />} value={form.telefono} onChange={v => setForm(p => ({ ...p, telefono: v }))} />}
                   <FormField label="PROVINCIA" icon={<MapPin size={14} />} value={form.provincia} onChange={v => setForm(p => ({ ...p, provincia: v }))} />
                   <FormField label="CIUDAD" icon={<MapPin size={14} />} value={form.ciudad} onChange={v => setForm(p => ({ ...p, ciudad: v }))} />
                   <FormField label="ZONA / BARRIO" icon={<MapPin size={14} />} value={form.zona} onChange={v => setForm(p => ({ ...p, zona: v }))} />
+                  {esInstitucion && <FormField label="DIRECCIÓN" icon={<MapPin size={14} />} value={form.direccion} onChange={v => setForm(p => ({ ...p, direccion: v }))} />}
                 </div>
               </div>
             </div>

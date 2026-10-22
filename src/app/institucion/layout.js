@@ -29,7 +29,7 @@ export default function InstitucionLayout({ children }) {
       navigation={INSTITUCION_NAVIGATION}
       subtitle="PORTAL INSTITUCIONAL"
       logoHref="/institucion"
-      footerLinks={[{ href: "/institucion/perfil", label: "Mi Institución", icon: null }]} // Opciones específicas del footer si las hay
+      footerLinks={[{ href: "/profile", label: "Mi Institución", icon: null }]} // Opciones específicas del footer si las hay
     />
   );
 
@@ -38,7 +38,7 @@ export default function InstitucionLayout({ children }) {
       onMenuClick={() => setSidebarOpen(true)}
       showLocation={true}
       roleName="Institución"
-      profileLink="/institucion/perfil"
+      profileLink="/profile"
       notificationsLink="/institucion/notificaciones"
     />
   );
