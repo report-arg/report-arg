@@ -10,7 +10,7 @@ import apiClient from "@/services/apiClient";
 import { uploadImage } from "@/services/uploadService";
 
 export default function ProfilePage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
   const fileRef = useRef(null);
 
@@ -85,8 +85,25 @@ export default function ProfilePage() {
       const res = await apiClient.patch("/auth/me/perfil", form);
       const data = res.data;
       if (data.ok) {
+        const nombreActualizado = perfil?.rol === "institucion"
+          ? form.nombre
+          : `${form.nombre} ${form.apellido}`.trim();
+
         setMsg({ type: "ok", text: "Perfil actualizado correctamente" });
-        setPerfil(prev => ({ ...prev, ...form, nombre: perfil?.rol === "institucion" ? form.nombre : `${form.nombre} ${form.apellido}`.trim() }));
+        setPerfil(prev => ({ ...prev, ...form, nombre: nombreActualizado }));
+
+        // Actualiza la sesión que consume la barra de navegación sin requerir
+        // cerrar sesión ni recargar la página.
+        try {
+          await update({
+            name: nombreActualizado,
+            email: form.email,
+            foto: form.foto,
+          });
+        } catch {
+          // El perfil ya quedó persistido. En la próxima carga se consulta
+          // nuevamente /auth/me.
+        }
       } else {
         setMsg({ type: "error", text: data.mensaje || "Error al guardar" });
       }

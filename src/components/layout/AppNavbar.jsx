@@ -33,7 +33,12 @@ export default function AppNavbar({
       .then(r => r.data)
       .then(d => { if (d.ok) setPerfil(d.data); })
       .catch(() => {});
-  }, [session?.user?.id]);
+  }, [
+    session?.user?.id,
+    session?.user?.name,
+    session?.user?.email,
+    session?.user?.foto,
+  ]);
 
   useEffect(() => {
     function handleClick(e) {

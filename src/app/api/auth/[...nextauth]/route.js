@@ -100,8 +100,11 @@ const authOptions = {
         token.email = user.email || token.email;
         token.foto = user.foto || token.foto || null;
       }
-      if (trigger === "update" && session?.role) {
-        token.role = session.role;
+      if (trigger === "update" && session) {
+        token.name = session.name ?? token.name;
+        token.email = session.email ?? token.email;
+        token.foto = session.foto ?? token.foto;
+        token.role = session.role ?? token.role;
       }
       return token;
     },
