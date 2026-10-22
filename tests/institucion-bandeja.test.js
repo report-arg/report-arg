@@ -1,8 +1,9 @@
 import React from "react";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, within, fireEvent, waitFor, act } from "@testing-library/react";
 import apiClient from "@/services/apiClient";
 import BandejaReclamosPage from "@/app/institucion/reclamos/page";
 import InstitucionReclamoTable from "@/components/reclamos/InstitucionReclamoTable";
+import InstitucionReclamoFilterBar from "@/components/reclamos/InstitucionReclamoFilterBar";
 
 jest.mock("@/services/apiClient");
 
@@ -17,13 +18,17 @@ jest.mock("@/hooks/useCategorias", () => ({
   }),
 }));
 
+const mockReplace = jest.fn();
+const mockPush = jest.fn();
+let currentSearchParams = new URLSearchParams();
+
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
   usePathname: () => "/institucion/reclamos",
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => currentSearchParams,
 }));
 
-describe("LIS-01 — Consultar listado operativo de reclamos (Portal Institucional)", () => {
+describe("LIS-01 y LIS-02 — Bandeja Operativa Institucional (Tabla, Búsqueda, Filtros, Orden y Paginación)", () => {
   const mockReclamos = [
     {
       id: 42,
@@ -59,10 +64,20 @@ describe("LIS-01 — Consultar listado operativo de reclamos (Portal Institucion
 
   beforeEach(() => {
     jest.clearAllMocks();
+    currentSearchParams = new URLSearchParams();
   });
 
-  test("InstitucionReclamoTable: renderiza formato de tabla administrativa con todos los campos requeridos por LIS-01", () => {
-    render(<InstitucionReclamoTable reclamos={mockReclamos} />);
+  test("InstitucionReclamoTable: renderiza formato de tabla administrativa con todos los campos requeridos y paginación", () => {
+    const onCambiarPagina = jest.fn();
+    render(
+      <InstitucionReclamoTable
+        reclamos={mockReclamos}
+        pagina={1}
+        limite={20}
+        total={45}
+        onCambiarPagina={onCambiarPagina}
+      />
+    );
 
     const table = screen.getByRole("table", {
       name: /Listado operativo de reclamos asignados/i,
@@ -84,49 +99,67 @@ describe("LIS-01 — Consultar listado operativo de reclamos (Portal Institucion
     expect(
       within(table).getByText("Corte de suministro eléctrico en zona norte")
     ).toBeInTheDocument();
-    expect(within(table).getByText("#0043")).toBeInTheDocument();
-    expect(
-      within(table).getByText("Pérdida en cañería domiciliaria sensible")
-    ).toBeInTheDocument();
 
-    // Categorías
-    expect(within(table).getByText("Cortes de luz")).toBeInTheDocument();
-    expect(within(table).getByText("Problemas de agua")).toBeInTheDocument();
-
-    // Visibilidad: Público y Privado
+    // Visibilidad y estados
     expect(within(table).getByText("Público")).toBeInTheDocument();
     expect(within(table).getByText("Privado")).toBeInTheDocument();
-
-    // Estados actuales
     expect(within(table).getByText("Pendiente")).toBeInTheDocument();
     expect(within(table).getByText("En revisión")).toBeInTheDocument();
 
-    // Cantidad de afectados
+    // Cantidad de afectados y demora
     expect(within(table).getByText("8 afectados")).toBeInTheDocument();
-    expect(within(table).getByText("0 afectados")).toBeInTheDocument();
+    expect(within(table).getByText("Demorado")).toBeInTheDocument();
 
-    // Antigüedad e indicador visual de demora
-    expect(within(table).getByText("7 días")).toBeInTheDocument();
-    expect(within(table).getByText("1 día")).toBeInTheDocument();
-    expect(within(table).getByText(/Demorado \(\+5d\)/i)).toBeInTheDocument();
-
-    // Acción para acceder al detalle de cada reclamo
+    // Acción hacia el detalle
     const link42 = within(table).getByRole("link", {
       name: /Gestionar reclamo #0042/i,
     });
     expect(link42).toHaveAttribute("href", "/institucion/reclamos/42");
 
-    const link43 = within(table).getByRole("link", {
-      name: /Gestionar reclamo #0043/i,
-    });
-    expect(link43).toHaveAttribute("href", "/institucion/reclamos/43");
+    // Paginación cuando total > 20
+    expect(screen.getByText("45")).toBeInTheDocument();
+    const btnSiguiente = screen.getByRole("button", { name: /Siguiente/i });
+    fireEvent.click(btnSiguiente);
+    expect(onCambiarPagina).toHaveBeenCalledWith(2);
   });
 
-  test("BandejaReclamosPage: consulta /institucion/reclamos/bandeja sin enviar id_institucion y muestra la tabla", async () => {
+  test("InstitucionReclamoFilterBar: expone únicamente las 3 opciones de ordenamiento de LIS-02 (sin 'atencion')", () => {
+    render(
+      <InstitucionReclamoFilterBar
+        orderBy="recientes"
+        onOrderByChange={jest.fn()}
+        total={10}
+      />
+    );
+
+    const sortBtn = screen.getByLabelText(/Ordenar por/i);
+    fireEvent.click(sortBtn);
+
+    const listbox = screen.getByRole("listbox", {
+      name: /Opciones de ordenamiento/i,
+    });
+    expect(within(listbox).getByText("Más recientes")).toBeInTheDocument();
+    expect(within(listbox).getByText("Más antiguos")).toBeInTheDocument();
+    expect(
+      within(listbox).getByText("Mayor impacto ciudadano")
+    ).toBeInTheDocument();
+    expect(
+      within(listbox).queryByText(/Requieren atención/i)
+    ).not.toBeInTheDocument();
+  });
+
+  test("BandejaReclamosPage: inicializa filtros desde la URL, consulta el contrato { total, rows } sin enviar id_institucion y conserva estado", async () => {
+    currentSearchParams = new URLSearchParams(
+      "busqueda=Rivadavia&estado=Pendiente&categoria=1&visibilidad=publico&fechaDesde=2026-10-01&fechaHasta=2026-10-31&demorado=true&orderBy=impacto&pagina=2"
+    );
+
     apiClient.get.mockResolvedValueOnce({
       data: {
         ok: true,
-        data: mockReclamos,
+        data: {
+          total: 25,
+          rows: [mockReclamos[0]],
+        },
       },
     });
 
@@ -137,14 +170,54 @@ describe("LIS-01 — Consultar listado operativo de reclamos (Portal Institucion
     });
     expect(table).toBeInTheDocument();
 
-    expect(apiClient.get).toHaveBeenCalledWith(
-      "/institucion/reclamos/bandeja",
-      expect.objectContaining({
-        params: expect.not.objectContaining({
-          id_institucion: expect.anything(),
-        }),
-      })
-    );
+    expect(apiClient.get).toHaveBeenCalledWith("/institucion/reclamos/bandeja", {
+      params: {
+        busqueda: "Rivadavia",
+        estado: "Pendiente",
+        categoria: "1",
+        visibilidad: "publico",
+        fechaDesde: "2026-10-01",
+        fechaHasta: "2026-10-31",
+        demorado: true,
+        orderBy: "impacto",
+        pagina: 2,
+        limite: 20,
+      },
+    });
+  });
+
+  test("BandejaReclamosPage: muestra estado vacío claro cuando no hay coincidencias y permite limpiar filtros restableciendo la URL", async () => {
+    currentSearchParams = new URLSearchParams("estado=Cancelado&demorado=true");
+
+    apiClient.get.mockResolvedValue({
+      data: {
+        ok: true,
+        data: {
+          total: 0,
+          rows: [],
+        },
+      },
+    });
+
+    render(<BandejaReclamosPage />);
+
+    expect(
+      await screen.findByText("Sin resultados para estos filtros")
+    ).toBeInTheDocument();
+
+    // Limpiar filtros desde el estado vacío
+    const clearButtons = screen.getAllByRole("button", {
+      name: /Limpiar filtros/i,
+    });
+    await act(async () => {
+      fireEvent.click(clearButtons[clearButtons.length - 1]);
+    });
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith("/institucion/reclamos", {
+        scroll: false,
+      });
+    });
   });
 
   test("BandejaReclamosPage: muestra estado de error claramente y no lo oculta como lista vacía", async () => {

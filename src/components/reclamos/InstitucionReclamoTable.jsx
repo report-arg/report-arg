@@ -5,6 +5,7 @@ import {
   MapPin,
   Users,
   AlertTriangle,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Calendar,
@@ -30,8 +31,18 @@ function formatAntiguedad(reclamo) {
   return `${dias} ${dias === 1 ? "día" : "días"}`;
 }
 
-export default function InstitucionReclamoTable({ reclamos = [] }) {
+export default function InstitucionReclamoTable({
+  reclamos = [],
+  pagina = 1,
+  limite = 20,
+  total = 0,
+  onCambiarPagina,
+}) {
   if (!reclamos || reclamos.length === 0) return null;
+
+  const totalPaginas = Math.max(1, Math.ceil(total / limite));
+  const inicioRango = total > 0 ? (pagina - 1) * limite + 1 : 1;
+  const finRango = total > 0 ? Math.min(pagina * limite, total) : reclamos.length;
 
   return (
     <div className="bg-surface rounded-2xl border border-border-subtle shadow-xs overflow-hidden">
@@ -177,7 +188,7 @@ export default function InstitucionReclamoTable({ reclamos = [] }) {
                           title="Lleva 5 o más días en estado Pendiente esperando atención"
                         >
                           <AlertTriangle size={11} className="shrink-0" />
-                          <span>Demorado (+5d)</span>
+                          <span>Demorado</span>
                         </span>
                       )}
                     </div>
@@ -233,7 +244,7 @@ export default function InstitucionReclamoTable({ reclamos = [] }) {
                       title="Lleva 5 o más días en estado Pendiente esperando atención"
                     >
                       <AlertTriangle size={11} className="shrink-0" />
-                      <span>Demorado (+5d)</span>
+                      <span>Demorado</span>
                     </span>
                   )}
                   <StatusBadge status={r.estado} size="sm" />
@@ -298,6 +309,50 @@ export default function InstitucionReclamoTable({ reclamos = [] }) {
             </div>
           );
         })}
+      </div>
+
+      {/* Pie de tabla: Resumen de resultados y Paginación */}
+      <div className="p-4 border-t border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-text-muted bg-surface-subtle/30">
+        <div>
+          <span>
+            Mostrando{" "}
+            <strong className="text-text-primary">{inicioRango}</strong>–
+            <strong className="text-text-primary">{finRango}</strong> de{" "}
+            <strong className="text-text-primary">
+              {total || reclamos.length}
+            </strong>{" "}
+            {(total || reclamos.length) === 1 ? "resultado" : "resultados"}
+          </span>
+          {totalPaginas > 1 && (
+            <span className="ml-2">
+              · Página <strong className="text-text-primary">{pagina}</strong> de{" "}
+              <strong className="text-text-primary">{totalPaginas}</strong>
+            </span>
+          )}
+        </div>
+
+        {totalPaginas > 1 && (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={pagina <= 1}
+              onClick={() => onCambiarPagina?.(pagina - 1)}
+              leftIcon={<ChevronLeft size={14} />}
+            >
+              Anterior
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={pagina >= totalPaginas}
+              onClick={() => onCambiarPagina?.(pagina + 1)}
+              rightIcon={<ChevronRight size={14} />}
+            >
+              Siguiente
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -21,9 +21,10 @@ export default function InstitucionHome() {
   useEffect(() => {
     async function fetchBandeja() {
       try {
-        const res = await apiClient.get("/institucion/reclamos/bandeja?orderBy=atencion");
+        const res = await apiClient.get("/institucion/reclamos/bandeja?orderBy=atencion&limite=100");
         if (res.data.ok) {
-          setReclamos(res.data.data);
+          const payload = res.data.data;
+          setReclamos(Array.isArray(payload) ? payload : payload?.rows || []);
         }
       } catch (err) {
         console.error("Error al cargar bandeja", err);
