@@ -16,6 +16,9 @@ const ESTADOS_PERMITIDOS = ["Todos", ...CLAIM_STATUSES];
 function BandejaReclamos() {
   const searchParams = useSearchParams();
   const queryEstado = CLAIM_STATUSES.includes(searchParams.get("estado")) ? searchParams.get("estado") : "Todos";
+  const queryCategoria = searchParams.get("categoria") || "Todas";
+  const queryFechaDesde = searchParams.get("fechaDesde") || "";
+  const queryFechaHasta = searchParams.get("fechaHasta") || "";
 
   const [reclamos, setReclamos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,13 +26,13 @@ function BandejaReclamos() {
   
   // Filtros
   const [estado, setEstado] = useState(queryEstado);
-  const [categoria, setCategoria] = useState("Todas");
+  const [categoria, setCategoria] = useState(queryCategoria);
   const [orden, setOrden] = useState("recientes");
   const [error, setError] = useState("");
 
   const hayFiltrosActivos = useMemo(() => {
-    return estado !== "Todos" || categoria !== "Todas" || orden !== "recientes";
-  }, [estado, categoria, orden]);
+    return estado !== "Todos" || categoria !== "Todas" || orden !== "recientes" || Boolean(queryFechaDesde || queryFechaHasta);
+  }, [estado, categoria, orden, queryFechaDesde, queryFechaHasta]);
 
   useEffect(() => {
     let vigente = true;
@@ -38,12 +41,14 @@ function BandejaReclamos() {
     const params = { orderBy: orden };
     if (estado !== "Todos") params.estado = estado;
     if (categoria !== "Todas") params.categoria = categoria;
+    if (queryFechaDesde) params.fechaDesde = queryFechaDesde;
+    if (queryFechaHasta) params.fechaHasta = queryFechaHasta;
     apiClient.get('/institucion/reclamos/bandeja', { params })
       .then(res => { if (!res.data.ok) throw new Error(res.data.mensaje); if (vigente) setReclamos(res.data.data || []); })
       .catch(err => { if (vigente) setError(err.response?.data?.mensaje || "No se pudo cargar la bandeja. Intentá nuevamente."); })
       .finally(() => { if (vigente) setLoading(false); });
     return () => { vigente = false; };
-  }, [estado, categoria, orden]);
+  }, [estado, categoria, orden, queryFechaDesde, queryFechaHasta]);
 
   // Actualizar estado si cambia el query parameter
   useEffect(() => {
@@ -51,6 +56,7 @@ function BandejaReclamos() {
       const q = searchParams.get("estado");
       if (ESTADOS_PERMITIDOS.includes(q)) setEstado(q);
     }
+    if (searchParams.has("categoria")) setCategoria(searchParams.get("categoria") || "Todas");
   }, [searchParams]);
 
   function handleLimpiarFiltros() {
