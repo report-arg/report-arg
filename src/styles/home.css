@@ -19,7 +19,9 @@
 /* layout */
 .home-layout {
   display: flex;
+  width: 100%;
   min-height: 100vh;
+  overflow-x: clip;
   background: var(--home-bg);
   font-family: var(--font-manrope), "Manrope", system-ui, sans-serif;
 }
@@ -128,6 +130,8 @@
 /* área central */
 .home-main {
   flex: 1;
+  min-width: 0;
+  width: calc(100% - var(--home-sidebar-w));
   margin-left: var(--home-sidebar-w);
   min-height: 100vh;
   display: flex;
@@ -544,16 +548,19 @@
 
   .home-main {
     margin-left: 0;
+    width: 100%;
     padding-bottom: 70px;
   }
 
   .home-bottom-nav {
     display: block;
+    overflow-x: hidden;
   }
 
   .home-navbar {
     padding: 10px 14px;
     gap: 8px;
+    min-width: 0;
   }
 
   .home-navbar-search {

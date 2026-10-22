@@ -47,11 +47,8 @@ export default function InstitucionLayout({ children }) {
     <AppBottomNav
       tabs={[
         { href: "/institucion",              label: "Inicio",         icon: Home },
-        { href: "/institucion/explorar",     label: "Explorar",       icon: Search },
         { href: "/institucion/reclamos",     label: "Reclamos",       icon: FileText },
         { href: "/institucion/informes",     label: "Informes",       icon: BarChart3 },
-        { href: "/institucion/comunicados",  label: "Comunicados",    icon: Megaphone },
-        { href: "/institucion/mapa",         label: "Mapa",           icon: Map },
         { href: "/institucion/notificaciones",label: "Alertas",       icon: Bell },
       ]}
     />
