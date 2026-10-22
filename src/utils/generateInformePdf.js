@@ -35,12 +35,16 @@ export async function generateInformePdf({ informe, institucion }) {
     y = 18;
   };
   const section = (title) => {
-    nextPage(18);
+    nextPage(25);
+    y += 6;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
     doc.setTextColor(15, 35, 66);
     doc.text(title, margin, y);
-    y += 11;
+    doc.setDrawColor(203, 213, 225);
+    doc.setLineWidth(0.35);
+    doc.line(margin, y + 4, pageWidth - margin, y + 4);
+    y += 14;
   };
   const rows = (items) => {
     items.forEach(([label, value]) => {
@@ -77,20 +81,21 @@ export async function generateInformePdf({ informe, institucion }) {
     });
   };
 
-  doc.setFillColor(30, 58, 100);
+  doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, pageWidth, 42, 'F');
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(15, 35, 66);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
-  doc.text('Informe de gestión de reclamos', margin, 17);
+  doc.text('Informe de gestión de reclamos', margin + 45, 17);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  doc.text(institucion || 'Institución', margin, 25);
+  doc.text(institucion || 'Institución', margin + 45, 25);
   if (logo) {
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(pageWidth - 54, 8, 38, 22, 3, 3, 'F');
-    doc.addImage(logo, 'PNG', pageWidth - 51, 11, 32, 16);
+    doc.addImage(logo, 'PNG', margin, 9, 38, 19);
   }
+  doc.setDrawColor(37, 99, 235);
+  doc.setLineWidth(0.65);
+  doc.line(margin, 35, pageWidth - margin, 35);
   y = 54;
   doc.setTextColor(51, 65, 85);
   doc.setFontSize(10);
