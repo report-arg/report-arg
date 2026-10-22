@@ -58,7 +58,7 @@ export default function InformePdfPreviewModal({ informe, institucion, exporting
   }, [informe, institucion]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:p-4" role="dialog" aria-modal="true" aria-labelledby="vista-previa-pdf">
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:p-4" role="dialog" aria-modal="true" aria-labelledby="vista-previa-pdf">
       <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-slate-100 shadow-2xl sm:h-[min(92dvh,860px)] sm:max-w-4xl sm:rounded-xl">
         <header className="flex shrink-0 items-center justify-between bg-[#183657] px-3 py-2.5 text-white sm:px-5 sm:py-3">
           <div className="min-w-0">
