@@ -30,7 +30,7 @@ Reglas breves:
 
 1. Partí de la rama indicada en la tarea. Si no se especifica una, verificá primero la rama y los cambios locales; no sobrescribas trabajo ajeno ni hagas merge por tu cuenta.
 2. Identificá si el componente es compartido entre roles. Si el cambio corresponde a un solo rol, evitá alterar las otras experiencias. Mantené la separación por rol.
-3. Seguí las convenciones del área que editás. Reutilizá componentes existentes, evitá la duplicación de código, y **no crees componentes gigantes llenos de flags** para manejar distintos roles. Extraé las lógicas condicionales excesivas. Reutilizá `apiClient` para toda comunicación con el backend.
+3. Seguí las convenciones del área que editás. **Reutilizá obligatoriamente los componentes UI de `@/components/ui/`** (en especial `Select`, `Button`, `ConfirmModal`, `Input`, `Badge`, `EmptyState`). Queda estrictamente prohibido usar controles nativos desalineados (como `<select>` HTML o `<button>` planos) o maquetar modales inline ad-hoc. Evitá la duplicación de código y **no crees componentes gigantes llenos de flags** para manejar distintos roles. Extraé las lógicas condicionales excesivas. Reutilizá `apiClient` para toda comunicación con el backend.
 4. Usá endpoints y campos confirmados en el backend. No inventes respuestas, cifras ni permisos. Los ejemplos de la página de catálogo deben quedar señalados como muestras.
 5. Mantené separados los reclamos ciudadanos y los comunicados institucionales. No presentes acciones o estados de uno como si pertenecieran al otro.
 6. Para reclamos, respetá los estados actuales (`Pendiente`, `En revisión`, `En proceso`, `Resuelto`, `Cancelado`) y el control de visibilidad público/privado. Revisá `src/utils/reclamoStatus.js` y el backend antes de modificar transiciones o textos de negocio.
@@ -90,7 +90,12 @@ Si una comprobación falla por un problema previo o por falta de configuración 
 
 ## Componentes UI Reutilizables (`src/components/ui/`)
 
-Toda la interfaz debe mantener consistencia visual, accesible y responsive. Antes de crear diálogos o etiquetas inline, usá obligatoriamente los componentes del catálogo base:
+Toda la interfaz debe mantener consistencia visual, accesible y responsive. **Es mandatorio usar los componentes del catálogo base (`src/components/ui/`) y está terminantemente prohibido usar controles HTML nativos sin estilizar o armar modales inline ad-hoc**:
+
+- **Dropdowns y selectores:** **Prohibido el uso de `<select>` nativo.** Usar siempre `Select` (`src/components/ui/Select.jsx`) para asegurar consistencia visual, tema dark/light, accesibilidad por teclado y estética de la aplicación.
+- **Botones y acciones:** **Prohibido usar `<button>` plano con clases sueltas.** Usar siempre `Button` (`src/components/ui/Button.jsx`) respetando las variantes del sistema (`primary`, `secondary`, `outline`, `ghost`, `danger`, `success`) y sus estados de `loading`.
+- **Modales y confirmaciones:** **Prohibido crear modales inline con `fixed inset-0` y divs manuales.** Usar siempre `ConfirmModal` (`src/components/ui/ConfirmModal.jsx`) para confirmaciones de acciones críticas y `Modal` (`src/components/ui/Modal.jsx`) para modales de contenido.
+- **Formularios:** Usar `Input` y `Textarea` para campos estandarizados con accesibilidad (`aria-invalid`) y textos de ayuda integrados.
 
 1. **`Button` (`src/components/ui/Button.jsx`)**:
    - **Uso prioritario** para acciones interactivas y botones de navegación.

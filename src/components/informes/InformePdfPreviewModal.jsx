@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Download, Loader2, X } from "lucide-react";
+import Button from "@/components/ui/Button";
 import { createInformePdf } from "@/utils/generateInformePdf";
 
 export default function InformePdfPreviewModal({ informe, institucion, exporting, onClose, onDownload }) {
@@ -74,8 +75,19 @@ export default function InformePdfPreviewModal({ informe, institucion, exporting
         </div>
 
         <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-200 bg-white px-3 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
-          <button type="button" onClick={onClose} className="rounded-lg border border-border-subtle px-3 py-2 text-xs font-semibold text-text-secondary transition-colors hover:bg-surface-subtle sm:px-4">Cancelar</button>
-          <button type="button" onClick={onDownload} disabled={loading || Boolean(error) || exporting} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:gap-2 sm:px-4"><Download size={15} />{exporting ? "Descargando…" : "Descargar PDF"}</button>
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={onDownload}
+            disabled={loading || Boolean(error) || exporting}
+            loading={exporting}
+            leftIcon={<Download size={15} />}
+          >
+            Descargar PDF
+          </Button>
         </footer>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { CalendarDays, Download, Loader2, UsersRound } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import PageHeader from "@/components/layout/PageHeader";
+import { Select, Button } from "@/components/ui";
 import KpiCard from "@/components/informes/KpiCard";
 import StatusDonutChart from "@/components/informes/StatusDonutChart";
 import ClaimTrendChart from "@/components/informes/ClaimTrendChart";
@@ -78,20 +79,54 @@ export default function InformesInstitucionPage() {
   };
   return (
     <div className="w-full">
-      <PageHeader title="Informes" description="Analizá la gestión de reclamos de tu institución para el período seleccionado." action={<button type="button" onClick={() => setShowPdfPreview(true)} disabled={!informe || loading} className="btn-primary-report shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"><Download size={16} /><span>Vista previa PDF</span></button>} />
+      <PageHeader
+        title="Informes"
+        description="Analizá la gestión de reclamos de tu institución para el período seleccionado."
+        action={
+          <Button
+            variant="primary"
+            onClick={() => setShowPdfPreview(true)}
+            disabled={!informe || loading}
+            leftIcon={<Download size={16} />}
+          >
+            Vista previa PDF
+          </Button>
+        }
+      />
 
       <section className="mb-6 rounded-xl border border-border-subtle bg-surface p-4" aria-label="Período de análisis">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex flex-col gap-1">
-            <label htmlFor="periodo" className="text-xs font-semibold text-text-secondary">Período de análisis</label>
-            <select id="periodo" value={periodo} onChange={(event) => setPeriodo(event.target.value)} className="rounded-lg border border-border-subtle bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-primary">
-              {PERIODOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
+          <div className="w-full sm:w-64">
+            <Select
+              id="periodo"
+              label="Período de análisis"
+              value={periodo}
+              onChange={setPeriodo}
+              options={PERIODOS}
+            />
           </div>
           {periodo === "personalizado" && (
             <div className="flex flex-col gap-3 sm:flex-row">
-              <label className="flex flex-col gap-1 text-xs font-semibold text-text-secondary">Desde<input type="date" value={desde} max={hasta || undefined} onChange={(event) => setDesde(event.target.value)} className="rounded-lg border border-border-subtle bg-surface px-3 py-2 text-sm text-text-primary" /></label>
-              <label className="flex flex-col gap-1 text-xs font-semibold text-text-secondary">Hasta<input type="date" value={hasta} min={desde || undefined} onChange={(event) => setHasta(event.target.value)} className="rounded-lg border border-border-subtle bg-surface px-3 py-2 text-sm text-text-primary" /></label>
+              <label className="flex flex-col gap-1 text-[11px] font-semibold text-text-muted">
+                Desde
+                <input
+                  type="date"
+                  value={desde}
+                  max={hasta || undefined}
+                  onChange={(event) => setDesde(event.target.value)}
+                  className="h-9 rounded-xl border border-border-subtle bg-surface px-3 text-xs text-text-primary shadow-2xs transition-all hover:border-border-strong focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-[11px] font-semibold text-text-muted">
+                Hasta
+                <input
+                  type="date"
+                  value={hasta}
+                  min={desde || undefined}
+                  onChange={(event) => setHasta(event.target.value)}
+                  className="h-9 rounded-xl border border-border-subtle bg-surface px-3 text-xs text-text-primary shadow-2xs transition-all hover:border-border-strong focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+                />
+              </label>
             </div>
           )}
         </div>
