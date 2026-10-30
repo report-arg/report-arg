@@ -65,6 +65,11 @@ const authOptions = {
       }
 
       const resolvedEmail = user.email || `${account.provider}-${account.providerAccountId}@reportarg.social`;
+      const providerToken = account.id_token || account.access_token;
+
+      if (!providerToken) {
+        throw new Error('No se recibió un token válido del proveedor de identidad');
+      }
 
       const response = await fetch(`${API_URL}/api/auth/social-login`, {
         method: 'POST',
@@ -73,6 +78,9 @@ const authOptions = {
           email: resolvedEmail,
           name: user.name,
           provider: account.provider,
+          providerToken,
+          idToken: account.id_token || null,
+          accessToken: account.access_token || null,
         }),
       });
 

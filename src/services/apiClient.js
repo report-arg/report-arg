@@ -91,14 +91,29 @@ apiClient.interceptors.response.use(
       if (typeof window !== 'undefined') {
         const currentPath = window.location.pathname;
         const rolActual = error.response?.data?.rolActual || 'ciudadano';
-        const targetPath = rolActual === 'institucion' ? '/institucion' : '/ciudadano';
+        const targetPath =
+          rolActual === 'admin'
+            ? '/admin'
+            : rolActual === 'institucion'
+              ? '/institucion'
+              : '/ciudadano';
 
         // Si el usuario navegaba el panel de administración pero perdió su rol administrativo
-        if (currentPath.startsWith('/admin')) {
+        if (currentPath.startsWith('/admin') && rolActual !== 'admin') {
           console.warn(`[SEGURIDAD] Permisos administrativos revocados por la base de datos. Redirigiendo a ${targetPath}`);
+          window.location.href = `${targetPath}?motivo=rol_actualizado`;
+        } else if (currentPath.startsWith('/institucion') && rolActual !== 'institucion') {
+          console.warn(`[SEGURIDAD] Rol institucional no autorizado por la base de datos. Redirigiendo a ${targetPath}`);
+          window.location.href = `${targetPath}?motivo=rol_actualizado`;
+        } else if (currentPath.startsWith('/ciudadano') && rolActual === 'institucion') {
           window.location.href = `${targetPath}?motivo=rol_actualizado`;
         }
       }
+    }
+
+    // 3. Institución no verificada o inhabilitada (403 con INSTITUCION_NO_VERIFICADA)
+    if (status === 403 && errorCode === 'INSTITUCION_NO_VERIFICADA') {
+      clearSessionCache();
     }
 
     return Promise.reject(error);

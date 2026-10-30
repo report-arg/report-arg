@@ -186,6 +186,30 @@ describe('Seguridad y Manejo de Secretos (ADMIN-01 — Etapa 1)', () => {
       expect(global.window.location.href).toBe('/ciudadano?motivo=rol_actualizado');
     });
 
+    test('403 con ROL_NO_AUTORIZADO mientras navega /institucion redirige a /ciudadano', async () => {
+      global.window = {
+        location: {
+          pathname: '/institucion/reclamos',
+          href: '',
+        },
+      };
+
+      const error = {
+        response: {
+          status: 403,
+          data: {
+            codigo: 'ROL_NO_AUTORIZADO',
+            rolActual: 'ciudadano',
+          },
+        },
+      };
+
+      const rejectionHandler = apiClient.interceptors.response.handlers[0].rejected;
+      await expect(rejectionHandler(error)).rejects.toEqual(error);
+
+      expect(global.window.location.href).toBe('/ciudadano?motivo=rol_actualizado');
+    });
+
     test('403 estándar sin ROL_NO_AUTORIZADO no altera la ubicación del usuario', async () => {
       global.window = {
         location: {
