@@ -58,7 +58,8 @@ export default function MapaReclamos({ reclamos = [], height = "100%", defaultCe
     <MapContainer
       center={defaultCenter}
       zoom={12}
-      style={{ height, width: "100%", borderRadius: "inherit" }}
+      className="isolate z-0"
+      style={{ height, width: "100%", borderRadius: "inherit", zIndex: 0 }}
       scrollWheelZoom
     >
       <TileLayer

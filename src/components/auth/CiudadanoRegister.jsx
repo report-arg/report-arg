@@ -56,11 +56,26 @@ export default function CiudadanoRegister() {
     setServerError('');
 
     try {
-      await authService.registerCitizen(data);
+      const res = await authService.registerCitizen(data);
+      const ciudadActivaParam = res?.ciudad_activa === false ? '0' : '1';
 
-      toast.success('Registro exitoso. Te enviamos un código de verificación.');
+      if (res?.ciudad_activa === false) {
+        toast.info(
+          `Tu cuenta fue registrada con residencia en ${data.ciudad}, pero esa localidad aún no está activa. Verificá tu correo para solicitar su activación o continuar como visitante.`
+        );
+      } else {
+        toast.success('Registro exitoso. Te enviamos un código de verificación.');
+      }
+
       setTimeout(() => {
-        router.push(`/verify?email=${encodeURIComponent(data.email)}&type=citizen`);
+        const params = new URLSearchParams({
+          email: data.email,
+          type: 'citizen',
+          ciudadActiva: ciudadActivaParam,
+          ciudad: data.ciudad,
+          provincia: data.provincia,
+        });
+        router.push(`/verify?${params.toString()}`);
       }, 1500);
     } catch (error) {
       setServerError(error.response?.data?.error || error.message || 'Ocurrió un error al registrar ciudadano');

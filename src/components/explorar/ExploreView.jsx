@@ -9,11 +9,14 @@ import apiClient from "@/services/apiClient";
 import { toast } from "sonner";
 import useCategorias from "@/hooks/useCategorias";
 import PageHeader from "@/components/layout/PageHeader";
+import { useCiudadanoCiudad } from "@/context/CiudadanoCiudadContext";
 
 export default function ExploreView() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const { ciudadSeleccionada } = useCiudadanoCiudad();
+  const idCiudadConsulta = ciudadSeleccionada?.id || null;
 
   const queryInicial = searchParams.get("q") || "";
   const catInicial = searchParams.get("categoria") ? Number(searchParams.get("categoria")) : null;
@@ -30,6 +33,7 @@ export default function ExploreView() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ limite: 40 });
+      if (idCiudadConsulta) params.set("id_ciudad", String(idCiudadConsulta));
       if (tipo !== "todos") params.set("tipo", tipo);
       if (categoriaId) params.set("categoria", categoriaId);
       if (tipo === "reclamo" && estado && estado !== "Todos") {
@@ -57,7 +61,7 @@ export default function ExploreView() {
     } finally {
       setLoading(false);
     }
-  }, [tipo, estado, categoriaId, busqueda]);
+  }, [tipo, estado, categoriaId, busqueda, idCiudadConsulta]);
 
   useEffect(() => {
     fetchExplorar();

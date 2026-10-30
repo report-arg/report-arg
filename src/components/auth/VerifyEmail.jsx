@@ -5,11 +5,16 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { authService } from '@/services/authService';
 import Image from 'next/image';
+import Button from '@/components/ui/Button';
 
 export default function VerifyEmail() {
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [email, setEmail] = useState('');
   const [type, setType] = useState('');
+  const [ciudadActiva, setCiudadActiva] = useState('1');
+  const [ciudadDeclarada, setCiudadDeclarada] = useState('');
+  const [provinciaDeclarada, setProvinciaDeclarada] = useState('');
+  const [verificadoCiudadInactiva, setVerificadoCiudadInactiva] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const inputsRef = useRef([]);
@@ -19,6 +24,9 @@ export default function VerifyEmail() {
     const params = new URLSearchParams(window.location.search);
     setEmail(params.get('email') || '');
     setType(params.get('type') || '');
+    setCiudadActiva(params.get('ciudadActiva') ?? '1');
+    setCiudadDeclarada(params.get('ciudad') || '');
+    setProvinciaDeclarada(params.get('provincia') || '');
   }, []);
 
   const handleChange = (event, index) => {
@@ -54,6 +62,12 @@ export default function VerifyEmail() {
 
     try {
       await authService.verifyEmail(email, finalCode);
+
+      if (type === 'citizen' && ciudadActiva === '0') {
+        toast.success('¡Cuenta verificada! Tu ciudad de residencia aún no se encuentra activa.');
+        setVerificadoCiudadInactiva(true);
+        return;
+      }
 
       toast.success('¡Cuenta verificada! Ya podés iniciar sesión.');
       setTimeout(() => {
@@ -99,6 +113,33 @@ export default function VerifyEmail() {
             {type === 'institution' && <p className="login-form-subtitle">Completa la verificación para continuar con el alta institucional.</p>}
           </div>
 
+          {verificadoCiudadInactiva ? (
+            <div className="space-y-4 text-left p-5 rounded-2xl border border-amber-200 bg-amber-50/70">
+              <h3 className="text-base font-bold text-slate-900">
+                Estado de tu ciudad de residencia: {ciudadDeclarada || 'Localidad declarada'}
+                {provinciaDeclarada ? `, ${provinciaDeclarada}` : ''}
+              </h3>
+              <p className="text-xs text-slate-700 leading-relaxed">
+                Tu correo fue verificado y tu ciudad de residencia quedó asociada a tu perfil, pero actualmente no se encuentra activa en ReportARG. Podés solicitar la activación de tu localidad o iniciar sesión para continuar como visitante seleccionando otra ciudad activa.
+              </p>
+              <div className="flex flex-col gap-2.5 pt-2">
+                <Button
+                  href={`/solicitud-activacion?ciudad=${encodeURIComponent(ciudadDeclarada)}&provincia=${encodeURIComponent(provinciaDeclarada)}`}
+                  variant="primary"
+                  size="md"
+                >
+                  Solicitar activación de mi ciudad
+                </Button>
+                <Button
+                  href="/login"
+                  variant="outline"
+                  size="md"
+                >
+                  Continuar como visitante (Iniciar sesión)
+                </Button>
+              </div>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} noValidate>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 10, margin: '32px 0' }}>
               {code.map((digit, index) => (
@@ -139,6 +180,7 @@ export default function VerifyEmail() {
               </button>
             </div>
           </form>
+          )}
         </div>
       </div>
     </div>

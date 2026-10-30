@@ -31,11 +31,14 @@ function validarPerfil(form, esInstitucion) {
   }
   if (!EMAIL_REGEX.test(form.email)) return "Ingresá un correo electrónico válido.";
 
-  for (const [campo, etiqueta] of [["provincia", "La provincia"], ["ciudad", "La ciudad"], ["zona", "La zona o barrio"]]) {
+  for (const [campo, etiqueta] of [["zona", "La zona o barrio"]]) {
     if (form[campo].length < 2 || form[campo].length > 100) return `${etiqueta} debe tener entre 2 y 100 caracteres.`;
   }
 
   if (esInstitucion) {
+    for (const [campo, etiqueta] of [["provincia", "La provincia"], ["ciudad", "La ciudad"]]) {
+      if (form[campo].length < 2 || form[campo].length > 100) return `${etiqueta} debe tener entre 2 y 100 caracteres.`;
+    }
     if (form.tipo.length < 2 || form.tipo.length > 100) return "El tipo de institución debe tener entre 2 y 100 caracteres.";
     if (!/^[0-9+() -]{7,25}$/.test(form.telefono)) return "Ingresá un teléfono válido (entre 7 y 25 caracteres).";
     if (form.direccion.length < 5 || form.direccion.length > 160) return "La dirección debe tener entre 5 y 160 caracteres.";
@@ -286,11 +289,28 @@ export default function ProfilePage() {
                   <FormField label="EMAIL" icon={<Mail size={14} />} value={form.email} onChange={v => setForm(p => ({ ...p, email: v }))} type="email" />
                   {esInstitucion && <FormField label="TIPO DE INSTITUCIÓN" icon={<User size={14} />} value={form.tipo} onChange={v => setForm(p => ({ ...p, tipo: v }))} />}
                   {esInstitucion && <FormField label="TELÉFONO" icon={<Mail size={14} />} value={form.telefono} onChange={v => setForm(p => ({ ...p, telefono: v }))} />}
-                  <FormField label="PROVINCIA" icon={<MapPin size={14} />} value={form.provincia} onChange={v => setForm(p => ({ ...p, provincia: v }))} />
-                  <FormField label="CIUDAD" icon={<MapPin size={14} />} value={form.ciudad} onChange={v => setForm(p => ({ ...p, ciudad: v }))} />
+                  <FormField
+                    label={esInstitucion ? "PROVINCIA" : "PROVINCIA DE RESIDENCIA (FIJA)"}
+                    icon={<MapPin size={14} />}
+                    value={form.provincia}
+                    onChange={v => esInstitucion && setForm(p => ({ ...p, provincia: v }))}
+                    readOnly={!esInstitucion}
+                  />
+                  <FormField
+                    label={esInstitucion ? "CIUDAD" : "CIUDAD DE RESIDENCIA (FIJA)"}
+                    icon={<MapPin size={14} />}
+                    value={form.ciudad}
+                    onChange={v => esInstitucion && setForm(p => ({ ...p, ciudad: v }))}
+                    readOnly={!esInstitucion}
+                  />
                   <FormField label="ZONA / BARRIO" icon={<MapPin size={14} />} value={form.zona} onChange={v => setForm(p => ({ ...p, zona: v }))} />
                   {esInstitucion && <FormField label="DIRECCIÓN" icon={<MapPin size={14} />} value={form.direccion} onChange={v => setForm(p => ({ ...p, direccion: v }))} />}
                 </div>
+                {!esInstitucion && (
+                  <p style={{ marginTop: 10, marginBottom: 0, fontSize: 12, color: "#64748b" }}>
+                    La ciudad y provincia de residencia declaradas en el registro no se modifican desde el perfil. Podés consultar hasta 3 ciudades adicionales de interés desde tu panel ciudadano.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -467,7 +487,7 @@ export default function ProfilePage() {
   );
 }
 
-function FormField({ label, icon, value, onChange, type = "text", inputMode, maxLength }) {
+function FormField({ label, icon, value, onChange, type = "text", inputMode, maxLength, readOnly = false }) {
   return (
     <div>
       <label style={{ fontSize: 11, color: "#888", letterSpacing: 0.5, display: "block", marginBottom: 4 }}>
@@ -479,18 +499,21 @@ function FormField({ label, icon, value, onChange, type = "text", inputMode, max
         </span>
         <input
           type={type}
-          required
+          required={!readOnly}
+          readOnly={readOnly}
+          disabled={readOnly}
           inputMode={inputMode}
           maxLength={maxLength}
           value={value}
-          onChange={e => onChange(e.target.value)}
+          onChange={e => !readOnly && onChange(e.target.value)}
           style={{
             width: "100%", padding: "9px 12px 9px 32px", borderRadius: 8,
-            border: "1px solid #e5e9f5", fontSize: 13, color: "#1a1a2e",
-            background: "#fff", outline: "none", boxSizing: "border-box"
+            border: "1px solid #e5e9f5", fontSize: 13, color: readOnly ? "#64748b" : "#1a1a2e",
+            background: readOnly ? "#f8fafc" : "#fff", outline: "none", boxSizing: "border-box",
+            cursor: readOnly ? "not-allowed" : "text"
           }}
-          onFocus={e => e.target.style.borderColor = "#2D3A8C"}
-          onBlur={e => e.target.style.borderColor = "#e5e9f5"}
+          onFocus={e => { if (!readOnly) e.target.style.borderColor = "#2D3A8C"; }}
+          onBlur={e => { if (!readOnly) e.target.style.borderColor = "#e5e9f5"; }}
         />
       </div>
     </div>

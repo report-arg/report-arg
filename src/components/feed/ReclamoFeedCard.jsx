@@ -11,6 +11,7 @@ import BaseFeedCard from "./BaseFeedCard";
 import { useSession } from "next-auth/react";
 import apiClient from "@/services/apiClient";
 import { toast } from "sonner";
+import { useCiudadanoCiudad } from "@/context/CiudadanoCiudadContext";
 
 function iniciales(nombre) {
   if (!nombre) return "C";
@@ -37,6 +38,7 @@ async function compartirReclamo({ titulo, descripcion, id }) {
 export default function ReclamoFeedCard({ item, priorityImage }) {
   const router = useRouter();
   const { data: session } = useSession();
+  const { puedeOperarEnCiudadActual, esVisitante } = useCiudadanoCiudad();
 
   const esCiudadano = session?.user?.role === "ciudadano";
   const esInstitucion = session?.user?.role === "institucion";
@@ -68,6 +70,15 @@ export default function ReclamoFeedCard({ item, priorityImage }) {
   async function handleToggleAfectado(e) {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!puedeOperarEnCiudadActual) {
+      toast.info(
+        esVisitante
+          ? "Solo podés adherirte a reclamos de tu ciudad de residencia."
+          : "Tu ciudad de residencia aún no se encuentra activa."
+      );
+      return;
+    }
 
     if (loadingAfectado) return;
     setLoadingAfectado(true);
@@ -228,13 +239,21 @@ export default function ReclamoFeedCard({ item, priorityImage }) {
         <button
           type="button"
           onClick={handleToggleAfectado}
-          disabled={loadingAfectado}
-          className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border cursor-pointer ${
-            isAfectado
-              ? "bg-primary text-white border-primary shadow-xs hover:bg-[var(--color-brand-600)]"
-              : "bg-surface border-border-subtle text-text-secondary hover:bg-surface-subtle hover:border-border"
+          disabled={loadingAfectado || !puedeOperarEnCiudadActual}
+          className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+            !puedeOperarEnCiudadActual
+              ? "opacity-60 cursor-not-allowed bg-surface-subtle border-border-subtle text-text-muted"
+              : isAfectado
+              ? "bg-primary text-white border-primary shadow-xs hover:bg-[var(--color-brand-600)] cursor-pointer"
+              : "bg-surface border-border-subtle text-text-secondary hover:bg-surface-subtle hover:border-border cursor-pointer"
           }`}
-          title={isAfectado ? "Ya indicaste que te afecta" : "Indicar que a mí también me pasa"}
+          title={
+            !puedeOperarEnCiudadActual
+              ? "Solo podés adherirte a reclamos de tu ciudad de residencia activa"
+              : isAfectado
+              ? "Ya indicaste que te afecta"
+              : "Indicar que a mí también me pasa"
+          }
         >
           <Users size={13} className={isAfectado ? "text-white" : "text-text-muted"} />
           <span>A mí también me pasa</span>

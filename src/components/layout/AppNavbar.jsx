@@ -8,6 +8,7 @@ import { useTheme } from "next-themes";
 import apiClient from "@/services/apiClient";
 import Image from "next/image";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import { useCiudadanoCiudad } from "@/context/CiudadanoCiudadContext";
 
 export default function AppNavbar({
   onMenuClick = () => {},
@@ -51,15 +52,21 @@ export default function AppNavbar({
   }, []);
 
   const isAdmin = session?.user?.role === "admin";
+  const isCiudadano = session?.user?.role === "ciudadano";
   const displayedRole = isAdmin ? "Administrador" : roleName;
+  const { ciudadSeleccionada, ciudadResidencia, esVisitante, setModalAbierto } = useCiudadanoCiudad();
 
   const nombreMostrado = perfil?.nombre || session?.user?.name || displayedRole;
   const fotoUrl = perfil?.foto || session?.user?.foto || null;
   const iniciales = nombreMostrado
     .split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
 
-  const ciudad = perfil?.ciudad_activa || perfil?.ciudad_declarada || null;
-  const provincia = perfil?.provincia_activa || perfil?.provincia_declarada || null;
+  const ciudad = isCiudadano && ciudadSeleccionada?.nombre
+    ? ciudadSeleccionada.nombre
+    : (perfil?.ciudad_activa || perfil?.ciudad_declarada || ciudadResidencia?.nombre || null);
+  const provincia = isCiudadano && ciudadSeleccionada?.provincia
+    ? ciudadSeleccionada.provincia
+    : (perfil?.provincia_activa || perfil?.provincia_declarada || ciudadResidencia?.provincia || null);
   const ubicacionTexto = ciudad
     ? `${ciudad}${provincia ? `, ${provincia}` : ""}`
     : (provincia || null);
@@ -90,10 +97,28 @@ export default function AppNavbar({
 
         {/* Contexto Territorial Dinámico */}
         {showLocation && ubicacionTexto && (
-          <div className="home-location-badge hidden sm:flex" title="Ubicación">
-            <MapPin size={14} className="pin-icon" />
-            <span>{ubicacionTexto}</span>
-          </div>
+          isCiudadano ? (
+            <button
+              type="button"
+              onClick={() => setModalAbierto(true)}
+              className="home-location-badge hidden sm:flex cursor-pointer hover:opacity-90 transition-opacity"
+              title="Cambiar ciudad consultada o gestionar ciudades de interés"
+            >
+              <MapPin size={14} className="pin-icon" />
+              <span>{ubicacionTexto}</span>
+              {esVisitante && (
+                <span className="ml-1 px-1.5 py-0.5 rounded bg-white/15 text-[10px] font-bold">
+                  Visitante
+                </span>
+              )}
+              <ChevronDown size={12} className="ml-0.5 opacity-80" />
+            </button>
+          ) : (
+            <div className="home-location-badge hidden sm:flex" title="Ubicación">
+              <MapPin size={14} className="pin-icon" />
+              <span>{ubicacionTexto}</span>
+            </div>
+          )
         )}
 
         {/* Notificaciones funcionales con badge y dropdown (HU-22) */}

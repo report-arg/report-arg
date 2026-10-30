@@ -55,5 +55,48 @@ export const authService = {
   resetPassword: async (token, newPassword) => {
     const response = await apiClient.post('/auth/reset-password', { token, newPassword });
     return response.data;
-  }
+  },
+
+  /**
+   * Obtiene el listado de ciudades activas en ReportARG
+   */
+  getCiudadesActivas: async () => {
+    const response = await apiClient.get('/ciudades');
+    return response.data;
+  },
+
+  /**
+   * Obtiene las ciudades adicionales de interés del ciudadano autenticado
+   */
+  getCiudadesInteres: async () => {
+    const response = await apiClient.get('/auth/me/ciudades-interes');
+    return response.data;
+  },
+
+  /**
+   * Agrega una ciudad de interés (máximo 3)
+   * @param {number} idCiudad
+   */
+  addCiudadInteres: async (idCiudad) => {
+    const response = await apiClient.post('/auth/me/ciudades-interes', { id_ciudad: Number(idCiudad) });
+    return response.data;
+  },
+
+  /**
+   * Elimina una ciudad de interés guardada
+   * @param {number} idCiudad
+   */
+  removeCiudadInteres: async (idCiudad) => {
+    const response = await apiClient.delete(`/auth/me/ciudades-interes/${Number(idCiudad)}`);
+    return response.data;
+  },
+
+  /**
+   * Valida y cambia el contexto de ciudad consultada sin alterar la residencia ni permisos
+   * @param {number} idCiudad
+   */
+  cambiarContextoCiudad: async (idCiudad) => {
+    const response = await apiClient.post('/auth/me/contexto-ciudad', { id_ciudad: Number(idCiudad) });
+    return response.data;
+  },
 };

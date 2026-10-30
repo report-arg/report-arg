@@ -13,7 +13,7 @@ export const CIUDADES_AR = {
   'Ciudad Autónoma de Buenos Aires': ['CABA'],
   'Córdoba': ['Córdoba','Villa María','San Francisco','Río Cuarto','Alta Gracia','Villa Carlos Paz','Otra'],
   'Corrientes': ['Corrientes','Goya','Curuzú Cuatiá','Otra'],
-  'Entre Ríos': ['Paraná','Concordia','Gualeguaychú','Otra'],
+  'Entre Ríos': ['Viale','Paraná','Concordia','Gualeguaychú','Crespo','Villaguay','Victoria','La Paz','Colón','Diamante','Otra'],
   'Formosa': ['Formosa','Clorinda','Otra'],
   'Jujuy': ['San Salvador de Jujuy','Palpalá','San Pedro','Otra'],
   'La Pampa': ['Santa Rosa','General Pico','Otra'],

@@ -7,6 +7,8 @@ import AppShell from "@/components/layout/AppShell";
 import AppSidebar from "@/components/layout/AppSidebar";
 import AppNavbar from "@/components/layout/AppNavbar";
 import AppBottomNav from "@/components/layout/AppBottomNav";
+import { CiudadanoCiudadProvider } from "@/context/CiudadanoCiudadContext";
+import CiudadanoCiudadPanel from "@/components/ciudadano/CiudadanoCiudadPanel";
 import { Home, Search, FileText, Map, Bell, PlusSquare, Shield } from "lucide-react";
 import { ReportProblemIcon } from "@/components/brand/icons";
 
@@ -62,8 +64,11 @@ export default function CiudadanoLayout({ children }) {
   );
 
   return (
-    <AppShell sidebar={sidebar} navbar={navbar} bottomNav={bottomNav}>
-      {children}
-    </AppShell>
+    <CiudadanoCiudadProvider>
+      <AppShell sidebar={sidebar} navbar={navbar} bottomNav={bottomNav}>
+        <CiudadanoCiudadPanel />
+        {children}
+      </AppShell>
+    </CiudadanoCiudadProvider>
   );
 }

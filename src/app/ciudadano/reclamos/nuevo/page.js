@@ -13,11 +13,13 @@ import { uploadImage } from "@/services/uploadService";
 import { getCategoryIcon } from "@/components/brand/icons";
 import { toast } from "sonner";
 import useCategorias from "@/hooks/useCategorias";
-import { CategoriaDropdown } from "@/components/ui";
+import { CategoriaDropdown, Button } from "@/components/ui";
+import { useCiudadanoCiudad } from "@/context/CiudadanoCiudadContext";
 
 export default function NuevoReclamoPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { ciudadResidencia, esVisitante } = useCiudadanoCiudad();
 
   const fileInputRef = useRef(null);
   const tituloRef = useRef(null);
@@ -203,6 +205,37 @@ export default function NuevoReclamoPage() {
 
   if (status === "loading") return null;
 
+  if (ciudadResidencia && !ciudadResidencia.activa) {
+    return (
+      <div className="w-full max-w-2xl mx-auto py-6">
+        <div className="bg-surface rounded-2xl border border-amber-200 dark:border-amber-800/60 p-6 space-y-4 shadow-xs">
+          <h1 className="text-lg font-bold text-text-primary">
+            Tu ciudad de residencia ({ciudadResidencia.nombre}) no se encuentra activa
+          </h1>
+          <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
+            No es posible crear nuevos reclamos cuando tu ciudad de residencia está inactiva. El cambio de ciudad en el panel modifica únicamente el contexto de consulta y no otorga permisos de escritura en otras localidades.
+          </p>
+          <div className="flex flex-wrap items-center gap-2.5 pt-2">
+            <Button
+              href={`/solicitud-activacion?ciudad=${encodeURIComponent(ciudadResidencia.nombre || "")}&provincia=${encodeURIComponent(ciudadResidencia.provincia || "")}`}
+              variant="primary"
+              size="sm"
+            >
+              Solicitar activación de ciudad
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/ciudadano")}
+            >
+              Volver al panel ciudadano
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-4xl mx-auto py-2 sm:py-4 pb-20 sm:pb-8">
       {/* Contenedor principal del formulario integrado */}
@@ -225,6 +258,11 @@ export default function NuevoReclamoPage() {
           <p className="text-xs sm:text-sm text-text-muted mt-1 leading-relaxed">
             Contanos qué pasó para poder derivarlo a la institución correspondiente.
           </p>
+          {esVisitante && ciudadResidencia?.nombre && (
+            <p className="mt-2 text-xs font-medium text-primary bg-primary-subtle/50 border border-primary/20 rounded-xl px-3 py-2">
+              Nota: Aunque hayas seleccionado otra ciudad para consulta, este reclamo se registrará en tu ciudad de residencia activa (<strong>{ciudadResidencia.nombre}</strong>).
+            </p>
+          )}
         </div>
 
         {/* Formulario */}

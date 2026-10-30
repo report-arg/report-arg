@@ -11,6 +11,7 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import { ReportProblemIcon, getCategoryIcon } from "@/components/brand/icons";
 import { tiempoRelativo } from "@/utils/dateFormatters";
 import PageHeader from "@/components/layout/PageHeader";
+import { useCiudadanoCiudad } from "@/context/CiudadanoCiudadContext";
 
 const MapaReclamos = dynamic(
   () => import("@/components/mapa/MapaReclamos"),
@@ -28,6 +29,11 @@ const MapaReclamos = dynamic(
 export default function CiudadanoHomePage() {
   const router = useRouter();
   const { data: session } = useSession();
+  const {
+    ciudadSeleccionada,
+    ciudadResidencia,
+    puedeOperarEnCiudadActual,
+  } = useCiudadanoCiudad();
 
   const [perfil, setPerfil] = useState(null);
   const [misReclamos, setMisReclamos] = useState([]);
@@ -36,6 +42,8 @@ export default function CiudadanoHomePage() {
   const [loadingMapa, setLoadingMapa] = useState(true);
   const [tendencias, setTendencias] = useState([]);
   const [novedadReciente, setNovedadReciente] = useState(null);
+
+  const idCiudadConsulta = ciudadSeleccionada?.id || null;
 
   // 1. Cargar perfil del ciudadano
   useEffect(() => {
@@ -57,23 +65,25 @@ export default function CiudadanoHomePage() {
       .finally(() => setLoadingReclamos(false));
   }, [session?.user?.id]);
 
-  // 3. Cargar reclamos públicos para la preview del mapa
+  // 3. Cargar reclamos públicos para la preview del mapa según la ciudad seleccionada
   useEffect(() => {
     setLoadingMapa(true);
-    apiClient.get('/reclamos/mapa')
+    const query = idCiudadConsulta ? `?id_ciudad=${idCiudadConsulta}` : '';
+    apiClient.get(`/reclamos/mapa${query}`)
       .then(r => r.data)
       .then(d => { if (d.ok) setReclamosMapa(d.data || []); })
       .catch(() => {})
       .finally(() => setLoadingMapa(false));
-  }, []);
+  }, [idCiudadConsulta]);
 
-  // 4. Cargar temas más reportados (tendencias por ciudad)
+  // 4. Cargar temas más reportados (tendencias por ciudad seleccionada)
   useEffect(() => {
-    apiClient.get('/feed/tendencias')
+    const query = idCiudadConsulta ? `?id_ciudad=${idCiudadConsulta}` : '';
+    apiClient.get(`/feed/tendencias${query}`)
       .then(r => r.data)
       .then(d => { if (d.ok) setTendencias(d.data || []); })
       .catch(() => {});
-  }, []);
+  }, [idCiudadConsulta]);
 
   // 5. Cargar novedad importante no leída (si existe)
   useEffect(() => {
@@ -93,8 +103,8 @@ export default function CiudadanoHomePage() {
   // Datos del encabezado
   const nombreUsuario = perfil?.nombre || session?.user?.name || "Ciudadano";
   const primerNombre = nombreUsuario.split(" ")[0];
-  const ciudad = perfil?.ciudad_activa || perfil?.ciudad_declarada || null;
-  const provincia = perfil?.provincia_activa || perfil?.provincia_declarada || null;
+  const ciudad = ciudadSeleccionada?.nombre || perfil?.ciudad_activa || perfil?.ciudad_declarada || null;
+  const provincia = ciudadSeleccionada?.provincia || perfil?.provincia_activa || perfil?.provincia_declarada || null;
   const ubicacionTexto = ciudad
     ? `${ciudad}${provincia ? `, ${provincia}` : ""}`
     : "tu ciudad";
@@ -141,7 +151,15 @@ export default function CiudadanoHomePage() {
         action={
           <button
             onClick={() => router.push("/ciudadano/reclamos/nuevo")}
-            className="btn-primary-report shrink-0 cursor-pointer"
+            disabled={ciudadResidencia && !ciudadResidencia.activa}
+            title={
+              ciudadResidencia && !ciudadResidencia.activa
+                ? "Tu ciudad de residencia no está activa para crear reclamos"
+                : !puedeOperarEnCiudadActual
+                ? `Se registrará en tu ciudad de residencia (${ciudadResidencia?.nombre})`
+                : "Reportar un problema en mi ciudad"
+            }
+            className="btn-primary-report shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ReportProblemIcon size={16} />
             <span>Reportar un problema</span>
@@ -203,7 +221,7 @@ export default function CiudadanoHomePage() {
           </Link>
         </div>
 
-        <div className="rounded-2xl overflow-hidden border border-border-subtle bg-surface shadow-xs h-[280px] sm:h-[320px] relative">
+        <div className="rounded-2xl overflow-hidden border border-border-subtle bg-surface shadow-xs h-[280px] sm:h-[320px] relative isolate z-0">
           {loadingMapa ? (
             <div className="h-full w-full flex items-center justify-center text-xs text-text-muted gap-2">
               <Loader2 size={18} className="animate-spin text-primary" />

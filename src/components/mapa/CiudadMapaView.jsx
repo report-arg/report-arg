@@ -9,6 +9,7 @@ import apiClient from "@/services/apiClient";
 import ReclamoStatusBadge from "@/components/reclamos/ReclamoStatusBadge";
 import { CLAIM_STATUSES } from "@/utils/reclamoStatus";
 import PageHeader from "@/components/layout/PageHeader";
+import { useCiudadanoCiudad } from "@/context/CiudadanoCiudadContext";
 
 const MapaReclamos = dynamic(
   () => import("./MapaReclamos"),
@@ -22,18 +23,23 @@ const FILTROS = [
 
 export default function CiudadMapaView() {
   const router = useRouter();
+  const { ciudadSeleccionada } = useCiudadanoCiudad();
+  const idCiudadConsulta = ciudadSeleccionada?.id || null;
   const [reclamos, setReclamos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState("");
   const [seleccionado, setSeleccionado] = useState(null);
 
   useEffect(() => {
-    apiClient.get(`/reclamos/mapa`)
+    setLoading(true);
+    setSeleccionado(null);
+    const query = idCiudadConsulta ? `?id_ciudad=${idCiudadConsulta}` : "";
+    apiClient.get(`/reclamos/mapa${query}`)
       .then(r => r.data)
       .then(d => { if (d.ok) setReclamos(d.data); })
       .catch(() => { })
       .finally(() => setLoading(false));
-  }, []);
+  }, [idCiudadConsulta]);
 
   const visibles = filtro ? reclamos.filter(r => r.estado === filtro) : reclamos;
 
@@ -71,7 +77,7 @@ export default function CiudadMapaView() {
       </div>
 
       <div className={`grid gap-4 ${seleccionado ? "grid-cols-1 lg:grid-cols-[1fr_300px]" : "grid-cols-1"}`}>
-        <div className="relative rounded-xl overflow-hidden h-[500px] border border-border-subtle shadow-xs">
+        <div className="relative isolate z-0 rounded-xl overflow-hidden h-[500px] border border-border-subtle shadow-xs">
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center bg-surface text-text-muted text-sm gap-2 font-medium z-[1000]">
               <Loader2 size={24} className="animate-spin text-primary" /> Cargando datos…
