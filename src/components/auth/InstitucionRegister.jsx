@@ -24,7 +24,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { authService } from '@/services/authService';
 import Image from 'next/image';
 
-import { PROVINCIAS_AR, CIUDADES_AR } from '@/utils/constants';
+import { PROVINCIAS_AR } from '@/utils/constants';
+import Combobox from '@/components/ui/Combobox';
 
 const institutionTypes = [
   { key: 'municipio', label: 'Municipio' },
@@ -68,9 +69,47 @@ export default function InstitucionRegister() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [serverError, setServerError] = useState('');
   const [step] = useState(1);
+  const [localidadesOptions, setLocalidadesOptions] = useState([]);
+  const [loadingLocalidades, setLoadingLocalidades] = useState(false);
   const router = useRouter();
   
   const provinciaSeleccionada = watch('provincia');
+  const ciudadSeleccionada = watch('ciudad');
+
+  useEffect(() => {
+    if (!provinciaSeleccionada) {
+      setLocalidadesOptions([]);
+      return;
+    }
+
+    let isMounted = true;
+    setLoadingLocalidades(true);
+
+    authService
+      .getLocalidades({ provincia: provinciaSeleccionada, limit: 300 })
+      .then((res) => {
+        if (!isMounted) return;
+        const lista = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+        setLocalidadesOptions(
+          lista.map((loc) => ({
+            value: loc.nombre,
+            label: loc.nombre,
+            activa: Boolean(loc.activa),
+          }))
+        );
+      })
+      .catch((err) => {
+        console.error('Error al cargar localidades institucion:', err);
+        if (isMounted) setLocalidadesOptions([]);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingLocalidades(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [provinciaSeleccionada]);
 
   const formatCuit = (value) => {
     const digits = value.replace(/\D/g, '').slice(0, 11);
@@ -260,7 +299,9 @@ export default function InstitucionRegister() {
                   <select
                     id="provincia"
                     className="form-input form-select"
-                    {...register('provincia')}
+                    {...register('provincia', {
+                      onChange: () => setValue('ciudad', '', { shouldValidate: true }),
+                    })}
                   >
                     <option value="">Seleccioná una provincia</option>
                     {PROVINCIAS_AR.map(p => <option key={p} value={p}>{p}</option>)}
@@ -269,21 +310,20 @@ export default function InstitucionRegister() {
                 </div>
                 {errors.provincia && <p className="register-error">{errors.provincia.message}</p>}
               </div>
+
               <div className="form-group">
-                <label className="form-label" htmlFor="ciudad">CIUDAD <span className="form-required">*</span></label>
-                <div className="form-input-wrapper form-select-wrapper">
-                  <select
-                    id="ciudad"
-                    className="form-input form-select"
-                    {...register('ciudad')}
-                    disabled={!provinciaSeleccionada}
-                  >
-                    <option value="">{provinciaSeleccionada ? 'Seleccioná una ciudad' : 'Primero elegí provincia'}</option>
-                    {(CIUDADES_AR[provinciaSeleccionada] || []).map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <div className="form-input-icon"><ChevronDownIcon aria-hidden /></div>
-                </div>
-                {errors.ciudad && <p className="register-error">{errors.ciudad.message}</p>}
+                <label className="form-label" htmlFor="ciudad">CIUDAD DE SEDE <span className="form-required">*</span></label>
+                <Combobox
+                  id="ciudad"
+                  value={ciudadSeleccionada}
+                  onChange={(val) => setValue('ciudad', val, { shouldValidate: true, shouldDirty: true })}
+                  options={localidadesOptions}
+                  placeholder={provinciaSeleccionada ? 'Seleccionar o buscar localidad...' : 'Primero elegí provincia'}
+                  searchPlaceholder="Escribí para buscar localidad..."
+                  disabled={!provinciaSeleccionada}
+                  loading={loadingLocalidades}
+                  error={errors.ciudad?.message}
+                />
               </div>
             </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -13,13 +13,14 @@ import {
   ChevronDownIcon,
 } from '@heroicons/react/20/solid';
 
-import { PROVINCIAS_AR, CIUDADES_AR } from '@/utils/constants';
+import { PROVINCIAS_AR } from '@/utils/constants';
 import { citizenRegisterSchema } from '@/utils/schemas';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { authService } from '@/services/authService';
 import Image from 'next/image';
+import Combobox from '@/components/ui/Combobox';
 
 const initialForm = {
   nombre: '',
@@ -37,12 +38,15 @@ export default function CiudadanoRegister() {
   const [serverError, setServerError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [localidadesOptions, setLocalidadesOptions] = useState([]);
+  const [loadingLocalidades, setLoadingLocalidades] = useState(false);
   const router = useRouter();
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(citizenRegisterSchema),
@@ -51,6 +55,46 @@ export default function CiudadanoRegister() {
   });
 
   const provinciaSeleccionada = watch('provincia');
+  const ciudadSeleccionada = watch('ciudad');
+
+  // Cargar localidades oficiales del backend al cambiar la provincia
+  useEffect(() => {
+    if (!provinciaSeleccionada) {
+      setLocalidadesOptions([]);
+      return;
+    }
+
+    let isMounted = true;
+    setLoadingLocalidades(true);
+
+    authService
+      .getLocalidades({ provincia: provinciaSeleccionada, limit: 300 })
+      .then((res) => {
+        if (!isMounted) return;
+        const lista = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+        const formatted = lista.map((loc) => ({
+          value: loc.nombre,
+          label: loc.nombre,
+          activa: Boolean(loc.activa),
+        }));
+        setLocalidadesOptions(formatted);
+      })
+      .catch((err) => {
+        console.error('Error al cargar localidades:', err);
+        if (isMounted) setLocalidadesOptions([]);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingLocalidades(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [provinciaSeleccionada]);
+
+  const localidadElegidaObj = localidadesOptions.find(
+    (l) => l.value.trim().toLowerCase() === String(ciudadSeleccionada || '').trim().toLowerCase()
+  );
 
   const onSubmit = async (data) => {
     setServerError('');
@@ -175,7 +219,9 @@ export default function CiudadanoRegister() {
                   <select
                     id="provincia"
                     className="form-input form-select"
-                    {...register('provincia')}
+                    {...register('provincia', {
+                      onChange: () => setValue('ciudad', '', { shouldValidate: true }),
+                    })}
                   >
                     <option value="">Seleccioná una provincia</option>
                     {PROVINCIAS_AR.map(p => <option key={p} value={p}>{p}</option>)}
@@ -186,22 +232,26 @@ export default function CiudadanoRegister() {
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="ciudad">CIUDAD <span className="form-required">*</span></label>
-                <div className="form-input-wrapper form-select-wrapper">
-                  <select
-                    id="ciudad"
-                    className="form-input form-select"
-                    {...register('ciudad')}
-                    disabled={!provinciaSeleccionada}
-                  >
-                    <option value="">{provinciaSeleccionada ? 'Seleccioná una ciudad' : 'Primero elegí provincia'}</option>
-                    {(CIUDADES_AR[provinciaSeleccionada] || []).map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <div className="form-input-icon"><ChevronDownIcon aria-hidden /></div>
-                </div>
-                {errors.ciudad && <p className="register-error">{errors.ciudad.message}</p>}
+                <label className="form-label" htmlFor="ciudad">CIUDAD DE RESIDENCIA <span className="form-required">*</span></label>
+                <Combobox
+                  id="ciudad"
+                  value={ciudadSeleccionada}
+                  onChange={(val) => setValue('ciudad', val, { shouldValidate: true, shouldDirty: true })}
+                  options={localidadesOptions}
+                  placeholder={provinciaSeleccionada ? 'Seleccionar o buscar localidad...' : 'Primero elegí provincia'}
+                  searchPlaceholder="Escribí para buscar localidad..."
+                  disabled={!provinciaSeleccionada}
+                  loading={loadingLocalidades}
+                  error={errors.ciudad?.message}
+                />
               </div>
             </div>
+
+            {ciudadSeleccionada && localidadElegidaObj && localidadElegidaObj.activa === false && (
+              <div className="mb-4 p-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 text-xs leading-relaxed">
+                <strong>{ciudadSeleccionada}</strong> aún no se encuentra activa en ReportARG. Podés registrarte con tu residencia real y luego <strong>solicitar su activación</strong> o explorar otra ciudad activa como visitante.
+              </div>
+            )}
 
             <div className="form-group">
               <label className="form-label" htmlFor="zona">ZONA <span className="form-required">*</span></label>

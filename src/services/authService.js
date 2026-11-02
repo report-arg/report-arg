@@ -66,6 +66,30 @@ export const authService = {
   },
 
   /**
+   * Obtiene las provincias oficiales de Argentina
+   */
+  getProvincias: async () => {
+    const response = await apiClient.get('/ciudades/provincias');
+    return response.data;
+  },
+
+  /**
+   * Obtiene localidades oficiales por provincia con estado de activación en ReportARG
+   * @param {Object} params
+   * @param {string} params.provincia
+   * @param {string} [params.q]
+   * @param {number} [params.limit=150]
+   */
+  getLocalidades: async ({ provincia, q, limit = 150 }) => {
+    const paramsQuery = new URLSearchParams();
+    if (provincia) paramsQuery.set('provincia', provincia);
+    if (q) paramsQuery.set('q', q);
+    if (limit) paramsQuery.set('limit', String(limit));
+    const response = await apiClient.get(`/ciudades/localidades?${paramsQuery.toString()}`);
+    return response.data;
+  },
+
+  /**
    * Obtiene las ciudades adicionales de interés del ciudadano autenticado
    */
   getCiudadesInteres: async () => {

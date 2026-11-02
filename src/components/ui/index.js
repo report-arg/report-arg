@@ -9,6 +9,7 @@ export { default as ImageViewer } from "./ImageViewer";
 export { default as EmptyState } from "./EmptyState";
 export { default as StepIndicator } from "./StepIndicator";
 export { default as Select } from "./Select";
+export { default as Combobox } from "./Combobox";
 export { default as CategoriaDropdown } from "./CategoriaDropdown";
 export { default as StatusDropdown } from "./StatusDropdown";
 export { default as SortDropdown } from "./SortDropdown";
