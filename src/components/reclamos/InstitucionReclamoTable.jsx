@@ -54,28 +54,29 @@ export default function InstitucionReclamoTable({
         >
           <thead>
             <tr className="bg-surface-subtle border-b border-border-subtle text-text-secondary font-semibold uppercase tracking-wider text-[11px]">
-              <th scope="col" className="py-3 px-4">
-                Reclamo
+              <th scope="col" className="py-2.5 px-3">
+                <span>Reclamo</span>
+                <span className="sr-only">Visibilidad</span>
               </th>
-              <th scope="col" className="py-3 px-4">
+              <th scope="col" className="py-2.5 px-3 whitespace-nowrap text-center">
                 Categoría
               </th>
-              <th scope="col" className="py-3 px-4">
+              <th scope="col" className="py-2.5 px-3 whitespace-nowrap text-center">
                 Creación
               </th>
-              <th scope="col" className="py-3 px-4">
-                Visibilidad
-              </th>
-              <th scope="col" className="py-3 px-4">
+              <th scope="col" className="py-2.5 px-3 whitespace-nowrap text-center">
                 Estado
               </th>
-              <th scope="col" className="py-3 px-4">
+              <th scope="col" className="py-2.5 px-3 whitespace-nowrap text-center">
                 Afectados
               </th>
-              <th scope="col" className="py-3 px-4">
+              <th scope="col" className="py-2.5 px-3 whitespace-nowrap text-center">
                 Antigüedad / Demora
               </th>
-              <th scope="col" className="py-3 px-4 text-right">
+              <th
+                scope="col"
+                className="py-2.5 px-3 text-center whitespace-nowrap"
+              >
                 Acción
               </th>
             </tr>
@@ -95,15 +96,20 @@ export default function InstitucionReclamoTable({
                   key={r.id}
                   className="hover:bg-surface-subtle/50 transition-colors group"
                 >
-                  {/* Identificador y Título */}
-                  <td className="py-3.5 px-4 max-w-xs">
-                    <div className="flex items-center gap-2 mb-0.5">
+                  {/* Identificador, Visibilidad integrada y Título */}
+                  <td className="py-2.5 px-3 max-w-[240px]">
+                    <div className="flex items-center gap-2 mb-1">
                       <span className="font-mono text-xs font-bold text-text-muted">
                         {idFormateado}
                       </span>
+                      <ReclamoVisibilityBadge
+                        visibilidad={r.visibilidad || "publico"}
+                        size="sm"
+                      />
                     </div>
                     <Link
                       href={`/institucion/reclamos/${r.id}`}
+                      title={r.titulo}
                       className="font-semibold text-text-primary group-hover:text-primary transition-colors line-clamp-1 focus-visible:outline-none focus-visible:underline"
                     >
                       {r.titulo}
@@ -114,7 +120,7 @@ export default function InstitucionReclamoTable({
                         title={r.direccion}
                       >
                         <MapPin size={11} className="shrink-0" />
-                        <span className="truncate max-w-[240px]">
+                        <span className="truncate max-w-[200px]">
                           {r.direccion}
                         </span>
                       </div>
@@ -122,7 +128,7 @@ export default function InstitucionReclamoTable({
                   </td>
 
                   {/* Categoría */}
-                  <td className="py-3.5 px-4 whitespace-nowrap">
+                  <td className="py-2.5 px-3 whitespace-nowrap text-center">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-subtle border border-border-subtle text-text-primary text-xs font-medium">
                       <CategoryIcon
                         size={14}
@@ -133,7 +139,7 @@ export default function InstitucionReclamoTable({
                   </td>
 
                   {/* Fecha de creación */}
-                  <td className="py-3.5 px-4 whitespace-nowrap text-xs text-text-secondary">
+                  <td className="py-2.5 px-3 whitespace-nowrap text-xs text-text-secondary text-center">
                     <span
                       className="font-medium text-text-primary block"
                       title={fechaExacta(r.fecha_creacion)}
@@ -145,35 +151,26 @@ export default function InstitucionReclamoTable({
                     </span>
                   </td>
 
-                  {/* Visibilidad */}
-                  <td className="py-3.5 px-4 whitespace-nowrap">
-                    <ReclamoVisibilityBadge
-                      visibilidad={r.visibilidad || "publico"}
-                      size="sm"
-                    />
-                  </td>
-
                   {/* Estado actual */}
-                  <td className="py-3.5 px-4 whitespace-nowrap">
+                  <td className="py-2.5 px-3 whitespace-nowrap text-center">
                     <StatusBadge status={r.estado} size="sm" />
                   </td>
 
-                  {/* Cantidad de afectados */}
-                  <td className="py-3.5 px-4 whitespace-nowrap">
+                  {/* Cantidad de afectados (ícono + número compacto con soporte accesible) */}
+                  <td className="py-2.5 px-3 whitespace-nowrap text-center">
                     <div
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-text-secondary"
-                      title='Ciudadanos que indicaron "A mí también me pasa"'
+                      className="inline-flex items-center justify-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-subtle border border-border-subtle text-xs font-semibold text-text-secondary"
+                      title={`${afectados} ${afectados === 1 ? "afectado" : "afectados"} ("A mí también me pasa")`}
                     >
-                      <Users size={14} className="text-text-muted shrink-0" />
-                      <span>
-                        {afectados} {afectados === 1 ? "afectado" : "afectados"}
-                      </span>
+                      <Users size={13} className="text-text-muted shrink-0" />
+                      <span>{afectados}</span>
+                      <span className="sr-only"> {afectados === 1 ? "afectado" : "afectados"}</span>
                     </div>
                   </td>
 
                   {/* Antigüedad o Indicador de Demora */}
-                  <td className="py-3.5 px-4 whitespace-nowrap">
-                    <div className="flex flex-col items-start gap-1">
+                  <td className="py-2.5 px-3 whitespace-nowrap text-center">
+                    <div className="flex flex-col items-center gap-1">
                       <span
                         className="inline-flex items-center gap-1 text-xs text-text-secondary font-medium"
                         title={`Tiempo en estado ${r.estado}`}
@@ -184,7 +181,7 @@ export default function InstitucionReclamoTable({
 
                       {Boolean(r.demorado) && (
                         <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 shrink-0"
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 shrink-0"
                           title="Lleva 5 o más días en estado Pendiente esperando atención"
                         >
                           <AlertTriangle size={11} className="shrink-0" />
@@ -194,8 +191,8 @@ export default function InstitucionReclamoTable({
                     </div>
                   </td>
 
-                  {/* Acción para acceder al detalle */}
-                  <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                  {/* Acción para acceder al detalle (100% opaco y fijo a la derecha) */}
+                  <td className="py-2.5 px-3 text-center whitespace-nowrap">
                     <Button
                       href={`/institucion/reclamos/${r.id}`}
                       size="sm"
@@ -226,7 +223,7 @@ export default function InstitucionReclamoTable({
 
           return (
             <div key={r.id} className="p-4 space-y-3">
-              {/* Fila superior: ID + Estado + Demorado */}
+              {/* Fila superior: ID + Visibilidad + Demorado + Estado */}
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-xs font-bold text-text-muted">

@@ -88,7 +88,6 @@ describe("LIS-01 y LIS-02 — Bandeja Operativa Institucional (Tabla, Búsqueda,
     expect(within(table).getByText("Reclamo")).toBeInTheDocument();
     expect(within(table).getByText("Categoría")).toBeInTheDocument();
     expect(within(table).getByText("Creación")).toBeInTheDocument();
-    expect(within(table).getByText("Visibilidad")).toBeInTheDocument();
     expect(within(table).getByText("Estado")).toBeInTheDocument();
     expect(within(table).getByText("Afectados")).toBeInTheDocument();
     expect(within(table).getByText("Antigüedad / Demora")).toBeInTheDocument();
@@ -107,7 +106,7 @@ describe("LIS-01 y LIS-02 — Bandeja Operativa Institucional (Tabla, Búsqueda,
     expect(within(table).getByText("En revisión")).toBeInTheDocument();
 
     // Cantidad de afectados y demora
-    expect(within(table).getByText("8 afectados")).toBeInTheDocument();
+    expect(within(table).getByText("8")).toBeInTheDocument();
     expect(within(table).getByText("Demorado")).toBeInTheDocument();
 
     // Acción hacia el detalle
