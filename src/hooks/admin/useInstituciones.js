@@ -7,21 +7,32 @@ import { useDebounce } from "@/hooks/useDebounce";
 
 /**
  * Hook centralizado para la gestión de instituciones y solicitudes.
- * Comparte lógica de consulta, filtros, estadísticas, verificación y rechazo
- * entre el padrón general (/admin/institutions) y la bandeja de pendientes (/admin/solicitudes).
+ * Comparte lógica de consulta, filtros, estadísticas, verificación, rechazo,
+ * suspensión/rehabilitación, asignación de categorías e institución principal
+ * entre el padrón general (/admin/institutions) y la bandeja de solicitudes (/admin/solicitudes).
  *
  * @param {Object} options
- * @param {string} [options.filtroInicialEstado="todos"] - Estado inicial ('todos', 'verificada', 'pendiente', 'rechazada')
+ * @param {string} [options.filtroInicialEstado="todos"] - Estado inicial ('todos', 'verificada', 'pendiente', 'rechazada', 'suspendida')
  * @param {boolean} [options.fetchStats=true] - Si debe consultar las estadísticas globales
+ * @param {boolean} [options.fetchCatalogos=true] - Si debe consultar ciudades y categorías globales
  * @param {number} [options.limite=15] - Cantidad de registros por página
  */
 export function useInstituciones({
   filtroInicialEstado = "todos",
   fetchStats = true,
+  fetchCatalogos = true,
   limite = 15,
 } = {}) {
   const [instituciones, setInstituciones] = useState([]);
-  const [stats, setStats] = useState({ total: 0, verificadas: 0, pendientes: 0 });
+  const [stats, setStats] = useState({
+    total: 0,
+    verificadas: 0,
+    pendientes: 0,
+    rechazadas: 0,
+    suspendidas: 0,
+  });
+  const [ciudades, setCiudades] = useState([]);
+  const [categoriasGlobales, setCategoriasGlobales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingStats, setLoadingStats] = useState(false);
   const [error, setError] = useState("");
@@ -30,6 +41,7 @@ export function useInstituciones({
   const [busqueda, setBusqueda] = useState("");
   const debouncedBusqueda = useDebounce(busqueda, 350);
   const [filtroEstado, setFiltroEstado] = useState(filtroInicialEstado);
+  const [filtroCiudad, setFiltroCiudad] = useState("");
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalRegistros, setTotalRegistros] = useState(0);
@@ -38,6 +50,8 @@ export function useInstituciones({
   const [modalDetalle, setModalDetalle] = useState(null);
   const [modalAprobar, setModalAprobar] = useState(null);
   const [modalRechazar, setModalRechazar] = useState(null);
+  const [modalCambiarEstado, setModalCambiarEstado] = useState(null);
+  const [modalPrincipal, setModalPrincipal] = useState(null);
   const [procesandoAccion, setProcesandoAccion] = useState(false);
 
   // Salvaguardas de ciclo de vida y condiciones de carrera
@@ -50,6 +64,36 @@ export function useInstituciones({
       isMountedRef.current = false;
     };
   }, []);
+
+  // Cargar catálogos auxiliares (ciudades y categorías activas)
+  const cargarCatalogos = useCallback(async () => {
+    if (!fetchCatalogos) return;
+    try {
+      const [resCiudades, resCategorias] = await Promise.allSettled([
+        apiClient.get("/ciudades"),
+        apiClient.get("/admin/categorias"),
+      ]);
+
+      if (!isMountedRef.current) return;
+
+      if (resCiudades.status === "fulfilled" && resCiudades.value.data?.ok) {
+        const listaCiudades = resCiudades.value.data.data || [];
+        setCiudades(Array.isArray(listaCiudades) ? listaCiudades : []);
+      }
+
+      if (resCategorias.status === "fulfilled") {
+        const payload = resCategorias.value.data;
+        const listaCat = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+        setCategoriasGlobales(listaCat.filter((c) => Number(c.activa ?? 1) === 1));
+      }
+    } catch {
+      // Catálogos auxiliares opcionales
+    }
+  }, [fetchCatalogos]);
 
   // Cargar estadísticas globales
   const cargarStats = useCallback(async () => {
@@ -71,27 +115,40 @@ export function useInstituciones({
 
   // Cargar listado de instituciones con control estricto de concurrencia
   const cargarInstituciones = useCallback(
-    async (p = 1, search = debouncedBusqueda, estado = filtroEstado) => {
+    async (
+      p = 1,
+      search = debouncedBusqueda,
+      estado = filtroEstado,
+      idCiudad = filtroCiudad
+    ) => {
       const currentReqId = ++reqIdRef.current;
       setLoading(true);
       setError("");
       try {
         const params = new URLSearchParams();
         if (estado && estado !== "todos") params.append("estado", estado);
+        if (idCiudad) params.append("id_ciudad", String(idCiudad));
         if (search && search.trim()) params.append("busqueda", search.trim());
         params.append("pagina", String(p));
         params.append("limite", String(limite));
 
         const res = await apiClient.get(`/admin/instituciones?${params.toString()}`);
 
-        // Si la petición quedó desactualizada o el componente se desmontó, descartar
         if (!isMountedRef.current || currentReqId !== reqIdRef.current) return;
 
         if (res.data?.ok) {
-          setInstituciones(res.data.data || []);
+          const lista = res.data.data || [];
+          setInstituciones(lista);
           setTotalPaginas(res.data.totalPaginas || 1);
           setTotalRegistros(res.data.total || 0);
           setPagina(res.data.pagina || p);
+
+          // Sincronizar modalDetalle si está abierto
+          setModalDetalle((prev) => {
+            if (!prev) return null;
+            const actualizada = lista.find((item) => item.id === prev.id);
+            return actualizada || prev;
+          });
         } else {
           setError(res.data?.mensaje || "Error al cargar las instituciones.");
         }
@@ -107,27 +164,35 @@ export function useInstituciones({
         }
       }
     },
-    [limite, debouncedBusqueda, filtroEstado]
+    [limite, debouncedBusqueda, filtroEstado, filtroCiudad]
   );
 
-  // Efecto cuando cambia la búsqueda debounced o el filtro de estado: reinicia a página 1
+  // Efecto inicial y cuando cambian filtros: reinicia a página 1
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
+      cargarCatalogos();
       cargarStats();
-      cargarInstituciones(1, debouncedBusqueda, filtroEstado);
+      cargarInstituciones(1, debouncedBusqueda, filtroEstado, filtroCiudad);
       return;
     }
     setPagina(1);
-    cargarInstituciones(1, debouncedBusqueda, filtroEstado);
-  }, [debouncedBusqueda, filtroEstado, cargarStats, cargarInstituciones]);
+    cargarInstituciones(1, debouncedBusqueda, filtroEstado, filtroCiudad);
+  }, [
+    debouncedBusqueda,
+    filtroEstado,
+    filtroCiudad,
+    cargarCatalogos,
+    cargarStats,
+    cargarInstituciones,
+  ]);
 
   // Manejar cambio de página
   const cambiarPagina = (nuevaPagina) => {
     if (nuevaPagina < 1 || nuevaPagina > totalPaginas || nuevaPagina === pagina) return;
     setPagina(nuevaPagina);
-    cargarInstituciones(nuevaPagina, debouncedBusqueda, filtroEstado);
+    cargarInstituciones(nuevaPagina, debouncedBusqueda, filtroEstado, filtroCiudad);
   };
 
   // Limpiar búsqueda
@@ -136,22 +201,31 @@ export function useInstituciones({
   };
 
   // Acción: Verificar / Aprobar institución
-  const verificarInstitucion = async (institucion) => {
+  const verificarInstitucion = async (institucion, opciones = {}) => {
     if (!institucion?.id) return false;
     setProcesandoAccion(true);
     try {
-      const res = await apiClient.put(`/admin/instituciones/${institucion.id}/verificar`);
+      const payload = {};
+      if (Array.isArray(opciones.categorias)) {
+        payload.categorias = opciones.categorias;
+      }
+      if (opciones.es_principal !== undefined) {
+        payload.es_principal = Boolean(opciones.es_principal);
+      }
+
+      const hasPayload = Object.keys(payload).length > 0;
+      const res = hasPayload
+        ? await apiClient.put(`/admin/instituciones/${institucion.id}/verificar`, payload)
+        : await apiClient.put(`/admin/instituciones/${institucion.id}/verificar`);
       if (res.data?.ok) {
         toast.success(`Institución "${institucion.nombre}" verificada correctamente.`);
         if (isMountedRef.current) {
           setModalAprobar(null);
-          if (modalDetalle?.id === institucion.id) {
-            setModalDetalle((prev) =>
-              prev ? { ...prev, verificada: 1, fecha_verificacion: new Date().toISOString() } : null
-            );
+          if (modalDetalle?.id === institucion.id && res.data.data) {
+            setModalDetalle(res.data.data);
           }
         }
-        await cargarInstituciones(pagina, debouncedBusqueda, filtroEstado);
+        await cargarInstituciones(pagina, debouncedBusqueda, filtroEstado, filtroCiudad);
         await cargarStats();
         return true;
       } else {
@@ -172,7 +246,10 @@ export function useInstituciones({
   const rechazarInstitucion = async (institucion, motivo) => {
     if (!institucion?.id) return { ok: false, error: "ID de institución inválido" };
     if (!motivo || !motivo.trim()) {
-      return { ok: false, error: "El motivo de rechazo es obligatorio para notificar a la entidad." };
+      return {
+        ok: false,
+        error: "El motivo de rechazo es obligatorio para notificar a la entidad.",
+      };
     }
 
     setProcesandoAccion(true);
@@ -184,13 +261,11 @@ export function useInstituciones({
         toast.success(`Solicitud de "${institucion.nombre}" rechazada correctamente.`);
         if (isMountedRef.current) {
           setModalRechazar(null);
-          if (modalDetalle?.id === institucion.id) {
-            setModalDetalle((prev) =>
-              prev ? { ...prev, verificada: 0, fecha_verificacion: null } : null
-            );
+          if (modalDetalle?.id === institucion.id && res.data.data) {
+            setModalDetalle(res.data.data);
           }
         }
-        await cargarInstituciones(pagina, debouncedBusqueda, filtroEstado);
+        await cargarInstituciones(pagina, debouncedBusqueda, filtroEstado, filtroCiudad);
         await cargarStats();
         return { ok: true };
       } else {
@@ -209,9 +284,131 @@ export function useInstituciones({
     }
   };
 
+  // Acción: Suspender o rehabilitar una institución verificada
+  const cambiarEstadoInstitucion = async (institucion, { activo, motivo }) => {
+    if (!institucion?.id) return { ok: false, error: "ID de institución inválido" };
+    if (!activo && (!motivo || !motivo.trim())) {
+      return {
+        ok: false,
+        error: "El motivo de suspensión es obligatorio para registrar en auditoría.",
+      };
+    }
+
+    setProcesandoAccion(true);
+    try {
+      const res = await apiClient.patch(`/admin/instituciones/${institucion.id}/estado`, {
+        activo: Boolean(activo),
+        motivo: motivo ? motivo.trim() : undefined,
+      });
+
+      if (res.data?.ok) {
+        toast.success(
+          res.data.mensaje ||
+            (activo
+              ? `Institución "${institucion.nombre}" rehabilitada.`
+              : `Institución "${institucion.nombre}" suspendida.`)
+        );
+        if (isMountedRef.current) {
+          setModalCambiarEstado(null);
+          if (modalDetalle?.id === institucion.id && res.data.data) {
+            setModalDetalle(res.data.data);
+          }
+        }
+        await cargarInstituciones(pagina, debouncedBusqueda, filtroEstado, filtroCiudad);
+        await cargarStats();
+        return { ok: true, data: res.data.data };
+      } else {
+        const msg = res.data?.mensaje || "No se pudo cambiar el estado operativo.";
+        toast.error(msg);
+        return { ok: false, error: msg };
+      }
+    } catch (err) {
+      const msg =
+        err.response?.data?.mensaje || "Error al cambiar el estado operativo de la institución.";
+      toast.error(msg);
+      return { ok: false, error: msg };
+    } finally {
+      if (isMountedRef.current) {
+        setProcesandoAccion(false);
+      }
+    }
+  };
+
+  // Acción: Actualizar categorías autorizadas de la institución
+  const actualizarCategoriasInstitucion = async (institucion, categoriasIds) => {
+    if (!institucion?.id) return { ok: false, error: "ID de institución inválido" };
+    setProcesandoAccion(true);
+    try {
+      const res = await apiClient.put(`/admin/instituciones/${institucion.id}/categorias`, {
+        categorias: categoriasIds,
+      });
+      if (res.data?.ok) {
+        toast.success("Categorías operativas actualizadas correctamente.");
+        if (isMountedRef.current && modalDetalle?.id === institucion.id) {
+          setModalDetalle((prev) =>
+            prev ? { ...prev, categorias: res.data.data || [] } : null
+          );
+        }
+        await cargarInstituciones(pagina, debouncedBusqueda, filtroEstado, filtroCiudad);
+        return { ok: true, data: res.data.data };
+      } else {
+        const msg = res.data?.mensaje || "Error al actualizar las categorías.";
+        toast.error(msg);
+        return { ok: false, error: msg };
+      }
+    } catch (err) {
+      const msg =
+        err.response?.data?.mensaje ||
+        "Conflicto o error al actualizar las categorías de la institución.";
+      toast.error(msg);
+      return { ok: false, error: msg };
+    } finally {
+      if (isMountedRef.current) {
+        setProcesandoAccion(false);
+      }
+    }
+  };
+
+  // Acción: Designar institución como principal de su ciudad
+  const designarPrincipalInstitucion = async (institucion) => {
+    if (!institucion?.id) return false;
+    setProcesandoAccion(true);
+    try {
+      const res = await apiClient.put(`/admin/instituciones/${institucion.id}/principal`);
+      if (res.data?.ok) {
+        toast.success(
+          res.data.mensaje ||
+            `"${institucion.nombre}" fue designada como institución principal de su ciudad.`
+        );
+        if (isMountedRef.current) {
+          setModalPrincipal(null);
+          if (modalDetalle?.id === institucion.id && res.data.data) {
+            setModalDetalle(res.data.data);
+          }
+        }
+        await cargarInstituciones(pagina, debouncedBusqueda, filtroEstado, filtroCiudad);
+        return true;
+      } else {
+        toast.error(res.data?.mensaje || "No se pudo designar como institución principal.");
+        return false;
+      }
+    } catch (err) {
+      toast.error(
+        err.response?.data?.mensaje || "Error al designar como institución principal."
+      );
+      return false;
+    } finally {
+      if (isMountedRef.current) {
+        setProcesandoAccion(false);
+      }
+    }
+  };
+
   return {
     instituciones,
     stats,
+    ciudades,
+    categoriasGlobales,
     loading,
     loadingStats,
     error,
@@ -224,6 +421,8 @@ export function useInstituciones({
     limpiarBusqueda,
     filtroEstado,
     setFiltroEstado,
+    filtroCiudad,
+    setFiltroCiudad,
     cargarInstituciones,
     cargarStats,
     // Modales y acciones
@@ -233,9 +432,16 @@ export function useInstituciones({
     setModalAprobar,
     modalRechazar,
     setModalRechazar,
+    modalCambiarEstado,
+    setModalCambiarEstado,
+    modalPrincipal,
+    setModalPrincipal,
     procesandoAccion,
     verificarInstitucion,
     rechazarInstitucion,
+    cambiarEstadoInstitucion,
+    actualizarCategoriasInstitucion,
+    designarPrincipalInstitucion,
   };
 }
 

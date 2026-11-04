@@ -58,11 +58,11 @@ export default function CiudadesPage() {
         </div>
         <div className="text-xs space-y-1">
           <p className="font-bold text-text-primary m-0">
-            Módulo preparado para integración Multi-Ciudad (Tickets CITY-01 a CITY-05)
+            Gestión de cobertura territorial y localidades operativas
           </p>
           <p className="text-text-secondary m-0 leading-relaxed">
-            Actualmente el sistema opera con las localidades activas registradas en la plataforma.
-            Las funcionalidades avanzadas de alta territorial, solicitudes ciudadanas de apertura de ciudades y asignación de cabeceras se habilitarán en la siguiente etapa.
+            Desde este panel podés consultar las localidades registradas en la plataforma y su
+            estado operativo actual para la recepción de reclamos y comunicados oficiales.
           </p>
         </div>
       </div>

@@ -10,6 +10,8 @@ import SolicitudesPage from "@/app/admin/solicitudes/page";
 import UsuarioTable from "@/components/admin/usuarios/UsuarioTable";
 import AdminReclamosPage from "@/app/admin/reclamos/page";
 import CategoriaPanel from "@/components/admin/categorias/CategoriaPanel";
+import InstitucionStatusModal from "@/components/admin/instituciones/InstitucionStatusModal";
+import InstitucionEstadoSolicitudView from "@/components/institucion/InstitucionEstadoSolicitudView";
 
 // Mock de apiClient y toast
 jest.mock("@/services/apiClient");
@@ -21,17 +23,21 @@ jest.mock("sonner", () => ({
 }));
 
 // Mock de next-auth
+const mockUpdateSession = jest.fn();
 jest.mock("next-auth/react", () => ({
   useSession: () => ({
     data: { user: { id: "1", name: "Admin Global", role: "admin", email: "admin@test.gob.ar" } },
     status: "authenticated",
+    update: mockUpdateSession,
   }),
+  signOut: jest.fn(),
 }));
 
 // Mock de next/navigation
 const mockPush = jest.fn();
+const mockRefresh = jest.fn();
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush, replace: jest.fn() }),
+  useRouter: () => ({ push: mockPush, replace: jest.fn(), refresh: mockRefresh }),
   usePathname: () => "/admin",
   useParams: () => ({}),
 }));
@@ -386,6 +392,96 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
 
       // Verificar el último reclamo listado
       expect(screen.getByText("Luminaria rota en Plaza España")).toBeInTheDocument();
+    });
+  });
+
+  describe("6. Etapa 2: Ciclo de Vida Institucional y Solicitud Rechazada", () => {
+    it("InstitucionStatusModal: bloquea la suspensión si es institución principal de una ciudad activa", () => {
+      const onConfirm = jest.fn();
+      render(
+        <InstitucionStatusModal
+          isOpen={true}
+          onClose={jest.fn()}
+          onConfirm={onConfirm}
+          institucion={{
+            id: 1,
+            nombre: "Municipalidad de Viale",
+            ciudad_nombre: "Viale",
+            activo: 1,
+            es_principal: 1,
+            ciudad_activa: 1,
+          }}
+        />
+      );
+
+      expect(
+        screen.getByText(/Acción protegida: Institución Principal de ciudad activa/i)
+      ).toBeInTheDocument();
+      const btnSuspender = screen.getByRole("button", { name: /Suspender institución/i });
+      expect(btnSuspender).toBeDisabled();
+    });
+
+    it("InstitucionEstadoSolicitudView: muestra motivo de rechazo, alerta de 7 días y permite convertir a ciudadano", async () => {
+      apiClient.post.mockResolvedValueOnce({
+        data: {
+          ok: true,
+          user: { id: 33, role: "ciudadano", nombre: "Carlos Gómez" },
+          accessToken: "new-token",
+          refreshToken: "new-refresh",
+        },
+      });
+
+      render(
+        <InstitucionEstadoSolicitudView
+          perfil={{
+            id: 33,
+            nombre: "Cooperativa Mal Cargada",
+            email: "carlos@test.com",
+            tipo: "Cooperativa",
+            ciudad: "Viale",
+            provincia: "Entre Ríos",
+            institucion_verificada: false,
+            institucion_status: "rejected",
+            motivo_rechazo: "No figura en el padrón oficial de cooperativas.",
+            fecha_rechazo: new Date().toISOString(),
+          }}
+        />
+      );
+
+      expect(screen.getByText(/Solicitud institucional rechazada/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/No figura en el padrón oficial de cooperativas/i)
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/esta cuenta se cerrará automáticamente en/i)
+      ).toBeInTheDocument();
+
+      // Abrir modal para convertir a ciudadano
+      const btnConvertir = screen.getByRole("button", {
+        name: /Crear cuenta como Ciudadano/i,
+      });
+      fireEvent.click(btnConvertir);
+
+      const inputNombre = screen.getByPlaceholderText("Ej. María");
+      const inputApellido = screen.getByPlaceholderText("Ej. González");
+      fireEvent.change(inputNombre, { target: { value: "Carlos" } });
+      fireEvent.change(inputApellido, { target: { value: "Gómez" } });
+
+      const btnConfirmarConversion = screen.getByRole("button", {
+        name: /Confirmar y pasar a Ciudadano/i,
+      });
+      fireEvent.click(btnConfirmarConversion);
+
+      await waitFor(() => {
+        expect(apiClient.post).toHaveBeenCalledWith(
+          "/auth/me/convertir-a-ciudadano",
+          expect.objectContaining({ nombre: "Carlos", apellido: "Gómez" })
+        );
+        expect(mockUpdateSession).toHaveBeenCalledWith(
+          expect.objectContaining({ role: "ciudadano" })
+        );
+        expect(mockPush).toHaveBeenCalledWith("/ciudadano");
+      });
     });
   });
 });

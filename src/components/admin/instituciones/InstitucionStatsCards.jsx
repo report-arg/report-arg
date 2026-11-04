@@ -1,8 +1,11 @@
 "use client";
 
-import { Building2, CheckCircle2, Clock } from "lucide-react";
+import { Building2, CheckCircle2, Clock, ShieldOff } from "lucide-react";
 
 export default function InstitucionStatsCards({ stats = {}, loading = false }) {
+  const inactivasRechazadas =
+    Number(stats.rechazadas ?? 0) + Number(stats.suspendidas ?? 0);
+
   const cards = [
     {
       label: "TOTAL REGISTRADAS",
@@ -25,10 +28,17 @@ export default function InstitucionStatsCards({ stats = {}, loading = false }) {
       icon: <Clock size={20} className="text-amber-600 dark:text-amber-400" />,
       bgIcon: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
     },
+    {
+      label: "RECHAZADAS / SUSPENDIDAS",
+      value: inactivasRechazadas,
+      sub: `${stats.rechazadas ?? 0} rechazadas · ${stats.suspendidas ?? 0} suspendidas`,
+      icon: <ShieldOff size={20} className="text-rose-600 dark:text-rose-400" />,
+      bgIcon: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card, i) => (
         <div
           key={i}

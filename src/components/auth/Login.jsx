@@ -8,6 +8,7 @@ import AuthSplitLayout from '@/components/auth/AuthSplitLayout';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema } from '@/utils/schemas';
+import { authService } from '@/services/authService';
 import { toast } from 'sonner';
 import {
   EnvelopeIcon,
@@ -44,7 +45,21 @@ export default function Login() {
       });
 
       if (!result || result.error || !result.ok) {
-        toast.error('Credenciales incorrectas');
+        if (
+          typeof result?.error === 'string' &&
+          (result.error.toLowerCase().includes('verificar tu cuenta') ||
+            result.error.includes('EMAIL_NO_VERIFICADO'))
+        ) {
+          toast.info('Tu correo aún no está verificado. Te reenviamos un código de verificación.');
+          try {
+            await authService.resendVerificationCode(data.email);
+          } catch {
+            // Si ya había un código activo, igual redirigir a /verify
+          }
+          router.push(`/verify?email=${encodeURIComponent(data.email)}`);
+          return;
+        }
+        toast.error(result?.error || 'Credenciales incorrectas');
         return;
       }
 

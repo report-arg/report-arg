@@ -39,6 +39,8 @@ const authOptions = {
           role: data.user.role,
           name: data.user.nombre || data.user.email,
           foto: data.user.foto || null,
+          institucionVerificada: data.user.institucion_verificada ?? null,
+          institucionStatus: data.user.institucion_status ?? null,
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
         };
@@ -107,12 +109,22 @@ const authOptions = {
         token.name = user.name || token.name;
         token.email = user.email || token.email;
         token.foto = user.foto || token.foto || null;
+        token.institucionVerificada = user.institucionVerificada ?? token.institucionVerificada ?? null;
+        token.institucionStatus = user.institucionStatus ?? token.institucionStatus ?? null;
       }
       if (trigger === "update" && session) {
         token.name = session.name ?? token.name;
         token.email = session.email ?? token.email;
         token.foto = session.foto ?? token.foto;
         token.role = session.role ?? token.role;
+        token.accessToken = session.accessToken ?? token.accessToken;
+        token.refreshToken = session.refreshToken ?? token.refreshToken;
+        if (session.institucionVerificada !== undefined) {
+          token.institucionVerificada = session.institucionVerificada;
+        }
+        if (session.institucionStatus !== undefined) {
+          token.institucionStatus = session.institucionStatus;
+        }
       }
       return token;
     },
@@ -124,6 +136,8 @@ const authOptions = {
       session.user.name = token.name || session.user.name;
       session.user.email = token.email || session.user.email;
       session.user.foto = token.foto || null;
+      session.user.institucionVerificada = token.institucionVerificada ?? null;
+      session.user.institucionStatus = token.institucionStatus ?? null;
       return session;
     }
   },

@@ -28,6 +28,21 @@ export default function AppBottomNav({ tabs = [], cta = null }) {
             );
           }
 
+          if (tab.disabled) {
+            const textoTooltip = tab.disabledReason || "Pendiente de verificación";
+            return (
+              <span
+                key={tab.href}
+                aria-disabled="true"
+                title={textoTooltip}
+                className="home-bottom-nav-item opacity-40 cursor-not-allowed select-none"
+              >
+                {tab.icon && <tab.icon size={20} />}
+                {tab.label}
+              </span>
+            );
+          }
+
           const isActive = pathname === tab.href || pathname.startsWith(tab.href + "/");
           return (
             <Link

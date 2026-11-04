@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { X, LogOut } from "lucide-react";
+import { X, LogOut, Lock } from "lucide-react";
 import Image from "next/image";
 
 export default function AppSidebar({
@@ -52,17 +52,36 @@ export default function AppSidebar({
         )}
 
         <nav className="home-sidebar-nav mt-2">
-          {navigation.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`home-nav-item ${pathname === href ? "active" : ""}`}
-              onClick={onClose}
-            >
-              {Icon && <Icon size={18} className="home-nav-icon" />}
-              {label}
-            </Link>
-          ))}
+          {navigation.map(({ href, label, icon: Icon, disabled, disabledReason }) => {
+            if (disabled) {
+              const textoTooltip = disabledReason || "Pendiente de verificación";
+              return (
+                <span
+                  key={href}
+                  role="link"
+                  aria-disabled="true"
+                  title={textoTooltip}
+                  className="home-nav-item opacity-45 cursor-not-allowed select-none"
+                >
+                  {Icon && <Icon size={18} className="home-nav-icon" />}
+                  <span className="flex-1">{label}</span>
+                  <Lock size={13} className="opacity-70 shrink-0" />
+                </span>
+              );
+            }
+
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`home-nav-item ${pathname === href ? "active" : ""}`}
+                onClick={onClose}
+              >
+                {Icon && <Icon size={18} className="home-nav-icon" />}
+                {label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="home-sidebar-footer">

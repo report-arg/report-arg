@@ -10,36 +10,91 @@ import ReclamoTracking from "@/components/reclamos/ReclamoTracking";
 import ReclamoStatusBadge from "@/components/reclamos/ReclamoStatusBadge";
 import { tiempoRelativo } from "@/utils/dateFormatters";
 import PageHeader from "@/components/layout/PageHeader";
+import InstitucionEstadoSolicitudView from "@/components/institucion/InstitucionEstadoSolicitudView";
+import { useInstitucionContext } from "@/context/InstitucionContext";
 
 export default function InstitucionHome() {
   const router = useRouter();
   const { data: session } = useSession();
+  const instCtx = useInstitucionContext();
   
   const [reclamos, setReclamos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [perfilLocal, setPerfilLocal] = useState(null);
+  const [noVerificadaLocal, setNoVerificadaLocal] = useState(false);
+  const [loadingBandeja, setLoadingBandeja] = useState(true);
+
+  const perfilInstitucion = instCtx?.perfilInstitucion || perfilLocal;
+  const noVerificada = instCtx ? instCtx.noVerificada : noVerificadaLocal;
 
   useEffect(() => {
-    async function fetchBandeja() {
+    // Si ya sabemos por contexto que no está verificada, no llamar a /institucion/reclamos/bandeja
+    if (instCtx && instCtx.noVerificada) {
+      setLoadingBandeja(false);
+      return;
+    }
+    if (instCtx && instCtx.loadingPerfil) {
+      return;
+    }
+
+    async function fetchEstadoYBandeja() {
       try {
+        if (!instCtx) {
+          const meRes = await apiClient.get("/auth/me");
+          const userPerfil = meRes.data?.data || meRes.data?.user || null;
+          if (userPerfil) {
+            setPerfilLocal(userPerfil);
+            if (
+              userPerfil.institucion_verificada === false ||
+              Number(userPerfil.institucion_verificada) === 0
+            ) {
+              setNoVerificadaLocal(true);
+              return;
+            }
+          }
+        }
+
         const res = await apiClient.get("/institucion/reclamos/bandeja?orderBy=atencion&limite=100");
         if (res.data.ok) {
           const payload = res.data.data;
           setReclamos(Array.isArray(payload) ? payload : payload?.rows || []);
         }
       } catch (err) {
-        console.error("Error al cargar bandeja", err);
+        if (err.response?.status === 403) {
+          setNoVerificadaLocal(true);
+        } else {
+          console.error("Error al cargar bandeja", err);
+        }
       } finally {
-        setLoading(false);
+        setLoadingBandeja(false);
       }
     }
-    fetchBandeja();
-  }, []);
+    fetchEstadoYBandeja();
+  }, [instCtx, instCtx?.noVerificada, instCtx?.loadingPerfil]);
 
-  if (loading) {
+  const loading = instCtx ? instCtx.loadingPerfil || (!noVerificada && loadingBandeja) : loadingBandeja;
+
+  if (loading && !perfilInstitucion) {
     return (
       <div className="p-6 md:p-10 max-w-5xl mx-auto flex justify-center items-center h-64">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
+    );
+  }
+
+  if (noVerificada) {
+    return (
+      <InstitucionEstadoSolicitudView
+        perfil={perfilInstitucion}
+        onPerfilActualizado={(nuevoPerfil) => {
+          if (nuevoPerfil) {
+            if (instCtx?.actualizarPerfilInstitucion) {
+              instCtx.actualizarPerfilInstitucion(nuevoPerfil);
+            } else {
+              setPerfilLocal(nuevoPerfil);
+            }
+          }
+        }}
+      />
     );
   }
 
