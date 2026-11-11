@@ -17,6 +17,8 @@ export default function DashboardStatusDistribution({
   totalReclamosCalculado = 0,
 }) {
   const total = totalReclamosCalculado || totalReclamos || 0;
+  const sinAsignar = Number(statsReclamos.sinAsignar || 0);
+  const pendienteMasAntiguoDias = Number(statsReclamos.pendienteMasAntiguoDias || 0);
 
   return (
     <div className="lg:col-span-5 p-5 sm:p-6 rounded-2xl bg-surface border border-border-subtle shadow-xs flex flex-col justify-between">
@@ -94,13 +96,27 @@ export default function DashboardStatusDistribution({
         </div>
       </div>
 
-      <div className="pt-4 border-t border-border-subtle mt-4 text-[11px] text-text-muted flex justify-between">
-        <span>Resolución global</span>
-        <span className="font-bold text-emerald-600 dark:text-emerald-400">
-          {total > 0
-            ? `${(((statsReclamos.resueltos || 0) / total) * 100).toFixed(0)}% resueltos`
-            : "Sin datos"}
-        </span>
+      <div className="pt-4 border-t border-border-subtle mt-4 text-[11px] text-text-muted flex flex-col gap-1.5">
+        <div className="flex justify-between items-center">
+          <span>Resolución global</span>
+          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+            {total > 0
+              ? `${(((statsReclamos.resueltos || 0) / total) * 100).toFixed(0)}% resueltos`
+              : "Sin datos"}
+          </span>
+        </div>
+        {sinAsignar > 0 && (
+          <div className="flex justify-between items-center text-amber-600 dark:text-amber-400 font-semibold pt-0.5">
+            <span>Reclamos sin asignar</span>
+            <span>{sinAsignar}</span>
+          </div>
+        )}
+        {pendienteMasAntiguoDias > 0 && (
+          <div className="flex justify-between items-center text-text-muted">
+            <span>Demora máxima en espera</span>
+            <span>{pendienteMasAntiguoDias} días</span>
+          </div>
+        )}
       </div>
     </div>
   );

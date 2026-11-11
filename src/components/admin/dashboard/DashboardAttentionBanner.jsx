@@ -1,15 +1,61 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, ArrowRight } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ArrowRight, ShieldAlert, MapPin, Building2, Clock } from "lucide-react";
 
 export default function DashboardAttentionBanner({
+  requiereAtencion = false,
   hayPendientesInstituciones = false,
   hayPendientesReclamos = false,
+  hayCiudadesSinPrincipal = false,
+  hayReclamosSinAsignar = false,
   pendientesInstituciones = 0,
   pendientesReclamos = 0,
+  ciudadesSinPrincipal = 0,
+  reclamosSinAsignar = 0,
+  demoraDias = 0,
 }) {
-  const requiereAtencion = hayPendientesInstituciones || hayPendientesReclamos;
+  const listaAlertas = [];
+
+  if (hayPendientesInstituciones) {
+    listaAlertas.push({
+      texto: `${pendientesInstituciones} solicitud(es) de verificación institucional pendientes`,
+      href: "/admin/solicitudes",
+      accion: `Revisar solicitudes (${pendientesInstituciones})`,
+      urgente: true,
+      icono: Building2,
+    });
+  }
+
+  if (hayCiudadesSinPrincipal) {
+    listaAlertas.push({
+      texto: `${ciudadesSinPrincipal} ciudad(es) activa(s) sin institución principal designada`,
+      href: "/admin/ciudades",
+      accion: `Configurar institución principal (${ciudadesSinPrincipal})`,
+      urgente: true,
+      icono: MapPin,
+    });
+  }
+
+  if (hayReclamosSinAsignar) {
+    listaAlertas.push({
+      texto: `${reclamosSinAsignar} reclamo(s) sin institución responsable asignada`,
+      href: "/admin/reclamos?institucion=sin_asignar",
+      accion: `Asignar reclamos (${reclamosSinAsignar})`,
+      urgente: true,
+      icono: ShieldAlert,
+    });
+  }
+
+  if (hayPendientesReclamos) {
+    listaAlertas.push({
+      texto: `${pendientesReclamos} reclamo(s) en espera de revisión inicial${demoraDias > 0 ? ` (antigüedad máxima: ${demoraDias} día${demoraDias > 1 ? "s" : ""})` : ""}`,
+      href: "/admin/reclamos?estado=Pendiente",
+      accion: `Ver reclamos pendientes (${pendientesReclamos})`,
+      urgente: false,
+      icono: Clock,
+    });
+  }
 
   return (
     <div
@@ -19,7 +65,7 @@ export default function DashboardAttentionBanner({
           : "bg-surface border-border-subtle"
       }`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-start gap-3.5">
           <div
             className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
@@ -45,44 +91,33 @@ export default function DashboardAttentionBanner({
                 {requiereAtencion ? "Pendientes detectados" : "Al día"}
               </span>
             </div>
-            <p className="text-xs text-text-secondary mt-1 m-0 leading-relaxed">
+            <p className="text-xs text-text-secondary mt-1 m-0 leading-relaxed max-w-2xl">
               {requiereAtencion
-                ? `Se detectaron tareas pendientes que demandan tu intervención: ${[
-                    hayPendientesInstituciones
-                      ? `${pendientesInstituciones} solicitud(es) de instituciones sin verificar`
-                      : null,
-                    hayPendientesReclamos
-                      ? `${pendientesReclamos} reclamo(s) ciudadano(s) en espera de revisión inicial`
-                      : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" y ")}.`
-                : "No hay solicitudes de registro pendientes ni reclamos ciudadanos sin clasificar. Todos los flujos se encuentran al día."}
+                ? `Se detectaron tareas administrativas pendientes de supervisión: ${listaAlertas
+                    .map((a) => a.texto)
+                    .join(" · ")}.`
+                : "No hay solicitudes institucionales pendientes, todas las ciudades cuentan con institución principal válida y los reclamos se encuentran asignados correctamente."}
             </p>
           </div>
         </div>
 
         {/* Acciones directas si requiere atención */}
         {requiereAtencion && (
-          <div className="flex flex-wrap items-center gap-2 sm:self-center shrink-0">
-            {hayPendientesInstituciones && (
+          <div className="flex flex-wrap items-center gap-2 lg:self-center shrink-0">
+            {listaAlertas.map((alerta) => (
               <Link
-                href="/admin/solicitudes"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-xs transition-colors no-underline"
+                key={alerta.href}
+                href={alerta.href}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all no-underline shadow-2xs ${
+                  alerta.urgente
+                    ? "bg-amber-600 hover:bg-amber-700 text-white"
+                    : "bg-surface hover:bg-surface-subtle text-text-primary border border-border-subtle"
+                }`}
               >
-                <span>Revisar solicitudes ({pendientesInstituciones})</span>
+                <span>{alerta.accion}</span>
                 <ArrowRight size={13} />
               </Link>
-            )}
-            {hayPendientesReclamos && (
-              <Link
-                href="/admin/reclamos?estado=Pendiente"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-text-primary bg-surface hover:bg-surface-subtle border border-border-subtle shadow-xs transition-colors no-underline"
-              >
-                <span>Ver reclamos pendientes ({pendientesReclamos})</span>
-                <ArrowRight size={13} />
-              </Link>
-            )}
+            ))}
           </div>
         )}
       </div>

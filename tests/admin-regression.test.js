@@ -451,6 +451,39 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
       // Verificar el último reclamo listado
       expect(screen.getByText("Luminaria rota en Plaza España")).toBeInTheDocument();
     });
+
+    it("DashboardStats: debe destacar alertas de ciudades sin principal y reclamos huérfanos", async () => {
+      apiClient.get.mockImplementation((url) => {
+        if (url.includes("/admin/usuarios/stats")) {
+          return Promise.resolve({ data: { ok: true, data: { total: 100, activos: 95, inactivos: 5, admins: 2 } } });
+        }
+        if (url.includes("/admin/reclamos/stats")) {
+          return Promise.resolve({
+            data: { ok: true, data: { total: 50, pendientes: 0, resueltos: 30, sinAsignar: 3, pendienteMasAntiguoDias: 12 } },
+          });
+        }
+        if (url.includes("/admin/instituciones/stats")) {
+          return Promise.resolve({ data: { ok: true, data: { total: 10, verificadas: 8, pendientes: 0 } } });
+        }
+        if (url.includes("/admin/ciudades/stats")) {
+          return Promise.resolve({ data: { ok: true, data: { total: 5, activas: 3, inactivas: 2, sinPrincipal: 1 } } });
+        }
+        return Promise.resolve({ data: { ok: true, data: [] } });
+      });
+
+      render(<DashboardStats />);
+
+      // Verificar alerta crítica en banner
+      expect(await screen.findByText("Requiere Atención Administrativa")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /Configurar institución principal/i })).toHaveAttribute("href", "/admin/ciudades");
+      expect(screen.getByRole("link", { name: /Asignar reclamos/i })).toHaveAttribute("href", "/admin/reclamos?institucion=sin_asignar");
+
+      // Verificar KPIs territoriales y de reclamos
+      expect(screen.getByText("Ciudades Operativas")).toBeInTheDocument();
+      const sinPrincipalElems = screen.getAllByText(/sin institución principal/i);
+      expect(sinPrincipalElems.length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText(/3 sin asignar/i)).toBeInTheDocument();
+    });
   });
 
   describe("6. Etapa 2: Ciclo de Vida Institucional y Solicitud Rechazada", () => {
