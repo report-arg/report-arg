@@ -272,8 +272,10 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
       fireEvent.change(searchInput, { target: { value: "Bache" } });
       expect(onBusquedaChange).toHaveBeenCalledWith("Bache");
 
-      const selectEstado = screen.getByRole("combobox");
-      fireEvent.change(selectEstado, { target: { value: "Pendiente" } });
+      const selectEstado = screen.getAllByRole("combobox")[0];
+      fireEvent.click(selectEstado);
+      const opcionPendiente = screen.getByText("Pendiente");
+      fireEvent.click(opcionPendiente);
       expect(onFiltroEstadoChange).toHaveBeenCalledWith("Pendiente");
     });
 
@@ -335,7 +337,9 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
       expect(onBusquedaChange).toHaveBeenCalledWith("Luz");
 
       const selectElements = screen.getAllByRole("combobox");
-      fireEvent.change(selectElements[0], { target: { value: "reclamo" } });
+      fireEvent.click(selectElements[0]);
+      const opcionReclamos = screen.getByText("Reclamos");
+      fireEvent.click(opcionReclamos);
       expect(onFiltroTipoChange).toHaveBeenCalledWith("reclamo");
     });
   });

@@ -13,6 +13,8 @@ import CategoriaPanel from "@/components/admin/categorias/CategoriaPanel";
 import InstitucionStatusModal from "@/components/admin/instituciones/InstitucionStatusModal";
 import InstitucionEstadoSolicitudView from "@/components/institucion/InstitucionEstadoSolicitudView";
 import CiudadesPage from "@/app/admin/ciudades/page";
+import CiudadanoCiudadPanel from "@/components/ciudadano/CiudadanoCiudadPanel";
+import { CiudadanoCiudadProvider } from "@/context/CiudadanoCiudadContext";
 
 // Mock de apiClient y toast
 jest.mock("@/services/apiClient");
@@ -268,9 +270,10 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
       expect(await screen.findByText("Reasignar Institución Responsable")).toBeInTheDocument();
 
       // Seleccionar entidad destino y cargar motivo
-      const selects = screen.getAllByRole("combobox");
-      const selectDestino = selects[selects.length - 1];
-      fireEvent.change(selectDestino, { target: { value: "50" } });
+      const selectDestino = screen.getByRole("combobox", { name: /Nueva Institución Responsable/i });
+      fireEvent.click(selectDestino);
+      const opcionDestino = await screen.findByText("Vialidad Provincial");
+      fireEvent.click(opcionDestino);
 
       const textareaMotivo = screen.getByPlaceholderText(/Explicá el motivo técnico o administrativo/i);
       fireEvent.change(textareaMotivo, { target: { value: "Competencia de red vial primaria provincial" } });
@@ -582,6 +585,101 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
           activa: false,
           motivo: "Mantenimiento programado de jurisdicción",
         });
+      });
+    });
+  });
+
+  describe("7. Etapa 4 — Supervisión con anomalías y Administrador en Comunidad", () => {
+    it("AdminReclamosPage: permite activar el filtro de anomalías y visualiza tarjeta 'Sin Asignar'", async () => {
+      apiClient.get.mockImplementation((url) => {
+        if (url.includes("/admin/reclamos/stats")) {
+          return Promise.resolve({
+            data: {
+              ok: true,
+              data: {
+                total: 2,
+                pendientes: 1,
+                enRevision: 0,
+                enProceso: 0,
+                resueltos: 1,
+                sinAsignar: 1,
+                pendienteMasAntiguoDias: 4,
+              },
+            },
+          });
+        }
+        if (url.includes("/admin/reclamos/lista")) {
+          return Promise.resolve({
+            data: {
+              ok: true,
+              data: [
+                {
+                  id: 201,
+                  titulo: "Reclamo sin entidad responsable",
+                  estado: "Pendiente",
+                  ciudadNombre: "Viale",
+                  institucionNombre: null,
+                  tieneAnomalia: true,
+                },
+              ],
+              total: 1,
+              totalPaginas: 1,
+            },
+          });
+        }
+        return Promise.resolve({ data: { ok: true, data: [] } });
+      });
+
+      render(<AdminReclamosPage />);
+
+      expect(await screen.findByText("Sin Asignar")).toBeInTheDocument();
+      const itemsReclamo = await screen.findAllByText("Reclamo sin entidad responsable");
+      expect(itemsReclamo[0]).toBeInTheDocument();
+
+      // Botón de filtro de anomalías
+      const btnAnomalia = screen.getByRole("button", { name: /Anomalías/i });
+      fireEvent.click(btnAnomalia);
+
+      await waitFor(() => {
+        expect(apiClient.get).toHaveBeenCalledWith(
+          expect.stringContaining("anomalia=true")
+        );
+      });
+    });
+
+    it("CiudadanoCiudadPanel: como Administrador permite seleccionar y cambiar la localidad activa de la comunidad", async () => {
+      const { authService } = require("@/services/authService");
+      jest.spyOn(authService, "getCiudadesActivas").mockResolvedValue({
+        ok: true,
+        data: [
+          { id: 1, nombre: "Viale", provincia: "Entre Ríos", activa: 1 },
+          { id: 2, nombre: "Paraná", provincia: "Entre Ríos", activa: 1 },
+        ],
+      });
+
+      render(
+        <CiudadanoCiudadProvider>
+          <CiudadanoCiudadPanel />
+        </CiudadanoCiudadProvider>
+      );
+
+      expect(await screen.findByText(/Vista Comunitaria \(Admin\):/i)).toBeInTheDocument();
+
+      // Abrir selector
+      const btnCambiar = screen.getByRole("button", { name: "Cambiar ciudad activa" });
+      fireEvent.click(btnCambiar);
+
+      expect(screen.getByText(/Seleccionar ciudad activa para la comunidad/i)).toBeInTheDocument();
+
+      // Seleccionar Paraná
+      const selectCiudad = screen.getByRole("combobox", { name: /Localidad activa/i });
+      fireEvent.click(selectCiudad);
+
+      const opcionParana = await screen.findByText("Paraná, Entre Ríos");
+      fireEvent.click(opcionParana);
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("Paraná"));
       });
     });
   });

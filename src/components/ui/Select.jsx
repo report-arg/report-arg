@@ -156,6 +156,11 @@ export default function Select({
         aria-labelledby={label ? `${selectId}-label ${selectId}` : undefined}
         disabled={disabled}
         onClick={() => !disabled && setIsOpen((prev) => !prev)}
+        onChange={(e) => {
+          if (e?.target?.value !== undefined) {
+            handleSelect(e.target.value);
+          }
+        }}
         className={`w-full h-9 rounded-xl border bg-surface px-3 py-1.5 text-xs text-left transition-all flex items-center justify-between gap-2 cursor-pointer shadow-2xs select-none ${
           disabled
             ? "border-border-subtle/50 text-text-muted/50 cursor-not-allowed bg-surface-subtle/40"

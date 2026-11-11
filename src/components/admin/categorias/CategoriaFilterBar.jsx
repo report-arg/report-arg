@@ -1,7 +1,22 @@
 "use client";
 
-import { Search, X, Filter, RefreshCw } from "lucide-react";
+import { Search, X, RefreshCw } from "lucide-react";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Select from "@/components/ui/Select";
+
+const TIPOS_OPTIONS = [
+  { value: "", label: "Tipo: Todos" },
+  { value: "reclamo", label: "Reclamos" },
+  { value: "comunicado", label: "Comunicados" },
+  { value: "ambos", label: "Ambos" },
+];
+
+const ESTADOS_OPTIONS = [
+  { value: "", label: "Estado: Todos" },
+  { value: "activo", label: "Activas" },
+  { value: "inactivo", label: "Inactivas" },
+];
 
 export default function CategoriaFilterBar({
   busqueda = "",
@@ -18,16 +33,17 @@ export default function CategoriaFilterBar({
     <div className="p-4 rounded-2xl bg-surface border border-border-subtle shadow-xs flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
       {/* Buscador */}
       <div className="relative flex-1">
-        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
-        <input
+        <Input
           type="text"
           value={busqueda}
           onChange={(e) => onBusquedaChange?.(e.target.value)}
           placeholder="Buscar por nombre, código o descripción..."
-          className="w-full pl-10 pr-9 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-xs text-text-primary placeholder:text-text-muted focus:bg-surface focus:border-primary outline-hidden transition-all"
+          leftIcon={<Search size={16} />}
+          className="pr-9"
         />
         {busqueda && (
           <button
+            type="button"
             onClick={onLimpiarBusqueda}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary p-0.5 cursor-pointer"
             title="Limpiar búsqueda"
@@ -40,33 +56,22 @@ export default function CategoriaFilterBar({
 
       {/* Filtros Dropdowns y Botón Actualizar */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* Tipo */}
-        <div className="relative">
-          <select
+        <div className="w-36">
+          <Select
             value={filtroTipo}
-            onChange={(e) => onFiltroTipoChange?.(e.target.value)}
-            className="appearance-none pl-8 pr-8 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-xs font-semibold text-text-primary focus:bg-surface focus:border-primary outline-hidden cursor-pointer transition-all"
-          >
-            <option value="">Tipo: Todos</option>
-            <option value="reclamo">Reclamos</option>
-            <option value="comunicado">Comunicados</option>
-            <option value="ambos">Ambos</option>
-          </select>
-          <Filter size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+            onChange={(val) => onFiltroTipoChange?.(val)}
+            options={TIPOS_OPTIONS}
+            placeholder="Tipo: Todos"
+          />
         </div>
 
-        {/* Estado */}
-        <div className="relative">
-          <select
+        <div className="w-36">
+          <Select
             value={filtroEstado}
-            onChange={(e) => onFiltroEstadoChange?.(e.target.value)}
-            className="appearance-none pl-8 pr-8 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-xs font-semibold text-text-primary focus:bg-surface focus:border-primary outline-hidden cursor-pointer transition-all"
-          >
-            <option value="">Estado: Todos</option>
-            <option value="activo">Activas</option>
-            <option value="inactivo">Inactivas</option>
-          </select>
-          <Filter size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+            onChange={(val) => onFiltroEstadoChange?.(val)}
+            options={ESTADOS_OPTIONS}
+            placeholder="Estado: Todos"
+          />
         </div>
 
         <Button

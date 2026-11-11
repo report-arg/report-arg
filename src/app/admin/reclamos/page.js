@@ -27,6 +27,14 @@ export default function AdminReclamosPage() {
   const [busqueda, setBusqueda] = useState("");
   const debouncedBusqueda = useDebounce(busqueda, 350);
   const [filtroEstado, setFiltroEstado] = useState("");
+  const [filtroCiudad, setFiltroCiudad] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [filtroInstitucion, setFiltroInstitucion] = useState("");
+  const [filtroAnomalia, setFiltroAnomalia] = useState(false);
+
+  // Catálogos auxiliares para filtros
+  const [ciudadesCatalogo, setCiudadesCatalogo] = useState([]);
+  const [categoriasCatalogo, setCategoriasCatalogo] = useState([]);
 
   // Métricas
   const [stats, setStats] = useState({
@@ -35,6 +43,8 @@ export default function AdminReclamosPage() {
     enRevision: 0,
     enProceso: 0,
     resueltos: 0,
+    sinAsignar: 0,
+    pendienteMasAntiguoDias: 0,
   });
   const [loadingStats, setLoadingStats] = useState(true);
 
@@ -76,9 +86,40 @@ export default function AdminReclamosPage() {
     }
   }, []);
 
+  // Cargar catálogos para filtros (ciudades, categorías e instituciones verificadas)
+  const fetchCatalogosFiltros = useCallback(async () => {
+    try {
+      const [resCiudades, resCats, resInst] = await Promise.all([
+        apiClient.get("/admin/ciudades").catch(() => null),
+        apiClient.get("/admin/categorias").catch(() => null),
+        apiClient.get("/admin/instituciones?estado=verificada").catch(() => null),
+      ]);
+      if (!isMountedRef.current) return;
+      if (resCiudades?.data?.ok && Array.isArray(resCiudades.data.data)) {
+        setCiudadesCatalogo(resCiudades.data.data);
+      }
+      if (resCats?.data?.ok && Array.isArray(resCats.data.data)) {
+        setCategoriasCatalogo(resCats.data.data);
+      }
+      if (resInst?.data?.ok && Array.isArray(resInst.data.data)) {
+        setInstituciones(resInst.data.data);
+      }
+    } catch {
+      // silencioso
+    }
+  }, []);
+
   // Cargar reclamos paginados con protección contra carreras
   const fetchReclamos = useCallback(
-    async (page = 1, estado = filtroEstado, search = debouncedBusqueda) => {
+    async (
+      page = 1,
+      estado = filtroEstado,
+      search = debouncedBusqueda,
+      ciudad = filtroCiudad,
+      categoria = filtroCategoria,
+      institucion = filtroInstitucion,
+      anomalia = filtroAnomalia
+    ) => {
       const currentReqId = ++reqIdRef.current;
       setLoading(true);
       setError("");
@@ -89,6 +130,10 @@ export default function AdminReclamosPage() {
         });
         if (estado) params.set("estado", estado);
         if (search && search.trim()) params.set("busqueda", search.trim());
+        if (ciudad) params.set("ciudad", String(ciudad));
+        if (categoria) params.set("categoria", String(categoria));
+        if (institucion) params.set("institucion", String(institucion));
+        if (anomalia) params.set("anomalia", "true");
 
         const res = await apiClient.get(`/admin/reclamos/lista?${params.toString()}`);
 
@@ -114,7 +159,7 @@ export default function AdminReclamosPage() {
         }
       }
     },
-    [filtroEstado, debouncedBusqueda]
+    [filtroEstado, debouncedBusqueda, filtroCiudad, filtroCategoria, filtroInstitucion, filtroAnomalia]
   );
 
   // Cargar instituciones verificadas para reasignación
@@ -135,22 +180,47 @@ export default function AdminReclamosPage() {
     }
   };
 
-  // Efecto inicial para métricas
+  // Efecto inicial para métricas y catálogos
   useEffect(() => {
     fetchStats();
-  }, [fetchStats]);
+    fetchCatalogosFiltros();
+  }, [fetchStats, fetchCatalogosFiltros]);
 
-  // Efecto para cambios en búsqueda o estado
+  // Efecto para cambios en búsqueda o filtros
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
-      fetchReclamos(1, filtroEstado, debouncedBusqueda);
+      fetchReclamos(
+        1,
+        filtroEstado,
+        debouncedBusqueda,
+        filtroCiudad,
+        filtroCategoria,
+        filtroInstitucion,
+        filtroAnomalia
+      );
       return;
     }
     setPagina(1);
-    fetchReclamos(1, filtroEstado, debouncedBusqueda);
-  }, [debouncedBusqueda, filtroEstado, fetchReclamos]);
+    fetchReclamos(
+      1,
+      filtroEstado,
+      debouncedBusqueda,
+      filtroCiudad,
+      filtroCategoria,
+      filtroInstitucion,
+      filtroAnomalia
+    );
+  }, [
+    debouncedBusqueda,
+    filtroEstado,
+    filtroCiudad,
+    filtroCategoria,
+    filtroInstitucion,
+    filtroAnomalia,
+    fetchReclamos,
+  ]);
 
   // Manejador de cambio de página
   const handleCambiarPagina = (nuevaPag) => {
@@ -258,6 +328,8 @@ export default function AdminReclamosPage() {
         loading={loadingStats}
         filtroEstado={filtroEstado}
         onFiltroEstadoChange={setFiltroEstado}
+        filtroAnomalia={filtroAnomalia}
+        onFiltroAnomaliaChange={setFiltroAnomalia}
       />
 
       {/* Controles de búsqueda y filtros */}
@@ -267,9 +339,24 @@ export default function AdminReclamosPage() {
         onLimpiarBusqueda={() => setBusqueda("")}
         filtroEstado={filtroEstado}
         onFiltroEstadoChange={setFiltroEstado}
+        filtroCiudad={filtroCiudad}
+        onFiltroCiudadChange={setFiltroCiudad}
+        ciudades={ciudadesCatalogo}
+        filtroCategoria={filtroCategoria}
+        onFiltroCategoriaChange={setFiltroCategoria}
+        categorias={categoriasCatalogo}
+        filtroInstitucion={filtroInstitucion}
+        onFiltroInstitucionChange={setFiltroInstitucion}
+        instituciones={instituciones}
+        filtroAnomalia={filtroAnomalia}
+        onFiltroAnomaliaChange={setFiltroAnomalia}
         onLimpiarTodo={() => {
           setBusqueda("");
           setFiltroEstado("");
+          setFiltroCiudad("");
+          setFiltroCategoria("");
+          setFiltroInstitucion("");
+          setFiltroAnomalia(false);
         }}
         totalResultados={reclamos.length}
         totalGeneral={total}

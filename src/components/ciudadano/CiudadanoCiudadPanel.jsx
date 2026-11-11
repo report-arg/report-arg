@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import { MapPin, Plus, Trash2, AlertTriangle, CheckCircle2, Globe, Home, ArrowRight } from "lucide-react";
 import { useCiudadanoCiudad } from "@/context/CiudadanoCiudadContext";
 import Modal from "@/components/ui/Modal";
@@ -9,6 +10,9 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 
 export default function CiudadanoCiudadPanel() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin";
+
   const {
     loading,
     procesando,
@@ -83,6 +87,79 @@ export default function CiudadanoCiudadPanel() {
   }
 
   if (loading) return null;
+
+  if (isAdmin) {
+    return (
+      <>
+        <div className="mb-4">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-surface border border-border-subtle shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
+              <div className="inline-flex items-center gap-1.5 text-xs text-text-secondary">
+                <Globe size={14} className="text-primary shrink-0" />
+                <span className="font-medium text-text-muted">Vista Comunitaria (Admin):</span>
+                <span className="font-bold text-text-primary">
+                  {ciudadSeleccionada?.nombre
+                    ? `${ciudadSeleccionada.nombre}${ciudadSeleccionada.provincia ? `, ${ciudadSeleccionada.provincia}` : ""}`
+                    : "Ninguna ciudad seleccionada"}
+                </span>
+                {ciudadSeleccionada?.id && (
+                  <Badge variant="success" size="sm">
+                    Jurisdicción activa
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<MapPin size={14} />}
+                onClick={() => setModalAbierto(true)}
+              >
+                Cambiar ciudad activa
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <Modal
+          isOpen={modalAbierto}
+          onClose={() => setModalAbierto(false)}
+          title="Seleccionar ciudad activa para la comunidad"
+          description="Elegí la localidad activa donde querés interactuar o registrar un reclamo como administrador."
+          icon={<MapPin size={20} />}
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <Select
+              id="select-ciudad-admin"
+              label="Localidad activa *"
+              value={ciudadSeleccionada?.id ? String(ciudadSeleccionada.id) : ""}
+              onChange={(val) => {
+                seleccionarCiudad(Number(val));
+              }}
+              options={(ciudadesActivas || []).map((c) => ({
+                value: String(c.id),
+                label: `${c.nombre}, ${c.provincia}`,
+              }))}
+              placeholder="Seleccioná una localidad activa..."
+            />
+
+            <div className="pt-2 flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setModalAbierto(false)}
+              >
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      </>
+    );
+  }
 
   return (
     <>

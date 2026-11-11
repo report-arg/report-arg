@@ -61,10 +61,10 @@ export default function AppNavbar({
   const iniciales = nombreMostrado
     .split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
 
-  const ciudad = isCiudadano && ciudadSeleccionada?.nombre
+  const ciudad = (isCiudadano || isAdmin) && ciudadSeleccionada?.nombre
     ? ciudadSeleccionada.nombre
     : (perfil?.ciudad_activa || perfil?.ciudad_declarada || ciudadResidencia?.nombre || null);
-  const provincia = isCiudadano && ciudadSeleccionada?.provincia
+  const provincia = (isCiudadano || isAdmin) && ciudadSeleccionada?.provincia
     ? ciudadSeleccionada.provincia
     : (perfil?.provincia_activa || perfil?.provincia_declarada || ciudadResidencia?.provincia || null);
   const ubicacionTexto = ciudad
@@ -97,12 +97,12 @@ export default function AppNavbar({
 
         {/* Contexto Territorial Dinámico */}
         {showLocation && ubicacionTexto && (
-          isCiudadano ? (
+          (isCiudadano || isAdmin) ? (
             <button
               type="button"
               onClick={() => setModalAbierto(true)}
               className="home-location-badge hidden sm:flex cursor-pointer hover:opacity-90 transition-opacity"
-              title="Cambiar ciudad consultada o gestionar ciudades de interés"
+              title={isAdmin ? "Cambiar ciudad activa para operar en la comunidad" : "Cambiar ciudad consultada o gestionar ciudades de interés"}
             >
               <MapPin size={14} className="pin-icon" />
               <span>{ubicacionTexto}</span>

@@ -82,7 +82,10 @@ export default function ReclamoTable({
                     </p>
                     <div className="flex items-center gap-1.5 text-[11px] text-text-secondary mt-1">
                       <MapPin size={12} className="shrink-0 text-text-muted" />
-                      <span className="truncate">{r.direccion || "Sin dirección especificada"}</span>
+                      <span className="truncate">
+                        {r.ciudadNombre ? `${r.ciudadNombre} · ` : ""}
+                        {r.direccion || "Sin dirección especificada"}
+                      </span>
                     </div>
                   </td>
 
@@ -97,11 +100,18 @@ export default function ReclamoTable({
                   {/* Institución */}
                   <td className="py-3.5 px-4 whitespace-nowrap">
                     {r.institucionNombre ? (
-                      <div className="flex items-center gap-1.5 text-xs text-text-primary">
-                        <Building2 size={13} className="text-text-muted shrink-0" />
-                        <span className="font-medium truncate max-w-[180px]">
-                          {r.institucionNombre}
-                        </span>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5 text-xs text-text-primary">
+                          <Building2 size={13} className="text-text-muted shrink-0" />
+                          <span className="font-medium truncate max-w-[180px]">
+                            {r.institucionNombre}
+                          </span>
+                        </div>
+                        {r.tieneAnomalia && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/30 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900/40 w-fit">
+                            <AlertTriangle size={10} /> Institución inactiva
+                          </span>
+                        )}
                       </div>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-900/40">

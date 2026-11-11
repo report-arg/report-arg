@@ -28,13 +28,45 @@ export function CiudadanoCiudadProvider({ children }) {
 
   const cargarContextoCiudad = useCallback(async () => {
     if (status === "loading") return;
-    if (!userId || userRole !== "ciudadano") {
+    if (!userId || (userRole !== "ciudadano" && userRole !== "admin")) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
+      if (userRole === "admin") {
+        const activasRes = await authService.getCiudadesActivas();
+        const listaActivas = activasRes?.ok ? (activasRes.data || []) : [];
+        setCiudadesActivas(listaActivas);
+        setCiudadResidencia(null);
+        setCiudadesInteres([]);
+
+        let guardadaId = null;
+        if (typeof window !== "undefined" && storageKey) {
+          const raw = window.sessionStorage.getItem(storageKey);
+          if (raw) {
+            const parsed = Number(raw);
+            if (Number.isSafeInteger(parsed) && parsed > 0) {
+              guardadaId = parsed;
+            }
+          }
+        }
+
+        const ciudadGuardada = guardadaId ? listaActivas.find((c) => Number(c.id) === guardadaId) : null;
+        if (ciudadGuardada) {
+          setCiudadSeleccionada({ ...ciudadGuardada, activa: true, esResidencia: false });
+        } else if (listaActivas.length > 0) {
+          // Si el administrador aún no eligió ciudad activa para esta sesión comunitaria, abrimos el modal
+          setCiudadSeleccionada(null);
+          setModalAbierto(true);
+        } else {
+          setCiudadSeleccionada(null);
+        }
+        setLoading(false);
+        return;
+      }
+
       const [meRes, activasRes, interesRes] = await Promise.allSettled([
         apiClient.get("/auth/me"),
         authService.getCiudadesActivas(),
@@ -112,6 +144,20 @@ export function CiudadanoCiudadProvider({ children }) {
 
     setProcesando(true);
     try {
+      if (userRole === "admin") {
+        const encontrada = ciudadesActivas.find((c) => Number(c.id) === idCiudad);
+        if (encontrada) {
+          const nueva = { ...encontrada, activa: true, esResidencia: false };
+          setCiudadSeleccionada(nueva);
+          if (typeof window !== "undefined" && storageKey) {
+            window.sessionStorage.setItem(storageKey, String(nueva.id));
+          }
+          setModalAbierto(false);
+          toast.success(`Ciudad comunitaria activa seleccionada: ${nueva.nombre}`);
+          return true;
+        }
+      }
+
       const res = await authService.cambiarContextoCiudad(idCiudad);
       if (res?.ok && res?.data?.ciudad_seleccionada) {
         const nueva = {
@@ -137,7 +183,7 @@ export function CiudadanoCiudadProvider({ children }) {
     } finally {
       setProcesando(false);
     }
-  }, [storageKey]);
+  }, [ciudadesActivas, storageKey, userRole]);
 
   const agregarCiudadInteres = useCallback(async (idCiudadInput) => {
     const idCiudad = Number(idCiudadInput);
@@ -200,14 +246,16 @@ export function CiudadanoCiudadProvider({ children }) {
   }, [ciudadSeleccionada, ciudadResidencia, storageKey]);
 
   const esVisitante = useMemo(() => {
+    if (userRole === "admin") return false;
     if (!ciudadSeleccionada?.id) return false;
     if (!ciudadResidencia?.activa || !ciudadResidencia?.id) return true;
     return Number(ciudadSeleccionada.id) !== Number(ciudadResidencia.id);
-  }, [ciudadSeleccionada, ciudadResidencia]);
+  }, [ciudadSeleccionada, ciudadResidencia, userRole]);
 
   const puedeOperarEnCiudadActual = useMemo(() => {
+    if (userRole === "admin") return Boolean(ciudadSeleccionada?.id);
     return Boolean(ciudadResidencia?.activa && ciudadResidencia?.id && !esVisitante);
-  }, [ciudadResidencia, esVisitante]);
+  }, [ciudadResidencia, esVisitante, userRole, ciudadSeleccionada]);
 
   const ciudadesInteresInactivas = useMemo(
     () => ciudadesInteres.filter((c) => !c.activa),

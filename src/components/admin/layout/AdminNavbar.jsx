@@ -29,7 +29,6 @@ const SECTION_TITLES = {
   "/admin/users": "Gestión de Usuarios",
   "/admin/users/new": "Nuevo Usuario",
   "/admin/reclamos": "Supervisión de Reclamos",
-  "/admin/reclamos/nuevo": "Registrar Reclamo",
   "/admin/categories": "Administración de Categorías",
   "/admin/categories/crear": "Crear Categoría",
   "/admin/ciudades": "Administración Territorial",

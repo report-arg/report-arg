@@ -1,15 +1,17 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 
 export default function ReclamoStatsCards({
   stats = {},
   loading = false,
   filtroEstado = "",
   onFiltroEstadoChange,
+  filtroAnomalia = false,
+  onFiltroAnomaliaChange,
 }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
       {/* Total */}
       <div className="p-4 rounded-2xl bg-surface border border-border-subtle shadow-xs">
         <p className="text-xs font-semibold text-text-muted m-0">Total Reclamos</p>
@@ -33,7 +35,11 @@ export default function ReclamoStatsCards({
         <h3 className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1 m-0">
           {loading ? <Loader2 size={18} className="animate-spin text-text-muted" /> : stats.pendientes || 0}
         </h3>
-        <p className="text-[11px] text-text-secondary mt-1 m-0">Sin iniciar gestión</p>
+        <p className="text-[11px] text-text-secondary mt-1 m-0">
+          {Number(stats.pendienteMasAntiguoDias || 0) > 0
+            ? `Más antiguo: hace ${stats.pendienteMasAntiguoDias}d`
+            : "Sin iniciar gestión"}
+        </p>
       </div>
 
       {/* En Proceso */}
@@ -72,6 +78,26 @@ export default function ReclamoStatsCards({
           {loading ? <Loader2 size={18} className="animate-spin text-text-muted" /> : stats.resueltos || 0}
         </h3>
         <p className="text-[11px] text-text-secondary mt-1 m-0">Completados con éxito</p>
+      </div>
+
+      {/* Sin asignar / Anomalías */}
+      <div
+        onClick={() => onFiltroAnomaliaChange?.(!filtroAnomalia)}
+        className={`p-4 rounded-2xl bg-surface border shadow-xs cursor-pointer transition-all hover:border-rose-400 col-span-2 sm:col-span-1 ${
+          filtroAnomalia
+            ? "border-rose-500 ring-2 ring-rose-500/20"
+            : "border-border-subtle"
+        }`}
+        title="Click para filtrar reclamos sin institución o con anomalías"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold text-rose-700 dark:text-rose-400 m-0">Sin Asignar</p>
+          <AlertTriangle size={14} className="text-rose-500 shrink-0" />
+        </div>
+        <h3 className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1 m-0">
+          {loading ? <Loader2 size={18} className="animate-spin text-text-muted" /> : stats.sinAsignar || 0}
+        </h3>
+        <p className="text-[11px] text-text-secondary mt-1 m-0">Requieren reasignación</p>
       </div>
     </div>
   );

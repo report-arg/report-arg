@@ -3,6 +3,8 @@
 import { ArrowRightLeft, Loader2, AlertTriangle } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
+import Select from "@/components/ui/Select";
+import Textarea from "@/components/ui/Textarea";
 
 export default function ReclamoReassignModal({
   isOpen = false,
@@ -26,6 +28,14 @@ export default function ReclamoReassignModal({
       Number(inst.id_ciudad) === Number(reclamo.id_ciudad) &&
       Number(inst.id) !== Number(reclamo.id_institucion)
   );
+
+  const opcionesDestino = [
+    { value: "", label: "Seleccionar institución destino..." },
+    ...institucionesElegibles.map((inst) => ({
+      value: String(inst.id),
+      label: inst.nombre,
+    })),
+  ];
 
   return (
     <Modal
@@ -58,10 +68,6 @@ export default function ReclamoReassignModal({
 
         {/* Selector de nueva institución */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
-            Nueva Institución Responsable *
-          </label>
-
           {loadingInstituciones ? (
             <div className="flex items-center gap-2 py-2 text-xs text-text-muted">
               <Loader2 size={14} className="animate-spin text-primary" />
@@ -75,36 +81,26 @@ export default function ReclamoReassignModal({
               </span>
             </div>
           ) : (
-            <select
+            <Select
+              label="Nueva Institución Responsable *"
               value={institucionDestino}
-              onChange={(e) => onInstitucionDestinoChange?.(e.target.value)}
-              className="w-full text-xs sm:text-sm py-2 px-3 rounded-xl border border-border-subtle bg-surface text-text-primary focus:border-primary outline-hidden"
-            >
-              <option value="">Seleccionar institución destino...</option>
-              {institucionesElegibles.map((inst) => (
-                <option key={inst.id} value={inst.id}>
-                  {inst.nombre}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => onInstitucionDestinoChange?.(val)}
+              options={opcionesDestino}
+              placeholder="Seleccionar institución destino..."
+            />
           )}
         </div>
 
         {/* Motivo obligatorio */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
-            Motivo de la Reasignación *
-          </label>
-          <textarea
+          <Textarea
+            label="Motivo de la Reasignación *"
             rows={3}
             placeholder="Explicá el motivo técnico o administrativo de la reasignación (obligatorio para auditoría)..."
             value={motivo}
             onChange={(e) => onMotivoChange?.(e.target.value)}
-            className="w-full text-xs sm:text-sm p-3 rounded-xl border border-border-subtle bg-surface text-text-primary focus:border-primary outline-hidden resize-y"
+            helperText="Este motivo quedará asentado de forma indeleble en el historial de eventos del reclamo."
           />
-          <p className="text-[11px] text-text-muted mt-1 m-0">
-            Este motivo quedará asentado de forma indeleble en el historial de eventos del reclamo.
-          </p>
         </div>
 
         {/* Error de validación */}

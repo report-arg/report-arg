@@ -254,6 +254,7 @@ export default function CategoriaPanel() {
                   <th className="py-3 px-4">Categoría</th>
                   <th className="py-3 px-4">Descripción</th>
                   <th className="py-3 px-4">Ámbito</th>
+                  <th className="py-3 px-4">Cobertura Institucional</th>
                   <th className="py-3 px-4 text-center">Orden</th>
                   <th className="py-3 px-4">Estado</th>
                   <th className="py-3 px-4 text-right">Acciones</th>
@@ -267,6 +268,7 @@ export default function CategoriaPanel() {
                     label: cat.tipo,
                     badgeCls: "bg-surface-subtle text-text-secondary border-border-subtle",
                   };
+                  const cantEspecializadas = Number(cat.instituciones_especializadas_count || 0);
 
                   return (
                     <tr key={cat.id} className="hover:bg-surface-subtle/50 transition-colors">
@@ -299,6 +301,22 @@ export default function CategoriaPanel() {
                         <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${tipoInfo.badgeCls}`}>
                           {tipoInfo.label}
                         </span>
+                      </td>
+
+                      {/* Cobertura Institucional */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-semibold text-text-primary">
+                            {cantEspecializadas > 0 ? (
+                              `${cantEspecializadas} especializada${cantEspecializadas > 1 ? "s" : ""}`
+                            ) : (
+                              <span className="text-text-muted font-normal">Sin especializada</span>
+                            )}
+                          </span>
+                          <span className="text-[10px] text-text-muted">
+                            Respaldo: Inst. Principal por ciudad activa
+                          </span>
+                        </div>
                       </td>
 
                       {/* Orden */}

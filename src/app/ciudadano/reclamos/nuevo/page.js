@@ -19,7 +19,8 @@ import { useCiudadanoCiudad } from "@/context/CiudadanoCiudadContext";
 export default function NuevoReclamoPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { ciudadResidencia, esVisitante } = useCiudadanoCiudad();
+  const isAdmin = session?.user?.role === "admin";
+  const { ciudadResidencia, ciudadSeleccionada, esVisitante, setModalAbierto } = useCiudadanoCiudad();
 
   const fileInputRef = useRef(null);
   const tituloRef = useRef(null);
@@ -28,7 +29,11 @@ export default function NuevoReclamoPage() {
   const dirRef = useRef(null);
 
   // Obtener categorías directamente desde el backend en tiempo real (con resolución de institución dinámica)
-  const { categorias, loading: loadingCats } = useCategorias("reclamo", true);
+  const { categorias, loading: loadingCats } = useCategorias(
+    "reclamo",
+    true,
+    ciudadSeleccionada?.id || ciudadResidencia?.id || null
+  );
   const [form, setForm] = useState({
     titulo: "",
     descripcion: "",
@@ -178,7 +183,7 @@ export default function NuevoReclamoPage() {
     setSubmitting(true);
     try {
       const urlImagen = fotos[0]?.url || null;
-      const res = await apiClient.post(`/reclamos`, {
+      const payload = {
         titulo: form.titulo.trim(),
         descripcion: form.descripcion.trim(),
         id_categoria: form.id_categoria,
@@ -187,11 +192,18 @@ export default function NuevoReclamoPage() {
         longitud: coords.longitud,
         visibilidad: form.visibilidad,
         imagen_url: urlImagen,
-      });
+        ...(isAdmin && ciudadSeleccionada?.id ? { id_ciudad: Number(ciudadSeleccionada.id) } : {}),
+      };
+
+      const res = await apiClient.post(`/reclamos`, payload);
       const data = res.data;
       if (data.ok) {
-        toast.success("¡Reclamo creado exitosamente!");
-        router.push("/ciudadano/reclamos");
+        toast.success(
+          isAdmin
+            ? `¡Reclamo creado exitosamente en ${ciudadSeleccionada?.nombre || "la ciudad activa"}!`
+            : "¡Reclamo creado exitosamente!"
+        );
+        router.push(isAdmin ? "/admin/reclamos" : "/ciudadano/reclamos");
       } else {
         setError(data.mensaje || "Error al crear el reclamo.");
       }
@@ -205,7 +217,39 @@ export default function NuevoReclamoPage() {
 
   if (status === "loading") return null;
 
-  if (ciudadResidencia && !ciudadResidencia.activa) {
+  if (isAdmin && !ciudadSeleccionada?.id) {
+    return (
+      <div className="w-full max-w-2xl mx-auto py-6">
+        <div className="bg-surface rounded-2xl border border-primary/30 p-6 space-y-4 shadow-xs">
+          <h1 className="text-lg font-bold text-text-primary">
+            Seleccioná una ciudad activa para registrar el reclamo
+          </h1>
+          <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
+            Como administrador, antes de crear un reporte debés indicar en qué localidad activa se originará el reclamo para asignar adecuadamente la institución y las reglas territoriales.
+          </p>
+          <div className="flex flex-wrap items-center gap-2.5 pt-2">
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<MapPin size={15} />}
+              onClick={() => setModalAbierto(true)}
+            >
+              Seleccionar ciudad activa
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/admin/reclamos")}
+            >
+              Volver a supervisión
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin && ciudadResidencia && !ciudadResidencia.activa) {
     return (
       <div className="w-full max-w-2xl mx-auto py-6">
         <div className="bg-surface rounded-2xl border border-amber-200 dark:border-amber-800/60 p-6 space-y-4 shadow-xs">
@@ -258,7 +302,12 @@ export default function NuevoReclamoPage() {
           <p className="text-xs sm:text-sm text-text-muted mt-1 leading-relaxed">
             Contanos qué pasó para poder derivarlo a la institución correspondiente.
           </p>
-          {esVisitante && ciudadResidencia?.nombre && (
+          {isAdmin && ciudadSeleccionada?.nombre && (
+            <p className="mt-2 text-xs font-medium text-primary bg-primary-subtle/50 border border-primary/20 rounded-xl px-3 py-2">
+              Modo Administrador: Este reclamo se registrará directamente en la jurisdicción de <strong>{ciudadSeleccionada.nombre}</strong>.
+            </p>
+          )}
+          {!isAdmin && esVisitante && ciudadResidencia?.nombre && (
             <p className="mt-2 text-xs font-medium text-primary bg-primary-subtle/50 border border-primary/20 rounded-xl px-3 py-2">
               Nota: Aunque hayas seleccionado otra ciudad para consulta, este reclamo se registrará en tu ciudad de residencia activa (<strong>{ciudadResidencia.nombre}</strong>).
             </p>

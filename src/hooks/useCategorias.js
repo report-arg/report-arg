@@ -12,21 +12,23 @@ const categoriasCache = {
 };
 
 /**
- * Hook reutilizable para obtener categorías según su tipo.
+ * Hook reutilizable para obtener categorías según su tipo y ciudad opcional.
  * @param {string} tipo - "todas" | "reclamo" | "comunicado"
  * @param {boolean} [forceRefresh=false] - Forzar recarga omitiendo la caché en memoria
+ * @param {number|string|null} [idCiudad=null] - ID de ciudad opcional para resolución territorial de responsables
  */
-export default function useCategorias(tipo = "todas", forceRefresh = false) {
+export default function useCategorias(tipo = "todas", forceRefresh = false, idCiudad = null) {
+  const cacheKey = idCiudad ? `${tipo}_ciudad_${idCiudad}` : tipo;
   const [categorias, setCategorias] = useState(
-    !forceRefresh && categoriasCache[tipo] ? categoriasCache[tipo] : []
+    !forceRefresh && categoriasCache[cacheKey] ? categoriasCache[cacheKey] : []
   );
-  const [loading, setLoading] = useState(forceRefresh || !categoriasCache[tipo]);
+  const [loading, setLoading] = useState(forceRefresh || !categoriasCache[cacheKey]);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     // Si ya está en caché y no se fuerza recarga, reutilizar
-    if (!forceRefresh && categoriasCache[tipo]) {
-      setCategorias(categoriasCache[tipo]);
+    if (!forceRefresh && categoriasCache[cacheKey]) {
+      setCategorias(categoriasCache[cacheKey]);
       setLoading(false);
       return;
     }
@@ -36,10 +38,14 @@ export default function useCategorias(tipo = "todas", forceRefresh = false) {
     if (tipo === "reclamo") endpoint = "/reclamos/categorias";
     else if (tipo === "comunicado") endpoint = "/comunicados/categorias";
 
+    if (idCiudad) {
+      endpoint += `${endpoint.includes("?") ? "&" : "?"}id_ciudad=${encodeURIComponent(idCiudad)}`;
+    }
+
     apiClient.get(endpoint)
       .then(res => {
         if (res.data?.ok) {
-          categoriasCache[tipo] = res.data.data;
+          categoriasCache[cacheKey] = res.data.data;
           setCategorias(res.data.data);
         } else {
           throw new Error(res.data?.mensaje || "Error al cargar categorías");
@@ -53,7 +59,7 @@ export default function useCategorias(tipo = "todas", forceRefresh = false) {
       .finally(() => {
         setLoading(false);
       });
-  }, [tipo, forceRefresh]);
+  }, [tipo, forceRefresh, idCiudad, cacheKey]);
 
   return { categorias, loading, error };
 }
