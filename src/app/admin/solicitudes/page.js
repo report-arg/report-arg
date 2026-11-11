@@ -347,7 +347,7 @@ export default function SolicitudesPage() {
             verificada y activa en la localidad.
           </p>
           <div className="pt-2">
-            <Link href="/admin/cities">
+            <Link href="/admin/ciudades">
               <Button variant="outline" size="sm" leftIcon={<Globe2 size={14} />}>
                 Ir a Gestión de Ciudades
               </Button>

@@ -12,6 +12,7 @@ import AdminReclamosPage from "@/app/admin/reclamos/page";
 import CategoriaPanel from "@/components/admin/categorias/CategoriaPanel";
 import InstitucionStatusModal from "@/components/admin/instituciones/InstitucionStatusModal";
 import InstitucionEstadoSolicitudView from "@/components/institucion/InstitucionEstadoSolicitudView";
+import CiudadesPage from "@/app/admin/ciudades/page";
 
 // Mock de apiClient y toast
 jest.mock("@/services/apiClient");
@@ -481,6 +482,106 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
           expect.objectContaining({ role: "ciudadano" })
         );
         expect(mockPush).toHaveBeenCalledWith("/ciudadano");
+      });
+    });
+  });
+
+  describe("6. Etapa 3 — Administración Territorial de Ciudades", () => {
+    const mockCiudadesAdmin = [
+      {
+        id: 1,
+        id_ciudad: 1,
+        nombre: "Viale",
+        provincia: "Entre Ríos",
+        activa: 1,
+        estado: "activa",
+        id_institucion_principal: 10,
+        institucion_principal_nombre: "Municipalidad de Viale",
+        instituciones_verificadas: 3,
+        instituciones_pendientes: 0,
+        ciudadanos_total: 85,
+        reclamos_total: 32,
+        instituciones_elegibles: [
+          { id: 10, nombre: "Municipalidad de Viale", tipo: "municipio", es_principal: 1 },
+          { id: 12, nombre: "Obras Sanitarias Viale", tipo: "servicios", es_principal: 0 },
+        ],
+      },
+      {
+        id: 2,
+        id_ciudad: 2,
+        nombre: "Crespo",
+        provincia: "Entre Ríos",
+        activa: 0,
+        estado: "inactiva",
+        id_institucion_principal: null,
+        institucion_principal_nombre: null,
+        instituciones_verificadas: 1,
+        instituciones_pendientes: 1,
+        ciudadanos_total: 14,
+        reclamos_total: 0,
+        instituciones_elegibles: [
+          { id: 25, nombre: "Municipalidad de Crespo", tipo: "municipio", es_principal: 0 },
+        ],
+      },
+    ];
+
+    it("CiudadesPage: lista ciudades activas e inactivas y permite activar una ciudad con institución principal o desactivar con motivo", async () => {
+      apiClient.get.mockResolvedValue({
+        data: {
+          ok: true,
+          data: mockCiudadesAdmin,
+          stats: { total: 2, activas: 1, inactivas: 1, sin_principal: 1 },
+        },
+      });
+      apiClient.patch.mockResolvedValue({
+        data: {
+          ok: true,
+          mensaje: "Estado territorial actualizado correctamente.",
+        },
+      });
+
+      render(<CiudadesPage />);
+
+      expect(await screen.findByText("Viale")).toBeInTheDocument();
+      expect(screen.getByText("Crespo")).toBeInTheDocument();
+      expect(screen.getByText("Municipalidad de Viale")).toBeInTheDocument();
+
+      // Activar Crespo (inactiva, selecciona automáticamente su primera institución elegible)
+      const btnActivar = screen.getByRole("button", { name: "Activar" });
+      fireEvent.click(btnActivar);
+
+      expect(screen.getByText(/Activar ciudad: Crespo/i)).toBeInTheDocument();
+      const btnConfirmarActivar = screen.getByRole("button", { name: "Activar ciudad" });
+      fireEvent.click(btnConfirmarActivar);
+
+      await waitFor(() => {
+        expect(apiClient.patch).toHaveBeenCalledWith("/admin/ciudades/2/estado", {
+          activa: true,
+          id_institucion_principal: 25,
+        });
+      });
+
+      // Desactivar Viale (exige motivo obligatorio)
+      const btnDesactivar = screen.getByRole("button", { name: "Desactivar" });
+      fireEvent.click(btnDesactivar);
+
+      expect(screen.getByText(/Desactivar ciudad: Viale/i)).toBeInTheDocument();
+      const btnConfirmarDesactivar = screen.getByRole("button", { name: "Desactivar ciudad" });
+      fireEvent.click(btnConfirmarDesactivar);
+
+      expect(screen.getByText(/El motivo de desactivación es obligatorio/i)).toBeInTheDocument();
+
+      const textarea = screen.getByPlaceholderText(/Explicá el motivo administrativo/i);
+      fireEvent.change(textarea, {
+        target: { value: "Mantenimiento programado de jurisdicción" },
+      });
+      fireEvent.click(btnConfirmarDesactivar);
+
+      await waitFor(() => {
+        expect(apiClient.patch).toHaveBeenCalledWith("/admin/ciudades/1/estado", {
+          activa: false,
+          motivo: "Mantenimiento programado de jurisdicción",
+        });
       });
     });
   });

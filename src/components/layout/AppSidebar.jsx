@@ -8,7 +8,7 @@ import Image from "next/image";
 
 export default function AppSidebar({
   open = false,
-  onClose = () => {},
+  onClose = () => { },
   navigation = [],
   footerLinks = [],
   logoHref = "/ciudadano",
