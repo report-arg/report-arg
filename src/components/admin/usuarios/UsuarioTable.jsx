@@ -1,19 +1,19 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import Link from "next/link";
 import {
   UserCheck,
   UserX,
   Shield,
-  Edit2,
+  ShieldAlert,
   ChevronLeft,
   ChevronRight,
   Loader2,
   Building2,
   User as UserIcon,
+  MapPin,
+  FileText,
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import Button from "@/components/ui/Button";
@@ -21,6 +21,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import UsuarioAvatar from "./UsuarioAvatar";
 import UsuarioFilterBar from "./UsuarioFilterBar";
 import UsuarioStatusModal from "./UsuarioStatusModal";
+import UsuarioRoleModal from "./UsuarioRoleModal";
 
 const ROL_CONFIG = {
   admin: {
@@ -41,7 +42,6 @@ const ROL_CONFIG = {
 };
 
 export default function UsuarioTable() {
-  const router = useRouter();
   const { data: session } = useSession();
   const currentUserId = Number(session?.user?.id || 0);
 
@@ -66,6 +66,12 @@ export default function UsuarioTable() {
     tipo: "inhabilitar", // 'inhabilitar' | 'rehabilitar'
     loading: false,
     error: "",
+  });
+
+  // Modal para cambio de rol
+  const [modalRol, setModalRol] = useState({
+    isOpen: false,
+    usuario: null,
   });
 
   // Salvaguardas de ciclo de vida y condiciones de carrera
@@ -134,7 +140,6 @@ export default function UsuarioTable() {
     fetchUsuarios(1, debouncedBusqueda, filtroRol, filtroEstado);
   }, [debouncedBusqueda, filtroRol, filtroEstado, fetchUsuarios]);
 
-  // Manejar búsqueda y filtros reseteando página
   const handleBusquedaChange = (val) => {
     setBusqueda(val);
   };
@@ -157,7 +162,6 @@ export default function UsuarioTable() {
     setFiltroEstado("Todos");
   };
 
-  // Manejar cambio de página
   const handleCambiarPagina = (nuevaPag) => {
     const clamped = Math.max(1, Math.min(nuevaPag, totalPaginas));
     setPagina(clamped);
@@ -166,7 +170,7 @@ export default function UsuarioTable() {
 
   // Abrir modal de confirmación con salvaguarda de auto-inhabilitación
   function abrirModalCambioEstado(usuario, tipo) {
-    if (usuario.id === currentUserId && tipo === "inhabilitar") {
+    if (Number(usuario.id) === currentUserId && tipo === "inhabilitar") {
       alert("No podés inhabilitar tu propia cuenta administradora.");
       return;
     }
@@ -179,8 +183,8 @@ export default function UsuarioTable() {
     });
   }
 
-  // Confirmar inhabilitación o rehabilitación
-  async function confirmarCambioEstado() {
+  // Confirmar inhabilitación o rehabilitación con motivo de auditoría
+  async function confirmarCambioEstado(motivo = "") {
     if (!modalAccion.usuario) return;
     const { usuario, tipo } = modalAccion;
     const nuevoEstado = tipo === "inhabilitar" ? "inactivo" : "activo";
@@ -188,9 +192,10 @@ export default function UsuarioTable() {
     setModalAccion((prev) => ({ ...prev, loading: true, error: "" }));
 
     try {
-      const res = await apiClient.patch(`/admin/usuarios/${usuario.id}/estado`, {
-        estado: nuevoEstado,
-      });
+      const payload = { estado: nuevoEstado };
+      if (motivo) payload.motivo = motivo;
+
+      const res = await apiClient.patch(`/admin/usuarios/${usuario.id}/estado`, payload);
 
       if (res.data?.ok) {
         if (isMountedRef.current) {
@@ -214,6 +219,26 @@ export default function UsuarioTable() {
           error: err.response?.data?.mensaje || "Ocurrió un error al procesar la solicitud.",
         }));
       }
+    }
+  }
+
+  // Abrir modal de cambio de rol
+  function abrirModalRol(usuario) {
+    setModalRol({
+      isOpen: true,
+      usuario,
+    });
+  }
+
+  // Manejar confirmación de cambio de rol
+  async function handleRoleChanged(usuarioId, nuevoRol) {
+    const res = await apiClient.put(`/admin/usuarios/${usuarioId}/rol`, { rol: nuevoRol });
+    if (res.data?.ok) {
+      setUsuarios((prev) =>
+        prev.map((u) => (u.id === usuarioId ? { ...u, rol: nuevoRol } : u))
+      );
+    } else {
+      throw new Error(res.data?.mensaje || "No se pudo actualizar el rol.");
     }
   }
 
@@ -290,7 +315,9 @@ export default function UsuarioTable() {
                   <tr className="bg-surface-subtle border-b border-border-subtle text-text-muted font-bold uppercase tracking-wider text-[11px]">
                     <th className="py-3 px-4">Usuario</th>
                     <th className="py-3 px-4">Rol Asignado</th>
-                    <th className="py-3 px-4">Estado de Cuenta</th>
+                    <th className="py-3 px-4">Localidad / Ciudad</th>
+                    <th className="py-3 px-4 text-center">Reclamos</th>
+                    <th className="py-3 px-4">Estado</th>
                     <th className="py-3 px-4 text-right">Acciones</th>
                   </tr>
                 </thead>
@@ -299,7 +326,16 @@ export default function UsuarioTable() {
                     const rolCfg = ROL_CONFIG[u.rol] || ROL_CONFIG.ciudadano;
                     const RolIcon = rolCfg.icon;
                     const esActivo = u.estado === "activo";
-                    const esMiCuenta = u.id === currentUserId;
+                    const esMiCuenta = Number(u.id) === currentUserId;
+                    const esInstitucion = (u.rol || "").toLowerCase() === "institucion";
+
+                    const ciudadTexto = u.ciudad_nombre
+                      ? u.provincia_nombre
+                        ? `${u.ciudad_nombre}, ${u.provincia_nombre}`
+                        : u.ciudad_nombre
+                      : "Sin localidad asociada";
+
+                    const reclamosCount = Number(u.reclamos_total ?? u.reportes ?? 0);
 
                     return (
                       <tr key={u.id} className="hover:bg-surface-subtle/50 transition-colors">
@@ -336,6 +372,24 @@ export default function UsuarioTable() {
                           </span>
                         </td>
 
+                        {/* Localidad / Ciudad */}
+                        <td className="py-3.5 px-4">
+                          <div className="inline-flex items-center gap-1.5 text-text-secondary">
+                            <MapPin size={13} className="text-text-muted shrink-0" />
+                            <span className={u.ciudad_nombre ? "font-medium" : "text-text-muted italic"}>
+                              {ciudadTexto}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Reclamos Creados */}
+                        <td className="py-3.5 px-4 text-center">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-surface-subtle border border-border-subtle text-text-secondary">
+                            <FileText size={11} className="text-text-muted" />
+                            {reclamosCount}
+                          </span>
+                        </td>
+
                         {/* Estado */}
                         <td className="py-3.5 px-4">
                           {esActivo ? (
@@ -354,17 +408,23 @@ export default function UsuarioTable() {
                         {/* Acciones */}
                         <td className="py-3.5 px-4 text-right">
                           <div className="inline-flex items-center gap-1.5">
-                            <Link href={`/admin/users/${u.id}/edit`}>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                leftIcon={<Edit2 size={12} />}
-                                title="Editar datos del usuario"
-                              >
-                                Editar
-                              </Button>
-                            </Link>
+                            {/* Cambiar Rol */}
+                            <Button
+                              onClick={() => abrirModalRol(u)}
+                              variant="outline"
+                              size="sm"
+                              leftIcon={<ShieldAlert size={12} />}
+                              disabled={esInstitucion}
+                              title={
+                                esInstitucion
+                                  ? "Las cuentas institucionales se gestionan desde el padrón institucional"
+                                  : "Cambiar rol de usuario"
+                              }
+                            >
+                              Cambiar rol
+                            </Button>
 
+                            {/* Inhabilitar / Habilitar */}
                             {esActivo ? (
                               <Button
                                 onClick={() => abrirModalCambioEstado(u, "inhabilitar")}
@@ -406,7 +466,16 @@ export default function UsuarioTable() {
                 const rolCfg = ROL_CONFIG[u.rol] || ROL_CONFIG.ciudadano;
                 const RolIcon = rolCfg.icon;
                 const esActivo = u.estado === "activo";
-                const esMiCuenta = u.id === currentUserId;
+                const esMiCuenta = Number(u.id) === currentUserId;
+                const esInstitucion = (u.rol || "").toLowerCase() === "institucion";
+
+                const ciudadTexto = u.ciudad_nombre
+                  ? u.provincia_nombre
+                    ? `${u.ciudad_nombre}, ${u.provincia_nombre}`
+                    : u.ciudad_nombre
+                  : "Sin localidad asociada";
+
+                const reclamosCount = Number(u.reclamos_total ?? u.reportes ?? 0);
 
                 return (
                   <div key={u.id} className="p-4 space-y-3">
@@ -422,7 +491,7 @@ export default function UsuarioTable() {
                           <h4 className="text-xs font-bold text-text-primary m-0 truncate">
                             {u.nombre || "Sin nombre"}
                             {esMiCuenta && (
-                              <span className="ml-1 text-[9px] bg-primary/10 text-primary px-1 py-0.5 rounded-sm">
+                              <span className="ml-1 text-[9px] bg-primary/10 text-primary px-1 py-0.5 rounded-sm font-semibold">
                                 Tú
                               </span>
                             )}
@@ -438,7 +507,19 @@ export default function UsuarioTable() {
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between pt-1">
+                    {/* Metadata: Localidad y Reclamos */}
+                    <div className="flex items-center justify-between text-[11px] text-text-muted pt-1">
+                      <div className="flex items-center gap-1 truncate max-w-[65%]">
+                        <MapPin size={12} className="shrink-0 text-text-muted" />
+                        <span className="truncate">{ciudadTexto}</span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <FileText size={12} className="text-text-muted" />
+                        <span>{reclamosCount} reclamos</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-border-subtle/60">
                       {esActivo ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Activo
@@ -450,11 +531,16 @@ export default function UsuarioTable() {
                       )}
 
                       <div className="flex items-center gap-1.5">
-                        <Link href={`/admin/users/${u.id}/edit`}>
-                          <Button variant="outline" size="sm" leftIcon={<Edit2 size={12} />}>
-                            Editar
-                          </Button>
-                        </Link>
+                        <Button
+                          onClick={() => abrirModalRol(u)}
+                          variant="outline"
+                          size="sm"
+                          disabled={esInstitucion}
+                          leftIcon={<ShieldAlert size={12} />}
+                        >
+                          Rol
+                        </Button>
+
                         {esActivo ? (
                           <Button
                             onClick={() => abrirModalCambioEstado(u, "inhabilitar")}
@@ -523,6 +609,15 @@ export default function UsuarioTable() {
         tipo={modalAccion.tipo}
         loading={modalAccion.loading}
         error={modalAccion.error}
+      />
+
+      {/* 4. Modal de Cambio de Rol */}
+      <UsuarioRoleModal
+        isOpen={modalRol.isOpen}
+        onClose={() => setModalRol({ isOpen: false, usuario: null })}
+        usuario={modalRol.usuario}
+        currentUserId={currentUserId}
+        onRoleChanged={handleRoleChanged}
       />
     </div>
   );

@@ -1,7 +1,9 @@
 "use client";
 
-import { AlertTriangle, UserCheck, UserX } from "lucide-react";
+import { useState, useEffect } from "react";
+import { UserCheck, UserX } from "lucide-react";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import Textarea from "@/components/ui/Textarea";
 
 export default function UsuarioStatusModal({
   isOpen = false,
@@ -12,15 +14,27 @@ export default function UsuarioStatusModal({
   loading = false,
   error = "",
 }) {
+  const [motivo, setMotivo] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setMotivo("");
+    }
+  }, [isOpen]);
+
   if (!usuario) return null;
 
   const isInhabilitar = tipo === "inhabilitar";
+
+  const handleConfirm = () => {
+    onConfirm?.(motivo.trim());
+  };
 
   return (
     <ConfirmModal
       isOpen={isOpen}
       onClose={onClose}
-      onConfirm={onConfirm}
+      onConfirm={handleConfirm}
       title={isInhabilitar ? "¿Inhabilitar cuenta de usuario?" : "¿Rehabilitar cuenta de usuario?"}
       description={
         isInhabilitar
@@ -40,11 +54,28 @@ export default function UsuarioStatusModal({
         )
       }
     >
-      {error && (
-        <div className="mt-3 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-300 text-xs">
-          {error}
-        </div>
-      )}
+      <div className="mt-4 space-y-3">
+        {isInhabilitar && (
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-text-muted mb-1">
+              Motivo de la inhabilitación (opcional para auditoría)
+            </label>
+            <Textarea
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="Describí la causa administrativa para el registro de auditoría..."
+              rows={2}
+              className="text-xs"
+            />
+          </div>
+        )}
+
+        {error && (
+          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-300 text-xs">
+            {error}
+          </div>
+        )}
+      </div>
     </ConfirmModal>
   );
 }

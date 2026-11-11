@@ -305,10 +305,14 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
 
       const selectElements = screen.getAllByRole("combobox");
       // primer select es Rol, segundo es Estado
-      fireEvent.change(selectElements[0], { target: { value: "admin" } });
+      fireEvent.click(selectElements[0]);
+      const opcionAdmin = screen.getByText("Administrador");
+      fireEvent.click(opcionAdmin);
       expect(onFiltroRolChange).toHaveBeenCalledWith("admin");
 
-      fireEvent.change(selectElements[1], { target: { value: "activo" } });
+      fireEvent.click(selectElements[1]);
+      const opcionActivo = screen.getByText("Activos");
+      fireEvent.click(opcionActivo);
       expect(onFiltroEstadoChange).toHaveBeenCalledWith("activo");
     });
 

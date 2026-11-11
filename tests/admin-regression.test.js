@@ -15,6 +15,7 @@ import InstitucionEstadoSolicitudView from "@/components/institucion/Institucion
 import CiudadesPage from "@/app/admin/ciudades/page";
 import CiudadanoCiudadPanel from "@/components/ciudadano/CiudadanoCiudadPanel";
 import { CiudadanoCiudadProvider } from "@/context/CiudadanoCiudadContext";
+import EditUserPage from "@/app/admin/users/[id]/edit/page";
 
 // Mock de apiClient y toast
 jest.mock("@/services/apiClient");
@@ -194,6 +195,59 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
           estado: "inactivo",
         });
       });
+    });
+
+    it("UsuarioTable: debe mostrar ciudad, conteo de reclamos y permitir cambiar rol con modal", async () => {
+      const mockUsersConCiudad = [
+        { id: 1, nombre: "Admin Global", email: "admin@test.gob.ar", rol: "admin", estado: "activo", ciudad_nombre: "Viale", provincia_nombre: "Entre Ríos", reclamos_total: 0 },
+        { id: 2, nombre: "Juan Pérez", email: "juan@test.com", rol: "ciudadano", estado: "activo", ciudad_nombre: "Viale", provincia_nombre: "Entre Ríos", reclamos_total: 4 },
+      ];
+
+      apiClient.get.mockImplementation((url) => {
+        if (url.includes("/admin/usuarios")) {
+          return Promise.resolve({ data: { ok: true, data: mockUsersConCiudad, total: 2, totalPaginas: 1 } });
+        }
+        return Promise.resolve({ data: { ok: true } });
+      });
+
+      apiClient.put.mockResolvedValueOnce({ data: { ok: true, mensaje: "Rol actualizado" } });
+
+      render(<UsuarioTable />);
+
+      // Verificar visualización de ciudad y reclamos
+      const ciudadesViale = await screen.findAllByText(/Viale, Entre Ríos/i);
+      expect(ciudadesViale[0]).toBeInTheDocument();
+
+      // Abrir modal de cambio de rol para Juan Pérez
+      const btnsRol = screen.getAllByRole("button", { name: "Cambiar rol" });
+      fireEvent.click(btnsRol[1]);
+
+      expect(screen.getByText("Cambiar rol de usuario")).toBeInTheDocument();
+
+      // Cambiar selector a admin dentro del modal
+      const comboboxes = screen.getAllByRole("combobox");
+      const modalCombobox = comboboxes[comboboxes.length - 1];
+      fireEvent.click(modalCombobox);
+      const opcionAdmin = screen.getByRole("option", { name: "Administrador" });
+      fireEvent.click(opcionAdmin);
+
+      // Confirmar cambio
+      const btnConfirmar = screen.getByRole("button", { name: "Confirmar cambio de rol" });
+      fireEvent.click(btnConfirmar);
+
+      await waitFor(() => {
+        expect(apiClient.put).toHaveBeenCalledWith("/admin/usuarios/2/rol", {
+          rol: "admin",
+        });
+      });
+    });
+
+    it("EditUserPage: debe mostrar vista informativa de simplificación y canalizar hacia /admin/users", () => {
+      render(<EditUserPage />);
+
+      expect(screen.getByText("Gestión de Cuentas de Usuario")).toBeInTheDocument();
+      expect(screen.getByText("La edición directa de perfiles ha sido simplificada")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Ir al Padrón de Usuarios" })).toBeInTheDocument();
     });
   });
 
