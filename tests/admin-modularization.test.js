@@ -8,6 +8,9 @@ import InstitucionApproveModal from "@/components/admin/instituciones/Institucio
 import ReclamoFilterBar from "@/components/admin/reclamos/ReclamoFilterBar";
 import UsuarioFilterBar from "@/components/admin/usuarios/UsuarioFilterBar";
 import CategoriaFilterBar from "@/components/admin/categorias/CategoriaFilterBar";
+import CiudadStatsCards from "@/components/admin/ciudades/CiudadStatsCards";
+import CiudadFilterBar from "@/components/admin/ciudades/CiudadFilterBar";
+import CiudadTable from "@/components/admin/ciudades/CiudadTable";
 
 // Mock apiClient
 jest.mock("@/services/apiClient");
@@ -345,6 +348,36 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
       const opcionReclamos = screen.getByText("Reclamos");
       fireEvent.click(opcionReclamos);
       expect(onFiltroTipoChange).toHaveBeenCalledWith("reclamo");
+    });
+
+    it("Modularización de Ciudades: CiudadStatsCards y CiudadFilterBar renderizan y emiten eventos", () => {
+      const stats = { total: 10, activas: 8, inactivas: 2, sin_principal: 1 };
+      const { rerender } = render(<CiudadStatsCards stats={stats} loading={false} />);
+      expect(screen.getByText("TOTAL REGISTRADAS")).toBeInTheDocument();
+      expect(screen.getByText("10")).toBeInTheDocument();
+      expect(screen.getByText("8")).toBeInTheDocument();
+
+      const onFiltroEstadoChange = jest.fn();
+      const onBusquedaChange = jest.fn();
+
+      rerender(
+        <CiudadFilterBar
+          filtroEstado="todas"
+          onFiltroEstadoChange={onFiltroEstadoChange}
+          filtroProvincia="todas"
+          provinciasDisponibles={[{ value: "todas", label: "Todas las provincias" }]}
+          busqueda=""
+          onBusquedaChange={onBusquedaChange}
+        />
+      );
+
+      const searchInput = screen.getByPlaceholderText(/Buscar ciudad o institución/i);
+      fireEvent.change(searchInput, { target: { value: "Paraná" } });
+      expect(onBusquedaChange).toHaveBeenCalledWith("Paraná");
+
+      const tabActivas = screen.getByRole("button", { name: "Activas" });
+      fireEvent.click(tabActivas);
+      expect(onFiltroEstadoChange).toHaveBeenCalledWith("activa");
     });
   });
 });

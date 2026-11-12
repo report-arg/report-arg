@@ -16,12 +16,26 @@ import {
   UserCheck,
   FileSpreadsheet,
   Check,
+  Clock,
+  User,
+  Loader2,
 } from "lucide-react";
+import apiClient from "@/services/apiClient";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import InstitucionAvatar from "./InstitucionAvatar";
 import { formatearFecha } from "@/utils/dateFormatters";
+
+const ACCION_CONFIG = {
+  VERIFICAR_INSTITUCION: { label: "Verificación Aprobada", variant: "success" },
+  RECHAZAR_INSTITUCION: { label: "Solicitud Rechazada", variant: "danger" },
+  SUSPENDER_INSTITUCION: { label: "Institución Suspendida", variant: "danger" },
+  REHABILITAR_INSTITUCION: { label: "Institución Rehabilitada", variant: "success" },
+  DESIGNAR_INSTITUCION_PRINCIPAL: { label: "Designada Principal", variant: "primary" },
+  REENVIAR_SOLICITUD: { label: "Reintento de Solicitud", variant: "warning" },
+  CONVERTIR_A_CIUDADANO: { label: "Conversión a Ciudadano", variant: "neutral" },
+};
 
 export default function InstitucionDetailModal({
   isOpen = false,
@@ -37,6 +51,8 @@ export default function InstitucionDetailModal({
 }) {
   const [editandoCategorias, setEditandoCategorias] = useState(false);
   const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState([]);
+  const [historialAuditoria, setHistorialAuditoria] = useState([]);
+  const [loadingAuditoria, setLoadingAuditoria] = useState(false);
 
   useEffect(() => {
     if (institucion) {
@@ -47,6 +63,33 @@ export default function InstitucionDetailModal({
       setEditandoCategorias(false);
     }
   }, [institucion]);
+
+  // Cargar historial de auditoría de la institución al abrir el modal
+  useEffect(() => {
+    if (isOpen && institucion?.id) {
+      let isMounted = true;
+      setLoadingAuditoria(true);
+      apiClient
+        .get(`/admin/auditoria/institucion/${institucion.id}`)
+        .then((res) => {
+          if (isMounted && res.data?.ok) {
+            setHistorialAuditoria(Array.isArray(res.data.data) ? res.data.data : []);
+          }
+        })
+        .catch(() => {
+          if (isMounted) setHistorialAuditoria([]);
+        })
+        .finally(() => {
+          if (isMounted) setLoadingAuditoria(false);
+        });
+
+      return () => {
+        isMounted = false;
+      };
+    } else {
+      setHistorialAuditoria([]);
+    }
+  }, [isOpen, institucion?.id]);
 
   if (!institucion) return null;
 
@@ -349,6 +392,74 @@ export default function InstitucionDetailModal({
                   Guardar categorías
                 </Button>
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Sección de Historial de Auditoría y Trazabilidad */}
+        <div className="p-3.5 rounded-xl bg-surface border border-border-subtle space-y-2.5">
+          <div className="flex items-center gap-1.5">
+            <Clock size={14} className="text-primary" />
+            <span className="text-xs font-bold text-text-primary">
+              Historial de Auditoría y Decisiones Administrativas
+            </span>
+          </div>
+
+          {loadingAuditoria ? (
+            <div className="py-4 flex items-center justify-center gap-2 text-xs text-text-muted">
+              <Loader2 size={14} className="animate-spin text-primary" />
+              <span>Consultando historial de auditoría...</span>
+            </div>
+          ) : historialAuditoria.length === 0 ? (
+            <p className="text-xs text-text-muted italic m-0">
+              No se registran eventos administrativos previos para esta institución.
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {historialAuditoria.map((item) => {
+                const conf = ACCION_CONFIG[item.accion] || {
+                  label: item.accion,
+                  variant: "outline",
+                };
+                return (
+                  <div
+                    key={item.id}
+                    className="p-2.5 rounded-xl bg-surface-subtle border border-border-subtle text-xs space-y-1"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={conf.variant} size="sm">
+                          {conf.label}
+                        </Badge>
+                        <span className="text-[11px] text-text-secondary flex items-center gap-1">
+                          <User size={11} className="text-text-muted" />
+                          <span>Por:</span>
+                          <strong className="text-text-primary">
+                            {item.actor_nombre || item.actor_email || "Administrador"}
+                          </strong>
+                          {item.actor_email && item.actor_nombre !== item.actor_email && (
+                            <span className="text-text-muted text-[10px]">
+                              ({item.actor_email})
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-text-muted whitespace-nowrap">
+                        {formatearFecha(item.fecha_creacion)}
+                      </span>
+                    </div>
+
+                    {item.motivo && (
+                      <p className="text-xs text-text-primary bg-surface p-2 rounded-lg border border-border-subtle m-0 leading-relaxed">
+                        <strong className="text-text-muted text-[10px] uppercase block tracking-wider">
+                          Motivo registrado:
+                        </strong>
+                        {item.motivo}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

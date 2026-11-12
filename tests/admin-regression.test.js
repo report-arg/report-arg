@@ -11,11 +11,14 @@ import UsuarioTable from "@/components/admin/usuarios/UsuarioTable";
 import AdminReclamosPage from "@/app/admin/reclamos/page";
 import CategoriaPanel from "@/components/admin/categorias/CategoriaPanel";
 import InstitucionStatusModal from "@/components/admin/instituciones/InstitucionStatusModal";
+import InstitucionDetailModal from "@/components/admin/instituciones/InstitucionDetailModal";
 import InstitucionEstadoSolicitudView from "@/components/institucion/InstitucionEstadoSolicitudView";
 import CiudadesPage from "@/app/admin/ciudades/page";
 import CiudadanoCiudadPanel from "@/components/ciudadano/CiudadanoCiudadPanel";
 import { CiudadanoCiudadProvider } from "@/context/CiudadanoCiudadContext";
 import EditUserPage from "@/app/admin/users/[id]/edit/page";
+import AdminNavbar from "@/components/admin/layout/AdminNavbar";
+import CrearCategoriaPage from "@/app/admin/categories/crear/page";
 
 // Mock de apiClient y toast
 jest.mock("@/services/apiClient");
@@ -150,6 +153,53 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
         });
         expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("rechazada"));
       });
+    });
+
+    it("InstitucionDetailModal: consulta y muestra el historial de auditoría con nombre de administrador y motivo", async () => {
+      const mockAuditoria = [
+        {
+          id: 1,
+          accion: "SUSPENDER_INSTITUCION",
+          actor_nombre: "María López",
+          actor_email: "mlopez@reportarg.gob.ar",
+          motivo: "Reiterado incumplimiento en plazos de respuesta",
+          fecha_creacion: "2026-11-12T10:00:00.000Z",
+        },
+      ];
+
+      apiClient.get.mockImplementation((url) => {
+        if (url.includes("/admin/auditoria/institucion/10")) {
+          return Promise.resolve({ data: { ok: true, data: mockAuditoria } });
+        }
+        return Promise.resolve({ data: { ok: true, data: [] } });
+      });
+
+      render(
+        <InstitucionDetailModal
+          isOpen={true}
+          onClose={jest.fn()}
+          institucion={{
+            id: 10,
+            nombre: "Hospital Central",
+            tipo: "Salud",
+            verificada: 1,
+            activo: 0,
+            email: "hospital@mendoza.gob.ar",
+          }}
+        />
+      );
+
+      expect(screen.getByText("Hospital Central")).toBeInTheDocument();
+      expect(
+        screen.getByText("Historial de Auditoría y Decisiones Administrativas")
+      ).toBeInTheDocument();
+
+      // Esperar a que se muestre el evento de auditoría
+      expect(await screen.findByText("María López")).toBeInTheDocument();
+      expect(screen.getByText("Institución Suspendida")).toBeInTheDocument();
+      expect(
+        screen.getByText("Reiterado incumplimiento en plazos de respuesta")
+      ).toBeInTheDocument();
     });
   });
 
@@ -767,6 +817,69 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
 
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("Paraná"));
+      });
+    });
+
+    it("AdminNavbar: Búsqueda global incluye soporte para instituciones, ciudades y reclamos con rutas correctas", async () => {
+      const mockResultados = [
+        { tipo: "Usuario", label: "Juan Pérez", sub: "juan@test.com", href: "/admin/users" },
+        { tipo: "Institución", label: "Municipalidad de Paraná", sub: "Paraná · Pública", href: "/admin/institutions" },
+        { tipo: "Ciudad", label: "Paraná", sub: "Entre Ríos · Activa", href: "/admin/ciudades" },
+        { tipo: "Reporte", label: "Bache en calle San Martín", sub: "Pendiente", href: "/admin/reclamos" },
+      ];
+
+      apiClient.get.mockImplementation((url) => {
+        if (url.includes("/admin/buscar")) {
+          return Promise.resolve({ ok: true, data: { ok: true, data: mockResultados } });
+        }
+        return Promise.resolve({ ok: true, data: { ok: true, data: [] } });
+      });
+
+      render(<AdminNavbar />);
+
+      const searchInput = screen.getByPlaceholderText(/Buscar usuarios, reclamos, ciudades/i);
+      expect(searchInput).toBeInTheDocument();
+
+      fireEvent.change(searchInput, { target: { value: "Paraná" } });
+
+      // Esperar a que el debounce resuelva y se muestren los resultados
+      await waitFor(() => {
+        expect(screen.getByText("Municipalidad de Paraná")).toBeInTheDocument();
+      });
+
+      expect(screen.getByText("Bache en calle San Martín")).toBeInTheDocument();
+
+      // Click en el resultado de institución
+      const btnInst = screen.getByText("Municipalidad de Paraná").closest("button");
+      fireEvent.click(btnInst);
+
+      expect(mockPush).toHaveBeenCalledWith("/admin/institutions");
+    });
+
+    it("CrearCategoriaPage: renderiza con controles UI estandarizados y valida campos obligatorios", async () => {
+      render(<CrearCategoriaPage />);
+
+      expect(screen.getByText("Crear Nueva Categoría")).toBeInTheDocument();
+      const inputNombre = screen.getByLabelText(/Nombre de la categoría \*/i);
+      expect(inputNombre).toBeInTheDocument();
+
+      const btnSubmit = screen.getByRole("button", { name: /Crear categoría/i });
+      fireEvent.click(btnSubmit);
+
+      expect(await screen.findByText(/El nombre de la categoría es obligatorio/i)).toBeInTheDocument();
+
+      // Completar nombre
+      fireEvent.change(inputNombre, { target: { value: "Espacios Verdes" } });
+
+      apiClient.post.mockResolvedValueOnce({
+        data: { ok: true, mensaje: "Categoría creada" },
+      });
+
+      fireEvent.click(btnSubmit);
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("Espacios Verdes"));
+        expect(mockPush).toHaveBeenCalledWith("/admin/categories");
       });
     });
   });

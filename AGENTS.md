@@ -2,6 +2,15 @@
 
 Este archivo se aplica a todo el repositorio. Antes de trabajar, leé la solicitud, inspeccioná los archivos afectados y comprobá el estado de la rama. No supongas que el README refleja todas las rutas actuales: el código es la referencia para la implementación vigente.
 
+## Principios fundamentales de desarrollo para agentes
+
+1. **Consulta obligatoria ante decisiones:** Si se presenta una bifurcación técnica, de diseño o de comportamiento en la implementación, **preguntar siempre al usuario** presentando opciones claras con sus pros y contras para que elija. **NUNCA asumir, adivinar ni elegir por cuenta propia**.
+2. **Economía de código y síntesis:** Los cambios deben ser los mínimos y necesarios. Si un componente o archivo de 200 líneas puede reescribirse de forma limpia, declarativa y legible en 50 líneas, debe reescribirse y sintetizarse. Código conciso es más fácil de mantener y tiene menor superficie de errores.
+3. **Alcance estricto (no hacer de más):** Cada línea que cambia debe relacionarse directamente con lo solicitado por el usuario. No hacer refactorizaciones ajenas, ni cambios cosméticos innecesarios en archivos fuera del alcance.
+4. **Desarrollo responsive mandatorio:** Todo desarrollo visual debe ser 100% responsive. Comprobar rigurosamente en mobile, tablet y desktop. Ningún componente, tabla, tarjeta o modal debe desbordar horizontalmente ni recortar botones o acciones en pantallas pequeñas.
+5. **Modularidad y componentes cohesivos:** Queda prohibido construir componentes monolíticos gigantes (>200-300 líneas). Extraer subcomponentes especializados (`Table`, `FilterBar`, `StatsCards`, `Modals`) y hooks cuando corresponda, respetando la estructura del catálogo y la separación de responsabilidades.
+6. **Verificación y no regresión:** Comprobar siempre que los cambios pasen los linters (`npm run lint`), las pruebas (`npm test`) y no generen advertencias ni regresiones en la interfaz.
+
 ## Contexto y fuentes
 
 ReportARG es una plataforma de participación ciudadana con experiencias separadas para ciudadanos, instituciones y administración. El frontend usa Next.js App Router, React, JavaScript/JSX y Tailwind CSS.

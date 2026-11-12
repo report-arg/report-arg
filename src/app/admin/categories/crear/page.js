@@ -2,67 +2,79 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Tag } from "lucide-react";
+import { toast } from "sonner";
 import PageHeader from "@/components/layout/PageHeader";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Textarea from "@/components/ui/Textarea";
+import Select from "@/components/ui/Select";
 import apiClient from "@/services/apiClient";
+
+const OPCIONES_TIPO = [
+  { value: "reclamo", label: "Reclamo" },
+  { value: "comunicado", label: "Comunicado" },
+  { value: "ambos", label: "Reclamo y Comunicado (Ambos)" },
+];
 
 export default function CrearCategoriaPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const [form, setForm] = useState({
     nombre: "",
     descripcion: "",
-    tipo: "",
+    tipo: "reclamo",
     orden: 0,
     estado: "activo",
   });
 
-  function handleChange(e) {
-    const { name, value, type, checked } = e.target;
-    setForm(prev => ({
-      ...prev,
-      [name]: type === "checkbox" ? (checked ? "activo" : "inactivo") : value,
-    }));
-  }
-
-  async function handleSubmit() {
+  const handleSubmit = async (e) => {
+    if (e?.preventDefault) e.preventDefault();
     setError("");
-    setSuccess("");
 
-    if (!form.nombre.trim()) return setError("El nombre es obligatorio");
-    if (!form.tipo) return setError("El tipo es obligatorio");
+    if (!form.nombre.trim()) {
+      setError("El nombre de la categoría es obligatorio");
+      return;
+    }
+    if (!form.tipo) {
+      setError("El tipo de aplicación es obligatorio");
+      return;
+    }
 
     setSaving(true);
     try {
-      const res = await apiClient.post(`/admin/categorias`, {
+      const res = await apiClient.post("/admin/categorias", {
         ...form,
         nombre: form.nombre.trim(),
-        orden: Number(form.orden),
+        descripcion: form.descripcion.trim() || null,
+        orden: Number(form.orden) || 0,
       });
-      const data = res.data;
-      if (!data.ok) return setError(data.mensaje);
-      setSuccess("Categoría creada correctamente.");
-      setTimeout(() => router.push("/admin/categories"), 1500);
-    } catch {
-      setError("Error al conectar con el servidor");
+
+      if (res.data?.ok) {
+        toast.success(`Categoría "${form.nombre.trim()}" creada correctamente.`);
+        router.push("/admin/categories");
+      } else {
+        setError(res.data?.mensaje || "Error al registrar la categoría.");
+      }
+    } catch (err) {
+      setError(err.response?.data?.mensaje || "Error al conectar con el servidor.");
     } finally {
       setSaving(false);
     }
-  }
+  };
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-6">
       <PageHeader
         title="Crear Nueva Categoría"
-        description="Completá la información para registrar una nueva categoría en ReportARG."
+        description="Configurá una nueva categoría para la clasificación de reclamos ciudadanos o comunicados institucionales."
         action={
           <Button
             onClick={() => router.push("/admin/categories")}
             variant="outline"
+            size="sm"
             leftIcon={<ArrowLeft size={16} />}
           >
             Volver a categorías
@@ -70,113 +82,84 @@ export default function CrearCategoriaPage() {
         }
       />
 
-      <div className="bg-surface rounded-2xl border border-border-subtle p-6 max-w-2xl shadow-xs">
-        {/* Nombre */}
-        <div className="mb-4">
-          <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
-            Nombre *
-          </label>
-          <input
-            name="nombre"
-            value={form.nombre}
-            onChange={handleChange}
-            placeholder="Ej: Alumbrado Público, Cloacas..."
-            className="w-full text-xs sm:text-sm py-2 px-3 rounded-xl border border-border-subtle bg-surface text-text-primary focus:border-primary outline-hidden"
-          />
-        </div>
-
-        {/* Descripción */}
-        <div className="mb-4">
-          <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
-            Descripción
-          </label>
-          <textarea
-            name="descripcion"
-            value={form.descripcion}
-            onChange={handleChange}
-            placeholder="Breve descripción del alcance de esta categoría..."
-            rows={3}
-            className="w-full text-xs sm:text-sm p-3 rounded-xl border border-border-subtle bg-surface text-text-primary focus:border-primary outline-hidden resize-y"
-          />
-        </div>
-
-        {/* Tipo y Orden */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
-              Tipo de Aplicación *
-            </label>
-            <select
-              name="tipo"
-              value={form.tipo}
-              onChange={handleChange}
-              className="w-full text-xs sm:text-sm py-2 px-3 rounded-xl border border-border-subtle bg-surface text-text-primary focus:border-primary outline-hidden"
-            >
-              <option value="">Seleccionar tipo...</option>
-              <option value="reclamo">Reclamo</option>
-              <option value="comunicado">Comunicado</option>
-              <option value="ambos">Ambos</option>
-            </select>
+      <div className="bg-surface rounded-2xl border border-border-subtle p-6 max-w-2xl shadow-xs space-y-5">
+        {error && (
+          <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 text-xs font-semibold border border-rose-200 dark:border-rose-800/40">
+            {error}
           </div>
+        )}
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1">
-              Orden de Visualización
-            </label>
-            <input
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            label="Nombre de la categoría *"
+            value={form.nombre}
+            onChange={(e) => setForm((prev) => ({ ...prev, nombre: e.target.value }))}
+            placeholder="Ej: Alumbrado Público, Cloacas, Arbolado..."
+            leftIcon={<Tag size={15} />}
+          />
+
+          <Textarea
+            label="Descripción"
+            value={form.descripcion}
+            onChange={(e) => setForm((prev) => ({ ...prev, descripcion: e.target.value }))}
+            placeholder="Breve descripción del alcance operativo y problemáticas cubiertas por esta categoría..."
+            rows={3}
+            maxLength={300}
+            showCount
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Tipo de Aplicación *"
+              value={form.tipo}
+              onChange={(val) => setForm((prev) => ({ ...prev, tipo: String(val) }))}
+              options={OPCIONES_TIPO}
+              placeholder="Seleccionar tipo..."
+            />
+
+            <Input
+              label="Orden de Visualización"
               type="number"
-              name="orden"
-              value={form.orden}
-              onChange={handleChange}
               min={0}
-              className="w-full text-xs sm:text-sm py-2 px-3 rounded-xl border border-border-subtle bg-surface text-text-primary focus:border-primary outline-hidden"
+              value={form.orden}
+              onChange={(e) => setForm((prev) => ({ ...prev, orden: e.target.value }))}
+              placeholder="0"
             />
           </div>
-        </div>
 
-        {/* Estado activo */}
-        <div className="flex items-center gap-3 pt-2 pb-4">
-          <input
-            type="checkbox"
-            id="cat-activo"
-            name="estado"
-            checked={form.estado === "activo"}
-            onChange={handleChange}
-            className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
-          />
-          <label htmlFor="cat-activo" className="text-xs font-medium text-text-primary cursor-pointer select-none">
-            Categoría activa (disponible para selección)
-          </label>
-        </div>
-
-        {/* Mensajes */}
-        {success && (
-          <div className="p-3 mb-4 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-medium border border-emerald-200">
-            ✓ {success}
+          <div className="pt-2">
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.estado === "activo"}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    estado: e.target.checked ? "activo" : "inactivo",
+                  }))
+                }
+                className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
+              />
+              <span className="text-xs font-semibold text-text-primary">
+                Categoría activa (habilitada para selección de vecinos e instituciones)
+              </span>
+            </label>
           </div>
-        )}
-        {error && (
-          <div className="p-3 mb-4 rounded-xl bg-rose-50 text-rose-800 text-xs font-medium border border-rose-200">
-            ⚠ {error}
-          </div>
-        )}
 
-        {/* Acciones */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
-          <Button
-            onClick={() => router.push("/admin/categories")}
-            variant="outline"
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            loading={saving}
-            variant="primary"
-          >
-            Crear categoría
-          </Button>
-        </div>
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-border-subtle">
+            <Button
+              type="button"
+              onClick={() => router.push("/admin/categories")}
+              variant="outline"
+              disabled={saving}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" variant="primary" loading={saving}>
+              Crear categoría
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

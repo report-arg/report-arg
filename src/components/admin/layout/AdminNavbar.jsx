@@ -17,6 +17,8 @@ import {
   FileText,
   Tag,
   Users as UsersIcon,
+  Building2,
+  MapPin,
   ArrowRight,
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
@@ -177,7 +179,7 @@ export default function AdminNavbar({ onOpenSidebar = () => {} }) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => searchQuery.trim() && setSearchOpen(true)}
-              placeholder="Buscar usuarios, reclamos..."
+              placeholder="Buscar usuarios, reclamos, ciudades..."
               className="w-full text-xs py-2 pl-9 pr-7 rounded-xl bg-surface-subtle border border-border-subtle focus:bg-surface focus:border-primary text-text-primary placeholder:text-text-muted outline-hidden transition-all"
             />
             {searchQuery && (
@@ -210,6 +212,8 @@ export default function AdminNavbar({ onOpenSidebar = () => {} }) {
                       Usuario: UsersIcon,
                       Reporte: FileText,
                       Categoría: Tag,
+                      Institución: Building2,
+                      Ciudad: MapPin,
                     };
                     const ItemIcon = iconMap[item.tipo] || FileText;
 
