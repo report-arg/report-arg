@@ -10,6 +10,7 @@ import {
   Power,
   Trash2,
   Loader2,
+  MapPin,
 } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import Button from "@/components/ui/Button";
@@ -53,6 +54,8 @@ export default function CategoriaPanel() {
   const [modalBaja, setModalBaja] = useState(null);
   const [modalReactivar, setModalReactivar] = useState(null);
   const [modalEliminar, setModalEliminar] = useState(null);
+  const [modalAsignacion, setModalAsignacion] = useState(null);
+  const [ciudades, setCiudades] = useState([]);
   const [procesando, setProcesando] = useState(false);
 
   // Salvaguardas de ciclo de vida y condiciones de carrera
@@ -61,6 +64,11 @@ export default function CategoriaPanel() {
 
   useEffect(() => {
     isMountedRef.current = true;
+    apiClient.get("/admin/ciudades").then((res) => {
+      if (isMountedRef.current && res.data?.ok && Array.isArray(res.data.data)) {
+        setCiudades(res.data.data);
+      }
+    }).catch(() => {});
     return () => {
       isMountedRef.current = false;
     };
@@ -254,7 +262,6 @@ export default function CategoriaPanel() {
                   <th className="py-3 px-4">Categoría</th>
                   <th className="py-3 px-4">Descripción</th>
                   <th className="py-3 px-4">Ámbito</th>
-                  <th className="py-3 px-4">Cobertura Institucional</th>
                   <th className="py-3 px-4 text-center">Orden</th>
                   <th className="py-3 px-4">Estado</th>
                   <th className="py-3 px-4 text-right">Acciones</th>
@@ -268,7 +275,6 @@ export default function CategoriaPanel() {
                     label: cat.tipo,
                     badgeCls: "bg-surface-subtle text-text-secondary border-border-subtle",
                   };
-                  const cantEspecializadas = Number(cat.instituciones_especializadas_count || 0);
 
                   return (
                     <tr key={cat.id} className="hover:bg-surface-subtle/50 transition-colors">
@@ -303,22 +309,6 @@ export default function CategoriaPanel() {
                         </span>
                       </td>
 
-                      {/* Cobertura Institucional */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-semibold text-text-primary">
-                            {cantEspecializadas > 0 ? (
-                              `${cantEspecializadas} especializada${cantEspecializadas > 1 ? "s" : ""}`
-                            ) : (
-                              <span className="text-text-muted font-normal">Sin especializada</span>
-                            )}
-                          </span>
-                          <span className="text-[10px] text-text-muted">
-                            Respaldo: Inst. Principal por ciudad activa
-                          </span>
-                        </div>
-                      </td>
-
                       {/* Orden */}
                       <td className="py-3.5 px-4 text-center font-mono font-bold text-text-secondary">
                         {cat.orden ?? 0}
@@ -335,6 +325,16 @@ export default function CategoriaPanel() {
                       {/* Acciones */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="inline-flex items-center gap-1.5">
+                          <Button
+                            onClick={() => setModalAsignacion(cat)}
+                            variant="outline"
+                            size="sm"
+                            leftIcon={<MapPin size={13} />}
+                            title="Ver asignación local por localidad"
+                          >
+                            Asignación
+                          </Button>
+
                           <Button
                             onClick={() => router.push(`/admin/categories/editar/${cat.id}`)}
                             variant="outline"
@@ -396,6 +396,9 @@ export default function CategoriaPanel() {
         modalEliminar={modalEliminar}
         onCloseEliminar={() => setModalEliminar(null)}
         onConfirmEliminar={handleConfirmEliminar}
+        modalAsignacion={modalAsignacion}
+        onCloseAsignacion={() => setModalAsignacion(null)}
+        ciudades={ciudades}
         procesando={procesando}
       />
     </div>

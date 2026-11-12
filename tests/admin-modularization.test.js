@@ -11,6 +11,8 @@ import CategoriaFilterBar from "@/components/admin/categorias/CategoriaFilterBar
 import CiudadStatsCards from "@/components/admin/ciudades/CiudadStatsCards";
 import CiudadFilterBar from "@/components/admin/ciudades/CiudadFilterBar";
 import CiudadTable from "@/components/admin/ciudades/CiudadTable";
+import ReclamoCiudadSelector from "@/components/admin/reclamos/ReclamoCiudadSelector";
+import CategoriaAsignacionModal from "@/components/admin/categorias/CategoriaAsignacionModal";
 
 // Mock apiClient
 jest.mock("@/services/apiClient");
@@ -282,10 +284,11 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
       expect(onFiltroEstadoChange).toHaveBeenCalledWith("Pendiente");
     });
 
-    it("UsuarioFilterBar: debe emitir cambios en búsqueda, rol y estado de usuarios", () => {
+    it("UsuarioFilterBar: debe emitir cambios en búsqueda, localidad, rol y estado de usuarios", () => {
       const onBusquedaChange = jest.fn();
       const onFiltroRolChange = jest.fn();
       const onFiltroEstadoChange = jest.fn();
+      const onFiltroCiudadChange = jest.fn();
       const onLimpiarTodo = jest.fn();
 
       render(
@@ -293,6 +296,9 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
           busqueda=""
           onBusquedaChange={onBusquedaChange}
           onLimpiarBusqueda={jest.fn()}
+          filtroCiudad=""
+          onFiltroCiudadChange={onFiltroCiudadChange}
+          ciudades={[{ id_ciudad: 1, nombre: "Paraná", provincia: "Entre Ríos" }]}
           filtroRol="Todos"
           onFiltroRolChange={onFiltroRolChange}
           filtroEstado="Todos"
@@ -307,13 +313,18 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
       expect(onBusquedaChange).toHaveBeenCalledWith("García");
 
       const selectElements = screen.getAllByRole("combobox");
-      // primer select es Rol, segundo es Estado
+      // selectElements[0] es Ciudad, [1] es Rol, [2] es Estado
       fireEvent.click(selectElements[0]);
+      const opcionParana = screen.getByText("Paraná (Entre Ríos)");
+      fireEvent.click(opcionParana);
+      expect(onFiltroCiudadChange).toHaveBeenCalledWith("1");
+
+      fireEvent.click(selectElements[1]);
       const opcionAdmin = screen.getByText("Administrador");
       fireEvent.click(opcionAdmin);
       expect(onFiltroRolChange).toHaveBeenCalledWith("admin");
 
-      fireEvent.click(selectElements[1]);
+      fireEvent.click(selectElements[2]);
       const opcionActivo = screen.getByText("Activos");
       fireEvent.click(opcionActivo);
       expect(onFiltroEstadoChange).toHaveBeenCalledWith("activo");
@@ -378,6 +389,69 @@ describe("ADMIN-01 - Etapa 3: Modularización y reducción de responsabilidades"
       const tabActivas = screen.getByRole("button", { name: "Activas" });
       fireEvent.click(tabActivas);
       expect(onFiltroEstadoChange).toHaveBeenCalledWith("activa");
+    });
+
+    it("ReclamoCiudadSelector: renderiza tarjetas de localidades y emite onSelectCiudad al hacer clic", () => {
+      const mockCiudades = [
+        {
+          id_ciudad: 1,
+          nombre: "Paraná",
+          provincia: "Entre Ríos",
+          activa: true,
+          institucion_principal_nombre: "Municipalidad de Paraná",
+          reclamos_total: 15,
+          reclamos_abiertos: 4,
+        },
+      ];
+      const onSelectCiudad = jest.fn();
+
+      render(
+        <ReclamoCiudadSelector
+          ciudades={mockCiudades}
+          loading={false}
+          onSelectCiudad={onSelectCiudad}
+        />
+      );
+
+      expect(screen.getByText("Paraná")).toBeInTheDocument();
+      expect(screen.getByText("Municipalidad de Paraná")).toBeInTheDocument();
+      expect(screen.getByText("15")).toBeInTheDocument();
+      expect(screen.getByText("4")).toBeInTheDocument();
+
+      const btnSupervisar = screen.getByRole("button", { name: /Supervisar reclamos/i });
+      fireEvent.click(btnSupervisar);
+      expect(onSelectCiudad).toHaveBeenCalledWith("1");
+    });
+
+    it("CategoriaAsignacionModal: consulta resolución por ciudad y muestra entidad especializada", async () => {
+      const mockCategoria = { id: 5, nombre: "Alumbrado Público" };
+      const mockCiudades = [{ id_ciudad: 1, nombre: "Paraná", provincia: "Entre Ríos" }];
+      const onClose = jest.fn();
+
+      apiClient.get.mockResolvedValueOnce({
+        data: {
+          ok: true,
+          data: {
+            tipo: "especializada",
+            institucion: { id: 20, nombre: "Enersa" },
+            detalle: "Atendida por institución especializada (Enersa)",
+          },
+        },
+      });
+
+      render(
+        <CategoriaAsignacionModal
+          isOpen={true}
+          onClose={onClose}
+          categoria={mockCategoria}
+          ciudades={mockCiudades}
+        />
+      );
+
+      expect(screen.getByText("Asignación Institucional por Localidad")).toBeInTheDocument();
+      expect(await screen.findByText("Enersa")).toBeInTheDocument();
+      expect(screen.getByText("Especializada")).toBeInTheDocument();
+      expect(screen.getByText("Atendida por institución especializada (Enersa)")).toBeInTheDocument();
     });
   });
 });

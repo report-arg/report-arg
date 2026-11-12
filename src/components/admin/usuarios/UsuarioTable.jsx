@@ -54,6 +54,8 @@ export default function UsuarioTable() {
   const debouncedBusqueda = useDebounce(busqueda, 300);
   const [filtroRol, setFiltroRol] = useState("Todos");
   const [filtroEstado, setFiltroEstado] = useState("Todos");
+  const [filtroCiudad, setFiltroCiudad] = useState("");
+  const [ciudades, setCiudades] = useState([]);
   const [pagina, setPagina] = useState(1);
   const limite = 15;
   const [total, setTotal] = useState(0);
@@ -85,12 +87,29 @@ export default function UsuarioTable() {
     };
   }, []);
 
+  // Cargar catálogo de ciudades para el filtro territorial
+  useEffect(() => {
+    let activo = true;
+    apiClient
+      .get("/admin/ciudades")
+      .then((res) => {
+        if (activo && res.data?.ok && Array.isArray(res.data.data)) {
+          setCiudades(res.data.data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      activo = false;
+    };
+  }, []);
+
   const fetchUsuarios = useCallback(
     async (
       p = 1,
       search = debouncedBusqueda,
       rol = filtroRol,
-      estado = filtroEstado
+      estado = filtroEstado,
+      ciudad = filtroCiudad
     ) => {
       const currentReqId = ++reqIdRef.current;
       setLoading(true);
@@ -100,6 +119,7 @@ export default function UsuarioTable() {
         if (search && search.trim()) params.append("busqueda", search.trim());
         if (rol !== "Todos") params.append("rol", rol);
         if (estado !== "Todos") params.append("estado", estado);
+        if (ciudad) params.append("id_ciudad", ciudad);
         params.append("pagina", String(p));
         params.append("limite", String(limite));
 
@@ -125,7 +145,7 @@ export default function UsuarioTable() {
         }
       }
     },
-    [debouncedBusqueda, filtroRol, filtroEstado, limite]
+    [debouncedBusqueda, filtroRol, filtroEstado, filtroCiudad, limite]
   );
 
   // Efecto cuando cambian los filtros
@@ -133,12 +153,12 @@ export default function UsuarioTable() {
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
-      fetchUsuarios(1, debouncedBusqueda, filtroRol, filtroEstado);
+      fetchUsuarios(1, debouncedBusqueda, filtroRol, filtroEstado, filtroCiudad);
       return;
     }
     setPagina(1);
-    fetchUsuarios(1, debouncedBusqueda, filtroRol, filtroEstado);
-  }, [debouncedBusqueda, filtroRol, filtroEstado, fetchUsuarios]);
+    fetchUsuarios(1, debouncedBusqueda, filtroRol, filtroEstado, filtroCiudad);
+  }, [debouncedBusqueda, filtroRol, filtroEstado, filtroCiudad, fetchUsuarios]);
 
   const handleBusquedaChange = (val) => {
     setBusqueda(val);
@@ -156,16 +176,21 @@ export default function UsuarioTable() {
     setFiltroEstado(val);
   };
 
+  const handleFiltroCiudadChange = (val) => {
+    setFiltroCiudad(val);
+  };
+
   const handleLimpiarTodo = () => {
     setBusqueda("");
     setFiltroRol("Todos");
     setFiltroEstado("Todos");
+    setFiltroCiudad("");
   };
 
   const handleCambiarPagina = (nuevaPag) => {
     const clamped = Math.max(1, Math.min(nuevaPag, totalPaginas));
     setPagina(clamped);
-    fetchUsuarios(clamped, debouncedBusqueda, filtroRol, filtroEstado);
+    fetchUsuarios(clamped, debouncedBusqueda, filtroRol, filtroEstado, filtroCiudad);
   };
 
   // Abrir modal de confirmación con salvaguarda de auto-inhabilitación
@@ -243,7 +268,10 @@ export default function UsuarioTable() {
   }
 
   const hayFiltrosActivos =
-    busqueda.trim() !== "" || filtroRol !== "Todos" || filtroEstado !== "Todos";
+    busqueda.trim() !== "" ||
+    filtroRol !== "Todos" ||
+    filtroEstado !== "Todos" ||
+    Boolean(filtroCiudad);
 
   return (
     <div className="space-y-4">
@@ -256,6 +284,9 @@ export default function UsuarioTable() {
         onFiltroRolChange={handleFiltroRolChange}
         filtroEstado={filtroEstado}
         onFiltroEstadoChange={handleFiltroEstadoChange}
+        filtroCiudad={filtroCiudad}
+        onFiltroCiudadChange={handleFiltroCiudadChange}
+        ciudades={ciudades}
         onLimpiarTodo={handleLimpiarTodo}
         hayFiltrosActivos={hayFiltrosActivos}
       />

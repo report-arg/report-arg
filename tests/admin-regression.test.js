@@ -325,6 +325,24 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
 
     it("AdminReclamosPage: debe cargar métricas, listado, abrir detalle y permitir reasignación auditada", async () => {
       apiClient.get.mockImplementation((url) => {
+        if (url.includes("/admin/ciudades")) {
+          return Promise.resolve({
+            data: {
+              ok: true,
+              data: [
+                {
+                  id_ciudad: 1,
+                  nombre: "Mendoza",
+                  provincia: "Mendoza",
+                  activa: true,
+                  institucion_principal_nombre: "Municipalidad de Mendoza",
+                  reclamos_total: 1,
+                  reclamos_abiertos: 1,
+                },
+              ],
+            },
+          });
+        }
         if (url.includes("/admin/reclamos/stats")) {
           return Promise.resolve({
             data: { ok: true, data: { total: 1, pendientes: 1, enRevision: 0, enProceso: 0, resueltos: 0 } },
@@ -357,6 +375,13 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
       apiClient.patch.mockResolvedValueOnce({ data: { ok: true } });
 
       render(<AdminReclamosPage />);
+
+      expect(await screen.findByText("Supervisión Territorial de Reclamos")).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Mendoza" })).toBeInTheDocument();
+
+      // Seleccionar localidad para supervisar
+      const btnSupervisar = screen.getByRole("button", { name: /Supervisar reclamos/i });
+      fireEvent.click(btnSupervisar);
 
       const itemsReclamo = await screen.findAllByText("Bache profundo en calle San Martín");
       expect(itemsReclamo[0]).toBeInTheDocument();
@@ -729,6 +754,23 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
   describe("7. Etapa 4 — Supervisión con anomalías y Administrador en Comunidad", () => {
     it("AdminReclamosPage: permite activar el filtro de anomalías y visualiza tarjeta 'Sin Asignar'", async () => {
       apiClient.get.mockImplementation((url) => {
+        if (url.includes("/admin/ciudades")) {
+          return Promise.resolve({
+            data: {
+              ok: true,
+              data: [
+                {
+                  id_ciudad: 1,
+                  nombre: "Viale",
+                  provincia: "Entre Ríos",
+                  activa: true,
+                  reclamos_total: 2,
+                  reclamos_abiertos: 1,
+                },
+              ],
+            },
+          });
+        }
         if (url.includes("/admin/reclamos/stats")) {
           return Promise.resolve({
             data: {
@@ -768,6 +810,9 @@ describe("ADMIN-01 - Pruebas de Regresión y Flujos Funcionales (Etapa 3)", () =
       });
 
       render(<AdminReclamosPage />);
+
+      const btnSupervisar = await screen.findByRole("button", { name: /Supervisar reclamos/i });
+      fireEvent.click(btnSupervisar);
 
       expect(await screen.findByText("Sin Asignar")).toBeInTheDocument();
       const itemsReclamo = await screen.findAllByText("Reclamo sin entidad responsable");

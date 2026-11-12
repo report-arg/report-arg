@@ -26,9 +26,20 @@ export default function UsuarioFilterBar({
   onFiltroRolChange,
   filtroEstado = "Todos",
   onFiltroEstadoChange,
+  filtroCiudad = "",
+  onFiltroCiudadChange,
+  ciudades = [],
   onLimpiarTodo,
   hayFiltrosActivos = false,
 }) {
+  const opcionesCiudades = [
+    { value: "", label: "Todas las localidades" },
+    ...ciudades.map((c) => ({
+      value: String(c.id_ciudad ?? c.id),
+      label: `${c.nombre}${c.provincia ? ` (${c.provincia})` : ""}`,
+    })),
+  ];
+
   return (
     <div className="p-4 rounded-2xl bg-surface border border-border-subtle shadow-xs flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
       {/* Buscador */}
@@ -54,9 +65,18 @@ export default function UsuarioFilterBar({
         )}
       </div>
 
-      {/* Selectores de Rol y Estado */}
+      {/* Selectores de Ciudad, Rol y Estado */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="min-w-[160px] flex-1 sm:flex-none">
+        <div className="min-w-[180px] flex-1 sm:flex-none">
+          <Select
+            value={filtroCiudad}
+            onChange={(val) => onFiltroCiudadChange?.(val)}
+            options={opcionesCiudades}
+            placeholder="Todas las localidades"
+          />
+        </div>
+
+        <div className="min-w-[150px] flex-1 sm:flex-none">
           <Select
             value={filtroRol}
             onChange={(val) => onFiltroRolChange?.(val)}
@@ -65,7 +85,7 @@ export default function UsuarioFilterBar({
           />
         </div>
 
-        <div className="min-w-[150px] flex-1 sm:flex-none">
+        <div className="min-w-[140px] flex-1 sm:flex-none">
           <Select
             value={filtroEstado}
             onChange={(val) => onFiltroEstadoChange?.(val)}

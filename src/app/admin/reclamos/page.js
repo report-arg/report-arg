@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
 import Button from "@/components/ui/Button";
-import { RefreshCw, AlertCircle } from "lucide-react";
+import { RefreshCw, AlertCircle, ArrowLeft, MapPin } from "lucide-react";
 import apiClient from "@/services/apiClient";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -13,11 +14,18 @@ import ReclamoFilterBar from "@/components/admin/reclamos/ReclamoFilterBar";
 import ReclamoTable from "@/components/admin/reclamos/ReclamoTable";
 import ReclamoDetailModal from "@/components/admin/reclamos/ReclamoDetailModal";
 import ReclamoReassignModal from "@/components/admin/reclamos/ReclamoReassignModal";
+import ReclamoCiudadSelector from "@/components/admin/reclamos/ReclamoCiudadSelector";
 
-export default function AdminReclamosPage() {
+function AdminReclamosContent() {
+  const searchParams = useSearchParams?.();
+  const ciudadParam = searchParams?.get?.("ciudad") || "";
+
+  // Selección de Ciudad Territorial
+  const [filtroCiudad, setFiltroCiudad] = useState(ciudadParam);
+
   // Lista y paginación
   const [reclamos, setReclamos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [total, setTotal] = useState(0);
   const [totalPag, setTotalPag] = useState(1);
@@ -27,16 +35,16 @@ export default function AdminReclamosPage() {
   const [busqueda, setBusqueda] = useState("");
   const debouncedBusqueda = useDebounce(busqueda, 350);
   const [filtroEstado, setFiltroEstado] = useState("");
-  const [filtroCiudad, setFiltroCiudad] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroInstitucion, setFiltroInstitucion] = useState("");
   const [filtroAnomalia, setFiltroAnomalia] = useState(false);
 
   // Catálogos auxiliares para filtros
   const [ciudadesCatalogo, setCiudadesCatalogo] = useState([]);
+  const [loadingCiudades, setLoadingCiudades] = useState(true);
   const [categoriasCatalogo, setCategoriasCatalogo] = useState([]);
 
-  // Métricas
+  // Métricas de reclamos
   const [stats, setStats] = useState({
     total: 0,
     pendientes: 0,
@@ -46,7 +54,7 @@ export default function AdminReclamosPage() {
     sinAsignar: 0,
     pendienteMasAntiguoDias: 0,
   });
-  const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   // Modales
   const [detalle, setDetalle] = useState(null);
@@ -69,11 +77,13 @@ export default function AdminReclamosPage() {
     };
   }, []);
 
-  // Cargar estadísticas
-  const fetchStats = useCallback(async () => {
+  // Cargar estadísticas filtradas por ciudad
+  const fetchStats = useCallback(async (ciudadId = filtroCiudad) => {
+    if (!ciudadId) return;
     setLoadingStats(true);
     try {
-      const res = await apiClient.get("/admin/reclamos/stats");
+      const url = `/admin/reclamos/stats?ciudad=${encodeURIComponent(ciudadId)}`;
+      const res = await apiClient.get(url);
       if (isMountedRef.current && res.data?.ok) {
         setStats(res.data.data);
       }
@@ -84,10 +94,11 @@ export default function AdminReclamosPage() {
         setLoadingStats(false);
       }
     }
-  }, []);
+  }, [filtroCiudad]);
 
-  // Cargar catálogos para filtros (ciudades, categorías e instituciones verificadas)
+  // Cargar catálogos para filtros
   const fetchCatalogosFiltros = useCallback(async () => {
+    setLoadingCiudades(true);
     try {
       const [resCiudades, resCats, resInst] = await Promise.all([
         apiClient.get("/admin/ciudades").catch(() => null),
@@ -106,6 +117,8 @@ export default function AdminReclamosPage() {
       }
     } catch {
       // silencioso
+    } finally {
+      if (isMountedRef.current) setLoadingCiudades(false);
     }
   }, []);
 
@@ -120,6 +133,14 @@ export default function AdminReclamosPage() {
       institucion = filtroInstitucion,
       anomalia = filtroAnomalia
     ) => {
+      if (!ciudad) {
+        setReclamos([]);
+        setTotal(0);
+        setTotalPag(1);
+        setLoading(false);
+        return;
+      }
+
       const currentReqId = ++reqIdRef.current;
       setLoading(true);
       setError("");
@@ -127,10 +148,10 @@ export default function AdminReclamosPage() {
         const params = new URLSearchParams({
           pagina: String(page),
           limite: "15",
+          ciudad: String(ciudad),
         });
         if (estado) params.set("estado", estado);
         if (search && search.trim()) params.set("busqueda", search.trim());
-        if (ciudad) params.set("ciudad", String(ciudad));
         if (categoria) params.set("categoria", String(categoria));
         if (institucion) params.set("institucion", String(institucion));
         if (anomalia) params.set("anomalia", "true");
@@ -180,26 +201,15 @@ export default function AdminReclamosPage() {
     }
   };
 
-  // Efecto inicial para métricas y catálogos
+  // Efecto inicial para catálogos
   useEffect(() => {
-    fetchStats();
     fetchCatalogosFiltros();
-  }, [fetchStats, fetchCatalogosFiltros]);
+  }, [fetchCatalogosFiltros]);
 
-  // Efecto para cambios en búsqueda o filtros
-  const isFirstRender = useRef(true);
+  // Efecto para cambios en ciudad o filtros
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      fetchReclamos(
-        1,
-        filtroEstado,
-        debouncedBusqueda,
-        filtroCiudad,
-        filtroCategoria,
-        filtroInstitucion,
-        filtroAnomalia
-      );
+    if (!filtroCiudad) {
+      setReclamos([]);
       return;
     }
     setPagina(1);
@@ -212,24 +222,24 @@ export default function AdminReclamosPage() {
       filtroInstitucion,
       filtroAnomalia
     );
+    fetchStats(filtroCiudad);
   }, [
+    filtroCiudad,
     debouncedBusqueda,
     filtroEstado,
-    filtroCiudad,
     filtroCategoria,
     filtroInstitucion,
     filtroAnomalia,
     fetchReclamos,
+    fetchStats,
   ]);
 
-  // Manejador de cambio de página
   const handleCambiarPagina = (nuevaPag) => {
     const clamped = Math.max(1, Math.min(nuevaPag, totalPag));
     setPagina(clamped);
-    fetchReclamos(clamped, filtroEstado, debouncedBusqueda);
+    fetchReclamos(clamped, filtroEstado, debouncedBusqueda, filtroCiudad);
   };
 
-  // Abrir detalle completo
   const abrirDetalle = async (id) => {
     try {
       const res = await apiClient.get(`/admin/reclamos/${id}`);
@@ -245,7 +255,6 @@ export default function AdminReclamosPage() {
     }
   };
 
-  // Abrir modal de reasignación
   const abrirReasignar = async (rec) => {
     setModalReasignar(rec);
     setInstitucionDestino("");
@@ -254,7 +263,6 @@ export default function AdminReclamosPage() {
     await cargarInstituciones();
   };
 
-  // Ejecutar reasignación con auditoría
   const handleConfirmarReasignacion = async () => {
     setErrorReasignacion("");
 
@@ -284,8 +292,8 @@ export default function AdminReclamosPage() {
         if (detalle && detalle.id === recId) {
           await abrirDetalle(recId);
         }
-        await fetchReclamos(pagina, filtroEstado, debouncedBusqueda);
-        await fetchStats();
+        await fetchReclamos(pagina, filtroEstado, debouncedBusqueda, filtroCiudad);
+        await fetchStats(filtroCiudad);
       } else if (isMountedRef.current) {
         setErrorReasignacion(res.data?.mensaje || "Error al reasignar institución.");
       }
@@ -302,92 +310,148 @@ export default function AdminReclamosPage() {
     }
   };
 
+  const ciudadActual = ciudadesCatalogo.find(
+    (c) => String(c.id_ciudad ?? c.id) === String(filtroCiudad)
+  );
+
   return (
     <div className="w-full space-y-6">
-      {/* Encabezado */}
-      <PageHeader
-        title="Supervisión de Reclamos"
-        description="Supervisión global de reclamos ciudadanos, auditoría de eventos y reasignación institucional territorial."
-        action={
-          <Button
-            onClick={() => {
-              fetchReclamos(pagina, filtroEstado, debouncedBusqueda);
-              fetchStats();
-            }}
-            variant="outline"
-            leftIcon={<RefreshCw size={16} className={loading ? "animate-spin" : ""} />}
-          >
-            Actualizar
-          </Button>
-        }
-      />
+      {/* VISTA 1: SI NO HAY CIUDAD SELECCIONADA -> SELECTOR TERRITORIAL */}
+      {!filtroCiudad ? (
+        <>
+          <PageHeader
+            title="Supervisión Territorial de Reclamos"
+            description="Seleccioná una localidad para supervisar, filtrar y auditar los reclamos territoriales."
+            action={
+              <Button
+                onClick={() => fetchCatalogosFiltros()}
+                variant="outline"
+                leftIcon={<RefreshCw size={16} className={loadingCiudades ? "animate-spin" : ""} />}
+              >
+                Actualizar
+              </Button>
+            }
+          />
 
-      {/* Tarjetas KPI de Estado */}
-      <ReclamoStatsCards
-        stats={stats}
-        loading={loadingStats}
-        filtroEstado={filtroEstado}
-        onFiltroEstadoChange={setFiltroEstado}
-        filtroAnomalia={filtroAnomalia}
-        onFiltroAnomaliaChange={setFiltroAnomalia}
-      />
-
-      {/* Controles de búsqueda y filtros */}
-      <ReclamoFilterBar
-        busqueda={busqueda}
-        onBusquedaChange={setBusqueda}
-        onLimpiarBusqueda={() => setBusqueda("")}
-        filtroEstado={filtroEstado}
-        onFiltroEstadoChange={setFiltroEstado}
-        filtroCiudad={filtroCiudad}
-        onFiltroCiudadChange={setFiltroCiudad}
-        ciudades={ciudadesCatalogo}
-        filtroCategoria={filtroCategoria}
-        onFiltroCategoriaChange={setFiltroCategoria}
-        categorias={categoriasCatalogo}
-        filtroInstitucion={filtroInstitucion}
-        onFiltroInstitucionChange={setFiltroInstitucion}
-        instituciones={instituciones}
-        filtroAnomalia={filtroAnomalia}
-        onFiltroAnomaliaChange={setFiltroAnomalia}
-        onLimpiarTodo={() => {
-          setBusqueda("");
-          setFiltroEstado("");
-          setFiltroCiudad("");
-          setFiltroCategoria("");
-          setFiltroInstitucion("");
-          setFiltroAnomalia(false);
-        }}
-        totalResultados={reclamos.length}
-        totalGeneral={total}
-      />
-
-      {/* Error alert */}
-      {error && (
-        <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-300 text-sm flex items-start gap-3">
-          <AlertCircle size={18} className="shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="font-semibold m-0">Error en la consulta</p>
-            <p className="text-xs mt-1 m-0">{error}</p>
+          <ReclamoCiudadSelector
+            ciudades={ciudadesCatalogo}
+            loading={loadingCiudades}
+            onSelectCiudad={(id) => setFiltroCiudad(id)}
+          />
+        </>
+      ) : (
+        /* VISTA 2: CIUDAD SELECCIONADA -> GESTIÓN DE RECLAMOS DE ESA CIUDAD */
+        <>
+          {/* Banner de Localidad Activa con botón para cambiar ciudad */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-surface border border-border-subtle shadow-xs">
+            <div className="flex items-center gap-3 min-w-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFiltroCiudad("")}
+                leftIcon={<ArrowLeft size={15} />}
+              >
+                Cambiar localidad
+              </Button>
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold text-text-primary truncate m-0 flex items-center gap-2">
+                  <MapPin size={16} className="text-primary shrink-0" />
+                  {ciudadActual ? ciudadActual.nombre : `Localidad #${filtroCiudad}`}
+                </h2>
+                <p className="text-xs text-text-muted m-0 truncate">
+                  {ciudadActual?.provincia ? `${ciudadActual.provincia} • ` : ""}
+                  {ciudadActual?.institucion_principal_nombre
+                    ? `Institución Principal: ${ciudadActual.institucion_principal_nombre}`
+                    : "Sin institución principal"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                onClick={() => {
+                  fetchReclamos(pagina, filtroEstado, debouncedBusqueda, filtroCiudad);
+                  fetchStats(filtroCiudad);
+                }}
+                variant="outline"
+                size="sm"
+                leftIcon={<RefreshCw size={14} className={loading ? "animate-spin" : ""} />}
+              >
+                Actualizar
+              </Button>
+            </div>
           </div>
-          <Button size="sm" variant="outline" onClick={() => fetchReclamos(pagina, filtroEstado, debouncedBusqueda)}>
-            Reintentar
-          </Button>
-        </div>
+
+          {/* Tarjetas KPI de Estado para la Ciudad */}
+          <ReclamoStatsCards
+            stats={stats}
+            loading={loadingStats}
+            filtroEstado={filtroEstado}
+            onFiltroEstadoChange={setFiltroEstado}
+            filtroAnomalia={filtroAnomalia}
+            onFiltroAnomaliaChange={setFiltroAnomalia}
+          />
+
+          {/* Filtros para la Ciudad */}
+          <ReclamoFilterBar
+            busqueda={busqueda}
+            onBusquedaChange={setBusqueda}
+            onLimpiarBusqueda={() => setBusqueda("")}
+            filtroEstado={filtroEstado}
+            onFiltroEstadoChange={setFiltroEstado}
+            filtroCiudad={filtroCiudad}
+            onFiltroCiudadChange={setFiltroCiudad}
+            ciudades={ciudadesCatalogo}
+            filtroCategoria={filtroCategoria}
+            onFiltroCategoriaChange={setFiltroCategoria}
+            categorias={categoriasCatalogo}
+            filtroInstitucion={filtroInstitucion}
+            onFiltroInstitucionChange={setFiltroInstitucion}
+            instituciones={instituciones.filter(
+              (i) => !i.id_ciudad || String(i.id_ciudad) === String(filtroCiudad)
+            )}
+            filtroAnomalia={filtroAnomalia}
+            onFiltroAnomaliaChange={setFiltroAnomalia}
+            onLimpiarTodo={() => {
+              setBusqueda("");
+              setFiltroEstado("");
+              setFiltroCategoria("");
+              setFiltroInstitucion("");
+              setFiltroAnomalia(false);
+            }}
+            totalResultados={reclamos.length}
+            totalGeneral={total}
+          />
+
+          {error && (
+            <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-300 text-sm flex items-start gap-3">
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold m-0">Error en la consulta</p>
+                <p className="text-xs mt-1 m-0">{error}</p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => fetchReclamos(pagina, filtroEstado, debouncedBusqueda, filtroCiudad)}
+              >
+                Reintentar
+              </Button>
+            </div>
+          )}
+
+          <ReclamoTable
+            reclamos={reclamos}
+            loading={loading}
+            pagina={pagina}
+            totalPaginas={totalPag}
+            onCambiarPagina={handleCambiarPagina}
+            onVerDetalle={abrirDetalle}
+            onReasignar={abrirReasignar}
+          />
+        </>
       )}
 
-      {/* Tabla y Cards */}
-      <ReclamoTable
-        reclamos={reclamos}
-        loading={loading}
-        pagina={pagina}
-        totalPaginas={totalPag}
-        onCambiarPagina={handleCambiarPagina}
-        onVerDetalle={abrirDetalle}
-        onReasignar={abrirReasignar}
-      />
-
-      {/* MODAL 1: DETALLE COMPLETO Y SUPERVISIÓN */}
+      {/* Modales Compartidos */}
       <ReclamoDetailModal
         isOpen={Boolean(detalle)}
         onClose={() => setDetalle(null)}
@@ -395,7 +459,6 @@ export default function AdminReclamosPage() {
         onAbrirReasignar={(d) => abrirReasignar(d)}
       />
 
-      {/* MODAL 2: REASIGNACIÓN AUDITADA */}
       <ReclamoReassignModal
         isOpen={Boolean(modalReasignar)}
         onClose={() => setModalReasignar(null)}
@@ -411,5 +474,13 @@ export default function AdminReclamosPage() {
         onConfirmar={handleConfirmarReasignacion}
       />
     </div>
+  );
+}
+
+export default function AdminReclamosPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-text-muted text-sm">Cargando supervisión...</div>}>
+      <AdminReclamosContent />
+    </Suspense>
   );
 }

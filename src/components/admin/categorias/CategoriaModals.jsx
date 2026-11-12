@@ -2,6 +2,7 @@
 
 import { PowerOff, Power, Trash2 } from "lucide-react";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import CategoriaAsignacionModal from "./CategoriaAsignacionModal";
 
 export default function CategoriaModals({
   modalBaja,
@@ -13,10 +14,20 @@ export default function CategoriaModals({
   modalEliminar,
   onCloseEliminar,
   onConfirmEliminar,
+  modalAsignacion,
+  onCloseAsignacion,
+  ciudades = [],
   procesando = false,
 }) {
   return (
     <>
+      {/* Modal Asignación Territorial por Localidad */}
+      <CategoriaAsignacionModal
+        isOpen={Boolean(modalAsignacion)}
+        onClose={onCloseAsignacion}
+        categoria={modalAsignacion}
+        ciudades={ciudades}
+      />
       {/* Modal Baja Lógica */}
       {modalBaja && (
         <ConfirmModal
